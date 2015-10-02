@@ -1,0 +1,2 @@
+Main-Class: org.jocean.zookeeper.cli.Booter
+Class-Path: ../../etc/ 
