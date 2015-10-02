@@ -12,6 +12,7 @@ dependencies {
     compile 'org.slf4j:slf4j-api:1.7.7'
     
     compile 'commons-io:commons-io:2.4'
+    compile 'com.google.guava:guava:18.0'
     
     /* jocean */
     compile 'org.jocean:jocean-idiom:0.1.3-SNAPSHOT'
@@ -20,9 +21,11 @@ dependencies {
     compile('org.jocean:jocean-j2se:0.0.3-SNAPSHOT') { transitive = false }
     
     
-    /* jansi */
-    compile 'jline:jline:2.13'
-    compile 'org.fusesource.jansi:jansi:1.11'
+    /* zkoss */
+    compile 'org.zkoss.zk:zkplus:7.0.3'
+    compile 'org.zkoss.zk:zhtml:7.0.3'
+    compile 'org.zkoss.zk:zkbind:7.0.3'
+    compile 'org.zkoss.zk:zul:7.0.3'
     
     /* for yaml */
     compile 'org.yaml:snakeyaml:1.16'
