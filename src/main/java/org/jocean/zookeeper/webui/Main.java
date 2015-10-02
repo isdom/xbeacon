@@ -28,7 +28,7 @@ public class Main {
         final Server server = new Server(7080);
         
         final WebAppContext context = new WebAppContext();
-        context.setContextPath("/");
+        context.setContextPath("/zkwebui");
 
         final String warfile = System.getProperty("user.dir") 
                 + System.getProperty("file.separator")
