@@ -1,3 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?variable-resolver class="org.zkoss.zkplus.spring.DelegatingVariableResolver"?>
+<zk>
 <window title="My First ZK Application" border="normal">
-   Hello World!
+   Hello ${demo.message}
 </window>
+</zk>

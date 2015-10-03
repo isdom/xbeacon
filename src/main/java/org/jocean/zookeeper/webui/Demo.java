@@ -9,4 +9,8 @@ public class Demo {
     public Demo() {
         LOG.info("demo started...");
     }
+    
+    public String getMessage() {
+        return "Demo";
+    }
 }

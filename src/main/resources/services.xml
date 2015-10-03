@@ -4,6 +4,6 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
-    <bean class="org.jocean.zookeeper.webui.Demo" />
+    <bean id="demo" class="org.jocean.zookeeper.webui.Demo" />
     
 </beans>
