@@ -31,6 +31,12 @@ dependencies {
     compile 'org.zkoss.zk:zhtml:7.0.3'
     compile 'org.zkoss.zk:zkbind:7.0.3'
     compile 'org.zkoss.zk:zul:7.0.3'
+    compile('org.zkoss.zk:zkspring-core:3.1.1') { transitive = false }
+    
+    /* spring */
+    compile "org.springframework:spring-web:${springVersion}"
+    compile "org.springframework:spring-context-support:${springVersion}"
+    compile "org.springframework:spring-orm:${springVersion}"
     
     /* jetty */
     compile 'org.eclipse.jetty:jetty-webapp:9.2.13.v20150730'
@@ -46,4 +52,5 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.1.2'
     
     testCompile 'junit:junit:4.12'
+    testCompile "org.springframework:spring-test:${springVersion}"
 }

@@ -4,17 +4,17 @@
     <contextName>yjy</contextName>
     <jmxConfigurator/>
     <!-- direct log messages to stdout -->
-    <!-- appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <Target>System.out</Target>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %5p |-%c{35}:%L - %m %n</pattern>
         </encoder>
-    </appender-->
+    </appender>
 
     <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${user.dir}/../logs/yjy.log</file>
+        <file>${user.dir}/../logs/zkwebui.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${user.dir}/../logs/bak/yjy.%d{yyyy-MM-dd}.%i.log.gz</FileNamePattern>
+            <FileNamePattern>${user.dir}/../logs/bak/zkwebui.%d{yyyy-MM-dd}.%i.log.gz</FileNamePattern>
             <timeBasedFileNamingAndTriggeringPolicy
                 class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
                 <maxFileSize>1024MB</maxFileSize>
@@ -27,14 +27,14 @@
     </appender>
 
     <appender name="errorFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${user.dir}/../logs/yjy-error.log</file>
+        <file>${user.dir}/../logs/zkwebui-error.log</file>
         <filter class="ch.qos.logback.classic.filter.LevelFilter">
             <level>ERROR</level>
             <onMatch>ACCEPT</onMatch>
             <onMismatch>DENY</onMismatch>
         </filter>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <FileNamePattern>${user.dir}/../logs/bak/yjy-error.%d{yyyy-MM-dd}.log.gz</FileNamePattern>
+            <FileNamePattern>${user.dir}/../logs/bak/zkwebui-error.%d{yyyy-MM-dd}.log.gz</FileNamePattern>
             <maxHistory>7</maxHistory>
         </rollingPolicy>
         <encoder>
@@ -48,6 +48,7 @@
     </appender>
 
     <root level="DEBUG">
+        <appender-ref ref="stdout"/>
         <appender-ref ref="ASYNC"/>
         <appender-ref ref="errorFile"/>
     </root>
