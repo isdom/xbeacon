@@ -13,8 +13,7 @@ import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
-import org.zkoss.zul.Tabpanels;
-import org.zkoss.zul.Tabs;
+import org.zkoss.zul.Menuitem;
 import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
@@ -61,9 +60,26 @@ public class AdminComposer extends SelectorComposer<Window>{
 		
 		refreshNodeTree();
 		
+        save.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+
+            @Override
+            public void onEvent(final Event event) throws Exception {
+                final SimpleTreeModel.Node node = currentSelectedNode();
+                if ( null != node ) {
+                    LOG.info("try to save current content for path:{}", node.getData());
+                    saveCurrentContent((String)node.getData());
+                }
+            }});
 	}
 
-	private void displayNodeData(final String fullpath) throws Exception {
+	private void saveCurrentContent(final String fullpath) throws Exception {
+	    final byte[] content = this.parameters.getText().getBytes(Charsets.UTF_8);
+	    if (null!=content) {
+	        this._zkClient.setData().forPath(fullpath, content);
+	    }
+    }
+
+    private void displayNodeData(final String fullpath) throws Exception {
 	    final byte[] data = this._zkClient.getData().forPath(fullpath);
 	    if (null != data) {
 	        final String content = new String(data, Charsets.UTF_8);
@@ -145,10 +161,12 @@ public class AdminComposer extends SelectorComposer<Window>{
     Textbox     parameters;
     
     @Wire
-    Tabs        maintabs;
-	
-    @Wire
-    Tabpanels   maintabpanels;
+    Menuitem        save;
+//    @Wire
+//    Tabs        maintabs;
+//	
+//    @Wire
+//    Tabpanels   maintabpanels;
 	
 //    private     TreeCache _treeCache;
     
