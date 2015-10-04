@@ -2,14 +2,15 @@
 	<window id="main" width="100%" height="100%" 
 		apply="org.jocean.zookeeper.webui.admin.AdminComposer">
  		<borderlayout>
-			<west size="200px" splittable="true" flex="true" collapsible="true" title="Server"> 
+			<west size="200px" splittable="true" flex="true" collapsible="true" title="Nodes"> 
 				<tree id="nodes" style="border:none"/>
 			</west>
 			<center id="center" flex="true" >
-				<tabbox > <!-- mold="accordion" -->
+				<!-- tabbox >
 				      <tabs id="maintabs" />
 				      <tabpanels id="maintabpanels" />
-				</tabbox>
+				</tabbox -->
+                <textbox id="parameters" multiline="true"/>
 			</center>
 			<south height="100px">
 				<caption label="status"/>

@@ -15,12 +15,15 @@ import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
 import org.zkoss.zul.Tabpanels;
 import org.zkoss.zul.Tabs;
+import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
 import org.zkoss.zul.Treeitem;
 import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
+
+import com.google.common.base.Charsets;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class AdminComposer extends SelectorComposer<Window>{
@@ -51,7 +54,7 @@ public class AdminComposer extends SelectorComposer<Window>{
 				final SimpleTreeModel.Node node = currentSelectedNode();
 				if ( null != node ) {
 					LOG.info("select node:{}", node.getData());
-//					refreshServiceViews( desc );
+					displayNodeData( (String)node.getData() );
 				}
 			}		
 		});
@@ -60,12 +63,20 @@ public class AdminComposer extends SelectorComposer<Window>{
 		
 	}
 
-	/**
+	private void displayNodeData(final String fullpath) throws Exception {
+	    final byte[] data = this._zkClient.getData().forPath(fullpath);
+	    if (null != data) {
+	        final String content = new String(data, Charsets.UTF_8);
+	        this.parameters.setText(content);
+	    }
+    }
+
+    /**
 	 * @throws Exception 
 	 * 
 	 */
 	private void refreshNodeTree() throws Exception {
-		nodes.setModel( new SimpleTreeModel(genTreeNode(null, "/")) );
+		nodes.setModel( new SimpleTreeModel(genTreeNode(null, _rootPath)) );
 	}
 	
    private SimpleTreeModel.Node currentSelectedNode() {
@@ -131,6 +142,9 @@ public class AdminComposer extends SelectorComposer<Window>{
     Tree        nodes;
 	
     @Wire
+    Textbox     parameters;
+    
+    @Wire
     Tabs        maintabs;
 	
     @Wire
@@ -140,4 +154,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     
 	@WireVariable("zkClient")
 	private CuratorFramework _zkClient;
+	
+    @WireVariable("rootPath")
+	private String _rootPath;
 }

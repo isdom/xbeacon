@@ -25,4 +25,7 @@
         </constructor-arg>
     </bean>
     
+    <bean id="rootPath" class="java.lang.String">
+        <constructor-arg value="${root.path:/}"/>
+    </bean>
 </beans>
