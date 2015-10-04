@@ -4,6 +4,25 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
-    <bean id="demo" class="org.jocean.zookeeper.webui.Demo" />
+    <bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="locations">
+            <list>
+                <value>classpath:${config:webui.properties}</value>
+            </list>
+        </property>
+        <property name="fileEncoding" value="UTF-8"/>
+    </bean>
+    
+    <bean id="zkClient" class="org.apache.curator.framework.CuratorFrameworkFactory"
+        factory-method="newClient"
+        init-method="start">
+        <constructor-arg value="${zk.address}"/>
+        <constructor-arg>
+            <bean class="org.apache.curator.retry.ExponentialBackoffRetry">
+                <constructor-arg value="1000"/>
+                <constructor-arg value="3"/>
+            </bean>
+        </constructor-arg>
+    </bean>
     
 </beans>
