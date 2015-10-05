@@ -38,12 +38,6 @@ public class AdminComposer extends SelectorComposer<Window>{
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
 		
-//		this._treeCache = TreeCache.newBuilder(_zkClient, "/")
-//	            .setCacheData(false)
-//	            .build();
-		        
-		//System.out.println("_mbscSource:" + _mbscSource);
-		
 		nodes.setItemRenderer(new NodeTreeRenderer());
 		
 		nodes.addEventListener(Events.ON_SELECT, new EventListener<Event>() {
