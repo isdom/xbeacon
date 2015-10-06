@@ -26,8 +26,6 @@ import com.google.common.base.Charsets;
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class ZKAdminComposer extends SelectorComposer<Window>{
 	
-    private static final byte[] EMPTY_BYTES = new byte[0];
-
     /**
      * 
      */
@@ -85,7 +83,7 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
 	private void addNodeFor(final String fullpath) {
 	    final Window dialog = new Window("Add Node", "normal", true);
 	    dialog.setWidth("300px");
-	    dialog.setHeight("100px");
+	    dialog.setHeight("550px");
 	    dialog.setSizable(false);
 	    dialog.setPage(this.getPage());
 	    
@@ -94,6 +92,13 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
             {
                 this.setWidth("260px");
             }};
+        final Textbox tbNodecontent = new Textbox() {
+            private static final long serialVersionUID = 1L; 
+            {
+                this.setWidth("260px");
+                this.setHeight("400px");
+                this.setMultiline(true);
+            }};
         final Button btnOK = new Button("OK") {
             private static final long serialVersionUID = 1L;
             {
@@ -101,7 +106,8 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
                     @Override
                     public void onEvent(Event event) throws Exception {
                         final String nodepath = concatParentAndChild(fullpath, tbNodename.getText());
-                        final String createdPath =_zkclient.create().forPath(nodepath, EMPTY_BYTES);
+                        final byte[] nodecontent = tbNodecontent.getText().getBytes(Charsets.UTF_8);
+                        final String createdPath =_zkclient.create().forPath(nodepath, nodecontent);
                         dialog.detach();
                         alert(createdPath + " created!");
                         refreshNodes();
@@ -119,6 +125,7 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
             }
             };
 	    dialog.appendChild(tbNodename);
+        dialog.appendChild(tbNodecontent);
         dialog.appendChild(btnOK);
         dialog.appendChild(btnCancel);
 	    dialog.doModal();
