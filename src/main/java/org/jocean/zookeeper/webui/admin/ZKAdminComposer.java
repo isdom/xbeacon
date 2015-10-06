@@ -2,6 +2,7 @@ package org.jocean.zookeeper.webui.admin;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.curator.framework.CuratorFramework;
+import org.jocean.idiom.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.event.Event;
@@ -13,6 +14,7 @@ import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Menuitem;
+import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
@@ -61,6 +63,17 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
                 if ( null != fullpath ) {
                     LOG.info("try to add node for path:{}", fullpath);
                     addNodeFor(fullpath);
+                }
+            }});
+        
+        delnode.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+
+            @Override
+            public void onEvent(final Event event) throws Exception {
+                final String fullpath = currentSelectedNode();
+                if ( null != fullpath ) {
+                    LOG.info("try to del node:{}", fullpath);
+                    delNodeFor(fullpath);
                 }
             }});
         
@@ -131,6 +144,27 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
 	    dialog.doModal();
     }
 
+    private void delNodeFor(final String fullpath) {
+        Messagebox.show("Are you sure to delete node(" + fullpath + ")?", 
+            "Confirm Dialog", 
+            Messagebox.OK | Messagebox.CANCEL, 
+            Messagebox.QUESTION, 
+            new org.zkoss.zk.ui.event.EventListener<Event>() {
+                public void onEvent(Event evt) throws InterruptedException {
+                    if (evt.getName().equals("onOK")) {
+                        try {
+                            _zkclient.delete().deletingChildrenIfNeeded()
+                            .forPath(fullpath);
+                            alert(fullpath + " deleted!");
+                            refreshNodes();
+                        } catch (Exception e) {
+                            alert(ExceptionUtils.exception2detail(e));
+                        }
+                    } else {
+                    }
+            }});
+    }
+
     private void saveCurrentContent(final String fullpath) throws Exception {
 	    final byte[] content = this.parameters.getText().getBytes(Charsets.UTF_8);
 	    if (null!=content) {
@@ -180,6 +214,9 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
     
     @Wire
     Menuitem        addnode;
+    
+    @Wire
+    Menuitem        delnode;
     
     @Wire
     Menuitem        save;

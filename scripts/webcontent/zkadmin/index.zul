@@ -3,6 +3,7 @@
         apply="org.jocean.zookeeper.webui.admin.ZKAdminComposer">
         <menubar>
              <menuitem id="addnode" label="Add Node"/>
+             <menuitem id="delnode" label="Delete Node"/>
              <menuitem id="save" label="Save To ZK"/>
         </menubar>
         <borderlayout>
