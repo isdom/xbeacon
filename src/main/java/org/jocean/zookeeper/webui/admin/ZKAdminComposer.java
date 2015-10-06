@@ -11,6 +11,7 @@ import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
+import org.zkoss.zul.Button;
 import org.zkoss.zul.Menuitem;
 import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Tree;
@@ -25,6 +26,8 @@ import com.google.common.base.Charsets;
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class ZKAdminComposer extends SelectorComposer<Window>{
 	
+    private static final byte[] EMPTY_BYTES = new byte[0];
+
     /**
      * 
      */
@@ -50,8 +53,19 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
 			}		
 		});
 		
-		nodes.setModel( new ZKTreeModel(this._zkClient, this._rootPath));
+		refreshNodes();
 		
+        addnode.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+
+            @Override
+            public void onEvent(final Event event) throws Exception {
+                final String fullpath = currentSelectedNode();
+                if ( null != fullpath ) {
+                    LOG.info("try to add node for path:{}", fullpath);
+                    addNodeFor(fullpath);
+                }
+            }});
+        
         save.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
 
             @Override
@@ -64,15 +78,61 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
             }});
 	}
 
-	private void saveCurrentContent(final String fullpath) throws Exception {
+    private void refreshNodes() {
+        nodes.setModel( new ZKTreeModel(this._zkclient, this._rootPath));
+    }
+
+	private void addNodeFor(final String fullpath) {
+	    final Window dialog = new Window("Add Node", "normal", true);
+	    dialog.setWidth("300px");
+	    dialog.setHeight("100px");
+	    dialog.setSizable(false);
+	    dialog.setPage(this.getPage());
+	    
+	    final Textbox tbNodename = new Textbox() {
+            private static final long serialVersionUID = 1L; 
+            {
+                this.setWidth("260px");
+            }};
+        final Button btnOK = new Button("OK") {
+            private static final long serialVersionUID = 1L;
+            {
+                this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                    @Override
+                    public void onEvent(Event event) throws Exception {
+                        final String nodepath = concatParentAndChild(fullpath, tbNodename.getText());
+                        final String createdPath =_zkclient.create().forPath(nodepath, EMPTY_BYTES);
+                        dialog.detach();
+                        alert(createdPath + " created!");
+                        refreshNodes();
+                    }});
+            }
+            };
+        final Button btnCancel = new Button("Cancel") {
+            private static final long serialVersionUID = 1L;
+            {
+                this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                    @Override
+                    public void onEvent(Event event) throws Exception {
+                        dialog.detach();
+                    }});
+            }
+            };
+	    dialog.appendChild(tbNodename);
+        dialog.appendChild(btnOK);
+        dialog.appendChild(btnCancel);
+	    dialog.doModal();
+    }
+
+    private void saveCurrentContent(final String fullpath) throws Exception {
 	    final byte[] content = this.parameters.getText().getBytes(Charsets.UTF_8);
 	    if (null!=content) {
-	        this._zkClient.setData().forPath(fullpath, content);
+	        this._zkclient.setData().forPath(fullpath, content);
 	    }
     }
 
     private void displayNodeData(final String fullpath) throws Exception {
-	    final byte[] data = this._zkClient.getData().forPath(fullpath);
+	    final byte[] data = this._zkclient.getData().forPath(fullpath);
 	    if (null != data) {
 	        final String content = new String(data, Charsets.UTF_8);
 	        this.parameters.setText(content);
@@ -82,10 +142,16 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
    private String currentSelectedNode() {
         final Treeitem item = nodes.getSelectedItem();
 
-        return (String)item.getValue();
+        return null != item ? (String)item.getValue() : null;
     }
 
 	
+    private String concatParentAndChild(final String fullpath,
+        final String child) {
+    return fullpath + (!fullpath.endsWith("/") ? "/" : "") + child;
+}
+
+
     class NodeTreeRenderer implements TreeitemRenderer<String> {
         public void render(final Treeitem item, final String fullname, int index) 
                 throws Exception {
@@ -106,15 +172,13 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
     Textbox     parameters;
     
     @Wire
+    Menuitem        addnode;
+    
+    @Wire
     Menuitem        save;
-//    @Wire
-//    Tabs        maintabs;
-//	
-//    @Wire
-//    Tabpanels   maintabpanels;
 	
 	@WireVariable("zkClient")
-	private CuratorFramework _zkClient;
+	private CuratorFramework _zkclient;
 	
     @WireVariable("rootPath")
 	private String _rootPath;
