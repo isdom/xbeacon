@@ -177,6 +177,8 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
 	    if (null != data) {
 	        final String content = new String(data, Charsets.UTF_8);
 	        this.parameters.setText(content);
+	    } else {
+            this.parameters.setText("");
 	    }
     }
 
@@ -197,8 +199,8 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
         public void render(final Treeitem item, final String fullname, int index) 
                 throws Exception {
             item.setValue(fullname);
-            final String text = fullname.equals("/") 
-                    ? "/" 
+            final String text = fullname.equals(_rootPath)
+                    ? fullname
                     : FilenameUtils.getName(fullname);
             item.appendChild( new Treerow() {
                 private static final long serialVersionUID = 1L;
