@@ -1,6 +1,6 @@
 <zk>
     <window id="main" width="100%" height="100%" 
-        apply="org.jocean.zookeeper.webui.admin.ZKAdminComposer">
+        apply="org.jocean.zookeeper.webui.admin.AdminComposer">
         <menubar>
              <menuitem id="addnode" label="Add Node"/>
              <menuitem id="delnode" label="Delete Node"/>

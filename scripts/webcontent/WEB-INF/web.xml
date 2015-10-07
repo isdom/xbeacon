@@ -11,13 +11,13 @@
         <param-value>classpath:services.xml</param-value>
     </context-param>
     <listener>
+        <description>ZK listener for session cleanup</description>
+        <listener-class>org.zkoss.zk.ui.http.HttpSessionListener</listener-class>
+    </listener>
+    <listener>
         <description>Used to init spring context</description>
         <display-name>Spring Context Initor</display-name>
         <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
-    </listener>
-    <listener>
-        <description>ZK listener for session cleanup</description>
-        <listener-class>org.zkoss.zk.ui.http.HttpSessionListener</listener-class>
     </listener>
     <servlet>
         <description>ZK loader for ZUML pages</description>

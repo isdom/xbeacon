@@ -28,4 +28,15 @@
     <bean id="rootPath" class="java.lang.String">
         <constructor-arg value="${root.path:/}"/>
     </bean>
+    
+    <bean id="zkagent" class="org.jocean.zookeeper.webui.admin.ZKAgent"
+        init-method="start">
+        <property name="zkclient" ref="zkClient"/>
+        <property name="root" value="${root.path:/}"/>
+        <property name="webapp">
+            <bean class="org.jocean.zookeeper.webui.MyWebAppInit" 
+                factory-method="getWebapp"/>
+        </property>
+    </bean>
+    
 </beans>

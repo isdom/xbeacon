@@ -1,8 +1,5 @@
 package org.jocean.zookeeper.webui.admin;
 
-import java.util.List;
-
-import org.apache.curator.framework.CuratorFramework;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,8 +18,6 @@ import org.zkoss.zul.Treeitem;
 import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
-
-import com.google.common.base.Charsets;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class AdminComposer extends SelectorComposer<Window>{
@@ -47,7 +42,7 @@ public class AdminComposer extends SelectorComposer<Window>{
 				final SimpleTreeModel.Node node = currentSelectedNode();
 				if ( null != node ) {
 					LOG.info("select node:{}", node.getData());
-					displayNodeData( (String)node.getData() );
+//					displayNodeData( (String)node.getData() );
 				}
 			}		
 		});
@@ -61,32 +56,32 @@ public class AdminComposer extends SelectorComposer<Window>{
                 final SimpleTreeModel.Node node = currentSelectedNode();
                 if ( null != node ) {
                     LOG.info("try to save current content for path:{}", node.getData());
-                    saveCurrentContent((String)node.getData());
+//                    saveCurrentContent((String)node.getData());
                 }
             }});
 	}
 
-	private void saveCurrentContent(final String fullpath) throws Exception {
-	    final byte[] content = this.parameters.getText().getBytes(Charsets.UTF_8);
-	    if (null!=content) {
-	        this._zkClient.setData().forPath(fullpath, content);
-	    }
-    }
-
-    private void displayNodeData(final String fullpath) throws Exception {
-	    final byte[] data = this._zkClient.getData().forPath(fullpath);
-	    if (null != data) {
-	        final String content = new String(data, Charsets.UTF_8);
-	        this.parameters.setText(content);
-	    }
-    }
+//	private void saveCurrentContent(final String fullpath) throws Exception {
+//	    final byte[] content = this.parameters.getText().getBytes(Charsets.UTF_8);
+//	    if (null!=content) {
+//	        this._zkClient.setData().forPath(fullpath, content);
+//	    }
+//    }
+//
+//    private void displayNodeData(final String fullpath) throws Exception {
+//	    final byte[] data = this._zkClient.getData().forPath(fullpath);
+//	    if (null != data) {
+//	        final String content = new String(data, Charsets.UTF_8);
+//	        this.parameters.setText(content);
+//	    }
+//    }
 
     /**
 	 * @throws Exception 
 	 * 
 	 */
 	private void refreshNodeTree() throws Exception {
-		nodes.setModel( new SimpleTreeModel(genTreeNode(null, _rootPath)) );
+		nodes.setModel( _zka.getModel() );
 	}
 	
    private SimpleTreeModel.Node currentSelectedNode() {
@@ -100,23 +95,6 @@ public class AdminComposer extends SelectorComposer<Window>{
         else {
             return  null;
         }
-    }
-
-	
-    private SimpleTreeModel.Node genTreeNode(final String parentPath, final String nodeName) 
-            throws Exception {
-        final String fullPath = null != parentPath 
-                ? parentPath + (!parentPath.endsWith("/") ? "/" : "") + nodeName
-                : nodeName;
-        final SimpleTreeModel.Node node = new SimpleTreeModel.Node(nodeName);
-        
-        node.setData(fullPath);
-        final List<String> children = _zkClient.getChildren().forPath(fullPath);
-        for (String child : children) {
-            node.addChild(genTreeNode(fullPath, child));
-        }
-        
-        return node;
     }
 
     class NodeTreeRenderer implements TreeitemRenderer<Object> {
@@ -164,9 +142,6 @@ public class AdminComposer extends SelectorComposer<Window>{
 	
 //    private     TreeCache _treeCache;
     
-	@WireVariable("zkClient")
-	private CuratorFramework _zkClient;
-	
-    @WireVariable("rootPath")
-	private String _rootPath;
+	@WireVariable("zkagent")
+	private ZKAgent _zka;
 }
