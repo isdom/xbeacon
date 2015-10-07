@@ -197,11 +197,13 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
         public void render(final Treeitem item, final String fullname, int index) 
                 throws Exception {
             item.setValue(fullname);
+            final String text = fullname.equals("/") 
+                    ? "/" 
+                    : FilenameUtils.getName(fullname);
             item.appendChild( new Treerow() {
                 private static final long serialVersionUID = 1L;
             {
-                this.appendChild(
-                    new Treecell(FilenameUtils.getName(fullname)));
+                this.appendChild(new Treecell(text));
             }});
         }
     }
