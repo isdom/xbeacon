@@ -29,7 +29,7 @@ public class Main {
         
         final WebAppContext context = new WebAppContext();
         context.setContextPath("/zkwebui");
-
+        
         final String warfile = System.getProperty("user.dir") 
                 + System.getProperty("file.separator")
                 + "bin"
@@ -39,6 +39,13 @@ public class Main {
                 ;
         if ( new File(warfile).exists() ) {
             LOG.info("found warfile {}, and use this file as war", warfile);
+            final File tmpdir = new File(System.getProperty("user.home") 
+                    + System.getProperty("file.separator")
+                    + ".zkwebui");
+            if (!tmpdir.exists()) {
+                tmpdir.mkdirs();
+            }
+            context.setTempDirectory(tmpdir);
             context.setWar(warfile);
         }
         else {
