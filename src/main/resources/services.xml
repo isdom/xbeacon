@@ -30,7 +30,8 @@
     </bean>
     
     <bean id="zkagent" class="org.jocean.zookeeper.webui.admin.ZKAgent"
-        init-method="start">
+        init-method="start"
+        destroy-method="stop">
         <property name="zkclient" ref="zkClient"/>
         <property name="root" value="${root.path:/}"/>
         <property name="webapp">

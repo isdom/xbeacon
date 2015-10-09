@@ -35,14 +35,14 @@ public class ZKAgent {
         this._zkclient = zkclient;
     }
     
-    public void setRoot(final String root) {
-        this._root = root;
-        this._rootNode = new SimpleTreeModel.Node(_root);
+    public void setRoot(final String rootPath) {
+        this._rootPath = rootPath;
+        this._rootNode = new SimpleTreeModel.Node(this._rootPath);
     }
     
     public void start() throws Exception {
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
-        this._treecache = TreeCache.newBuilder(_zkclient, _root)
+        this._treecache = TreeCache.newBuilder(_zkclient, _rootPath)
                 .setCacheData(true)
                 .build();
         this._treecache.getListenable().addListener(new TreeCacheListener() {
@@ -68,6 +68,10 @@ public class ZKAgent {
             }});
         this._treecache.start();
     }
+    
+    public void stop() {
+        this._treecache.close();
+    }
 
     private void addNode(final TreeCacheEvent event) {
         _rootNode.addChildrenIfAbsent(event.getData().getPath().split("/"));
@@ -82,7 +86,7 @@ public class ZKAgent {
     private TreeCache _treecache;
     private CuratorFramework _zkclient;
     private WebApp _webapp;
-    private String _root;
+    private String _rootPath;
     private EventQueue<Event> _eventqueue;
     
     private SimpleTreeModel.Node _rootNode;
