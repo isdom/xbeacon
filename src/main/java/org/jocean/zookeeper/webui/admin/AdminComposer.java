@@ -1,6 +1,7 @@
 package org.jocean.zookeeper.webui.admin;
 
 import org.jocean.zkoss.model.SimpleTreeModel;
+import org.jocean.zkoss.model.SimpleTreeModel.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.event.Event;
@@ -43,7 +44,7 @@ public class AdminComposer extends SelectorComposer<Window>{
 				final SimpleTreeModel.Node node = currentSelectedNode();
 				if ( null != node ) {
 					LOG.info("select node:{}", node.getData());
-//					displayNodeData( (String)node.getData() );
+					displayNodeData(node);
 				}
 			}		
 		});
@@ -57,7 +58,7 @@ public class AdminComposer extends SelectorComposer<Window>{
                 final SimpleTreeModel.Node node = currentSelectedNode();
                 if ( null != node ) {
                     LOG.info("try to save current content for path:{}", node.getData());
-//                    saveCurrentContent((String)node.getData());
+                    saveCurrentContent(node);
                 }
             }});
         EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
@@ -68,20 +69,13 @@ public class AdminComposer extends SelectorComposer<Window>{
             }});
 	}
 
-//	private void saveCurrentContent(final String fullpath) throws Exception {
-//	    final byte[] content = this.parameters.getText().getBytes(Charsets.UTF_8);
-//	    if (null!=content) {
-//	        this._zkClient.setData().forPath(fullpath, content);
-//	    }
-//    }
-//
-//    private void displayNodeData(final String fullpath) throws Exception {
-//	    final byte[] data = this._zkClient.getData().forPath(fullpath);
-//	    if (null != data) {
-//	        final String content = new String(data, Charsets.UTF_8);
-//	        this.parameters.setText(content);
-//	    }
-//    }
+	private void saveCurrentContent(final Node node) throws Exception {
+	    this._zka.setNodeDataAsString(node,  this.parameters.getText());
+    }
+	
+    private void displayNodeData(final Node node) throws Exception {
+        this.parameters.setText(this._zka.getNodeDataAsString(node));
+    }
 
     /**
 	 * @throws Exception 
@@ -124,8 +118,14 @@ public class AdminComposer extends SelectorComposer<Window>{
     Textbox     parameters;
     
     @Wire
+    Menuitem        addnode;
+    
+    @Wire
+    Menuitem        delnode;
+    
+    @Wire
     Menuitem        save;
-	
+    
 	@WireVariable("zkagent")
 	private ZKAgent _zka;
 	

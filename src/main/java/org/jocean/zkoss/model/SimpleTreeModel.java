@@ -83,6 +83,18 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
             return null;
         }
         
+        public Node getDescendant(final String[] path) {
+            Node parent = this;
+            for (String name : path) {
+                parent = parent.getChild(name);
+                if (null == parent) {
+                    return null;
+                }
+            }
+            
+            return  parent;
+        }
+        
 		private Object getChild(final int idx) {
 			return	this._children.get(idx);
 		}
