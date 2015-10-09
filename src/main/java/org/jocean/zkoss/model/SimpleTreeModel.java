@@ -33,9 +33,9 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 			return	toAdd;
 		}
 		
-		public Node addChildrenIfAbsent(final String[] names) {
+		public Node addChildrenIfAbsent(final String[] path) {
 			Node parent = this;
-			for ( String name : names) {
+			for ( String name : path) {
 				parent = parent.addChildIfAbsent(name);
 			}
 			
@@ -52,14 +52,45 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 			return	this;
 		}
 		
-		public String getName() {
+        public <T> Node removeChild(final String[] path) {
+            Node parent = null, child = this;
+            for (String name : path) {
+                parent = child;
+                child = parent.getChild(name);
+                if (null == child) {
+                    return null;
+                }
+            }
+            
+            parent.removeChild(child);
+            
+            return  child;
+        }
+        
+        public String getName() {
 			return	this._name;
 		}
 		
+        public Node getChild(final String name) {
+            for ( Object child : this._children ) {
+                if ( child instanceof Node ) {
+                    if ( ((Node)child)._name.equals(name) ) {
+                        return  (Node)child;
+                    }
+                }
+            }
+            
+            return null;
+        }
+        
 		private Object getChild(final int idx) {
 			return	this._children.get(idx);
 		}
 		
+        private void removeChild(final Node child) {
+            this._children.remove(child);
+        }
+
 		private int getChildCount() {
 			return	this._children.size();
 		}

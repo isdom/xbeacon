@@ -74,14 +74,19 @@ public class ZKAgent {
     }
 
     private void addNode(final TreeCacheEvent event) {
-        _rootNode.addChildrenIfAbsent(event.getData().getPath().split("/"));
+        this._rootNode.addChildrenIfAbsent(event.getData().getPath().split("/"));
+        notifyModelChanged(event.getData().getPath());
     }
 
     private void removeNode(final TreeCacheEvent event) {
-        // TODO Auto-generated method stub
-        
+        if (null!=this._rootNode.removeChild(event.getData().getPath().split("/"))) {
+            notifyModelChanged(event.getData().getPath());
+        }
     }
 
+    private void notifyModelChanged(final String path) {
+        this._eventqueue.publish(new Event("modelChanged"));
+    }
 
     private TreeCache _treecache;
     private CuratorFramework _zkclient;

@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
+import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
@@ -59,6 +60,12 @@ public class AdminComposer extends SelectorComposer<Window>{
 //                    saveCurrentContent((String)node.getData());
                 }
             }});
+        EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
+        .subscribe(new EventListener<Event>() {
+            @Override
+            public void onEvent(final Event event) throws Exception {
+                refreshNodeTree();
+            }});
 	}
 
 //	private void saveCurrentContent(final String fullpath) throws Exception {
@@ -97,31 +104,15 @@ public class AdminComposer extends SelectorComposer<Window>{
         }
     }
 
-    class NodeTreeRenderer implements TreeitemRenderer<Object> {
-        public void render(final Treeitem item, final Object data, int index) 
+    class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
+        public void render(final Treeitem item, final SimpleTreeModel.Node data, int index) 
                 throws Exception {
             item.setValue(data);
             item.appendChild( new Treerow() {
                 private static final long serialVersionUID = 1L;
             {
-                if ( data instanceof SimpleTreeModel.Node) {
-                    this.appendChild(
-                        new Treecell(((SimpleTreeModel.Node)data).getName()));
-                }
-//                else if ( data instanceof ServiceDescription ) {
-//                    final ServiceDescription desc = (ServiceDescription)data;
-//                    this.appendChild(
-//                        new Treecell( desc.getName() ) {
-//                            private static final long serialVersionUID = 1L;
-//                        {
-//                            this.setImage("server.png");
-//                            this.setTooltiptext(desc.getJmxurl());
-//                        }} );
-//                    
-//                }
-                else {
-                    LOG.warn("unknown tree node {}, just ignore", data);
-                }
+                this.appendChild(
+                    new Treecell(((SimpleTreeModel.Node)data).getName()));
             }});
         }
     }
@@ -134,14 +125,10 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     @Wire
     Menuitem        save;
-//    @Wire
-//    Tabs        maintabs;
-//	
-//    @Wire
-//    Tabpanels   maintabpanels;
 	
-//    private     TreeCache _treeCache;
-    
 	@WireVariable("zkagent")
 	private ZKAgent _zka;
+	
+    @WireVariable("rootPath")
+    private String _rootPath;
 }

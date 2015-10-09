@@ -191,9 +191,8 @@ public class ZKAdminComposer extends SelectorComposer<Window>{
 	
     private String concatParentAndChild(final String fullpath,
         final String child) {
-    return fullpath + (!fullpath.endsWith("/") ? "/" : "") + child;
-}
-
+        return fullpath + (!fullpath.endsWith("/") ? "/" : "") + child;
+    }
 
     class NodeTreeRenderer implements TreeitemRenderer<String> {
         public void render(final Treeitem item, final String fullname, int index) 
