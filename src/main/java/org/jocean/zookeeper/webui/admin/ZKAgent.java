@@ -83,11 +83,26 @@ public class ZKAgent {
         return ((Pair<String,String>)node.getData()).second;
     }
     
+    @SuppressWarnings("unchecked")
+    public String getNodePath(final SimpleTreeModel.Node node) {
+        return ((Pair<String,String>)node.getData()).first;
+    }
+    
     public void setNodeDataAsString(final SimpleTreeModel.Node node, final String data) 
             throws Exception {
         @SuppressWarnings("unchecked")
         final String path = ((Pair<String,String>)node.getData()).first;
         this._zkclient.setData().forPath(path, data.getBytes(Charsets.UTF_8));
+    }
+    
+    public String createZKNode(final String nodepath, final byte[] nodecontent) throws Exception {
+        return this._zkclient.create().forPath(nodepath, nodecontent);
+    }
+    
+    public void removeZKNode(final String nodepath) throws Exception {
+        _zkclient.delete()
+            .deletingChildrenIfNeeded()
+            .forPath(nodepath);
     }
     
     private void addNode(final TreeCacheEvent event) {
