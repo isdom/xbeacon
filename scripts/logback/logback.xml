@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <configuration scan="true" scanPeriod="5 seconds">
-    <contextName>yjy</contextName>
+    <contextName>zkwebui</contextName>
     <jmxConfigurator/>
     <!-- direct log messages to stdout -->
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
@@ -47,6 +47,13 @@
         <appender-ref ref="file"/>
     </appender>
 
+    <logger name="org.eclipse.jetty" level="WARN"/>
+    <logger name="org.apache.zookeeper" level="WARN"/>
+    <logger name="org.springframework" level="WARN"/>
+    <logger name="org.apache.curator" level="WARN"/>
+    <logger name="org.zkoss" level="WARN"/>
+    
+    
     <root level="DEBUG">
         <appender-ref ref="stdout"/>
         <appender-ref ref="ASYNC"/>
