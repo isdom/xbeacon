@@ -203,14 +203,14 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
 
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
-        public void render(final Treeitem item, final SimpleTreeModel.Node data, int index) 
+        public void render(final Treeitem item, final SimpleTreeModel.Node node, int index) 
                 throws Exception {
-            item.setValue(data);
+            item.setValue(node);
             item.appendChild( new Treerow() {
                 private static final long serialVersionUID = 1L;
             {
                 this.appendChild(
-                    new Treecell(((SimpleTreeModel.Node)data).getName()));
+                    new Treecell(node.getName()));
             }});
         }
     }

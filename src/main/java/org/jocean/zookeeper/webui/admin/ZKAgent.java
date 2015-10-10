@@ -1,5 +1,7 @@
 package org.jocean.zookeeper.webui.admin;
 
+import java.util.Arrays;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
@@ -17,9 +19,14 @@ import com.google.common.base.Charsets;
 
 public class ZKAgent {
     
+    private static final String[] PATH_ROOT = new String[]{"/"};
     private static final Logger LOG = 
             LoggerFactory.getLogger(ZKAgent.class);
 
+    public SimpleTreeModel getModel() {
+        return new SimpleTreeModel(this._rootNode);
+    }
+    
     /**
      * @param _webapp the _webapp to set
      */
@@ -27,10 +34,6 @@ public class ZKAgent {
         this._webapp = webapp;
     }
 
-    public SimpleTreeModel getModel() {
-        return new SimpleTreeModel(this._rootNode);
-    }
-    
     /**
      * @param zkclient the _zkclient to set
      */
@@ -105,9 +108,24 @@ public class ZKAgent {
             .forPath(nodepath);
     }
     
+    private static String[] buildPath(final TreeCacheEvent event) {
+        final String rawpath = event.getData().getPath();
+        final String[] path = rawpath.split("/");
+        if ( 0 == path.length) {
+            return PATH_ROOT;
+        } else {
+            path[0] = "/";
+            return path;
+        }
+    }
+
     private void addNode(final TreeCacheEvent event) {
+        final String[] path = buildPath(event);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("addNode: {}", Arrays.toString(path));
+        }
         final SimpleTreeModel.Node node = 
-                this._rootNode.addChildrenIfAbsent(event.getData().getPath().split("/"));
+                this._rootNode.addChildrenIfAbsent(path);
         node.setData(Pair.of(event.getData().getPath(), 
                 null != event.getData().getData() 
                     ? new String(event.getData().getData(), Charsets.UTF_8)
@@ -116,14 +134,14 @@ public class ZKAgent {
     }
 
     private void removeNode(final TreeCacheEvent event) {
-        if (null!=this._rootNode.removeChild(event.getData().getPath().split("/"))) {
+        if (null!=this._rootNode.removeChild(buildPath(event))) {
             notifyModelChanged(event.getData().getPath());
         }
     }
 
     private void updateNode(final TreeCacheEvent event) {
         final SimpleTreeModel.Node node = 
-                this._rootNode.getDescendant(event.getData().getPath().split("/"));
+                this._rootNode.getDescendant(buildPath(event));
         if (null!=node) {
             node.setData(Pair.of(event.getData().getPath(), 
                     null != event.getData().getData() 
