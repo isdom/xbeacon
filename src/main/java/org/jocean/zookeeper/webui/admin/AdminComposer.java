@@ -98,7 +98,8 @@ public class AdminComposer extends SelectorComposer<Window>{
 	}
 
     private void addNodeFor(final Node node) {
-        final Window dialog = new Window("Add Node", "normal", true);
+        final String path = _zka.getNodePath(node);
+        final Window dialog = new Window("Add Node for [" + path + "]", "normal", true);
         dialog.setWidth("300px");
         dialog.setHeight("550px");
         dialog.setSizable(false);
@@ -122,7 +123,7 @@ public class AdminComposer extends SelectorComposer<Window>{
                 this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
                     @Override
                     public void onEvent(Event event) throws Exception {
-                        final String nodepath = concatParentAndChild(_zka.getNodePath(node), tbNodename.getText());
+                        final String nodepath = concatParentAndChild(path, tbNodename.getText());
                         final byte[] nodecontent = tbNodecontent.getText().getBytes(Charsets.UTF_8);
                         final String createdPath = _zka.createZKNode(nodepath, nodecontent);
                         dialog.detach();
@@ -148,7 +149,8 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
 
     private void delNodeFor(final Node node) {
-        Messagebox.show("Are you sure to delete node(" + node + ")?", 
+        final String path = _zka.getNodePath(node);
+        Messagebox.show("Are you sure to delete node(" + path + ")?", 
             "Confirm Dialog", 
             Messagebox.OK | Messagebox.CANCEL, 
             Messagebox.QUESTION, 
@@ -156,8 +158,8 @@ public class AdminComposer extends SelectorComposer<Window>{
                 public void onEvent(Event evt) throws InterruptedException {
                     if (evt.getName().equals("onOK")) {
                         try {
-                            _zka.removeZKNode(_zka.getNodePath(node));
-                            alert(node + " deleted!");
+                            _zka.removeZKNode(path);
+                            alert(path + " deleted!");
                         } catch (Exception e) {
                             alert(ExceptionUtils.exception2detail(e));
                         }
