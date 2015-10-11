@@ -47,6 +47,7 @@ public class AdminComposer extends SelectorComposer<Window>{
 			@Override
 			public void onEvent(final Event event) throws Exception {
 				final SimpleTreeModel.Node node = currentSelectedNode();
+				configNodesMenus(null!=node);
 				if ( null != node ) {
 					LOG.info("select node:{}", node.getData());
 					displayNodeData(node);
@@ -96,6 +97,11 @@ public class AdminComposer extends SelectorComposer<Window>{
         
         refreshNodeTree();
 	}
+
+    private void configNodesMenus(final boolean nodeSelected) {
+        addnode.setDisabled(!nodeSelected);
+        delnode.setDisabled(!nodeSelected);
+    }
 
     private void addNodeFor(final Node node) {
         final String path = _zka.getNodePath(node);
@@ -182,6 +188,7 @@ public class AdminComposer extends SelectorComposer<Window>{
 	 */
 	private void refreshNodeTree() throws Exception {
 		nodes.setModel( _zka.getModel() );
+		configNodesMenus(false);
 	}
 	
     private String concatParentAndChild(final String fullpath,
@@ -192,14 +199,14 @@ public class AdminComposer extends SelectorComposer<Window>{
    private SimpleTreeModel.Node currentSelectedNode() {
         final Treeitem item = nodes.getSelectedItem();
 
-        final Object data = item.getValue();
+        if (null!=item) {
+            final Object data = item.getValue();
         
-        if ( data instanceof SimpleTreeModel.Node ) {
-            return  (SimpleTreeModel.Node)data;
+            if ( data instanceof SimpleTreeModel.Node ) {
+                return  (SimpleTreeModel.Node)data;
+            }
         }
-        else {
-            return  null;
-        }
+        return  null;
     }
 
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
