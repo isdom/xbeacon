@@ -8,17 +8,17 @@
         </menubar>
         <borderlayout>
             <west size="200px" splittable="true" flex="true" collapsible="true" title="Nodes"> 
-				<tree id="nodes" style="border:none"/>
+                <tree id="nodes" style="border:none"/>
 			</west>
 			<center id="center" flex="true" >
-				<!-- tabbox >
-				      <tabs id="maintabs" />
-				      <tabpanels id="maintabpanels" />
-				</tabbox -->
-                <textbox id="parameters" multiline="true"/>
+                <tabbox >
+                    <tabs id="maintabs" />
+                    <tabpanels id="maintabpanels" />
+                </tabbox>
+                <!-- textbox id="parameters" multiline="true"/ -->
 			</center>
 			<south height="100px">
-				<caption label="status"/>
+				<caption id="status" label="..."/>
 			</south>
 		</borderlayout>
 	</window>

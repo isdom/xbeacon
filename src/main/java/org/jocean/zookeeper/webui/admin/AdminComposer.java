@@ -1,5 +1,8 @@
 package org.jocean.zookeeper.webui.admin;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jocean.idiom.ExceptionUtils;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.model.SimpleTreeModel.Node;
@@ -9,19 +12,28 @@ import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
+import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
+import org.zkoss.zul.Borderlayout;
 import org.zkoss.zul.Button;
+import org.zkoss.zul.Caption;
+import org.zkoss.zul.Center;
 import org.zkoss.zul.Menuitem;
 import org.zkoss.zul.Messagebox;
+import org.zkoss.zul.Tab;
+import org.zkoss.zul.Tabpanels;
+import org.zkoss.zul.Tabpanel;
+import org.zkoss.zul.Tabs;
 import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
 import org.zkoss.zul.Treeitem;
 import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
+import org.zkoss.zul.West;
 import org.zkoss.zul.Window;
 
 import com.google.common.base.Charsets;
@@ -40,6 +52,20 @@ public class AdminComposer extends SelectorComposer<Window>{
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
 		
+		/*
+		parameters.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
+            @Override
+            public void onEvent(final InputEvent event) throws Exception {
+                status.setLabel("editing...");
+            }});
+		
+        parameters.addEventListener(Events.ON_CHANGE, new EventListener<InputEvent>() {
+            @Override
+            public void onEvent(final InputEvent event) throws Exception {
+                status.setLabel("done");
+            }});
+            */
+        
 		nodes.setItemRenderer(new NodeTreeRenderer());
 		
 		nodes.addEventListener(Events.ON_SELECT, new EventListener<Event>() {
@@ -175,11 +201,38 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
     
 	private void saveCurrentContent(final Node node) throws Exception {
-	    this._zka.setNodeDataAsString(node,  this.parameters.getText());
+	    // TODO
+	    //this._zka.setNodeDataAsString(node,  this.parameters.getText());
     }
 	
     private void displayNodeData(final Node node) throws Exception {
-        this.parameters.setText(this._zka.getNodeDataAsString(node));
+        final String path = this._zka.getNodePath(node);
+        Textbox textbox = this._textboxs.get(path);
+        if (null == textbox ) {
+            final Textbox newtextbox = new Textbox();
+            newtextbox.setWidth("100%");
+            newtextbox.setHeight("100%");
+            newtextbox.setMultiline(true);
+            this._textboxs.put(path, newtextbox);
+            maintabs.appendChild(new Tab(path) {
+                private static final long serialVersionUID = 1L;{
+                    this.setClosable(true);
+                    this.addEventListener(Events.ON_CLOSE, new EventListener<Event>() {
+
+                        @Override
+                        public void onEvent(Event event) throws Exception {
+                            _textboxs.remove(path);
+                        }});
+                }});
+            maintabpanels.appendChild(new Tabpanel() {
+                private static final long serialVersionUID = 1L; {
+                    this.appendChild(newtextbox);
+                }});
+            textbox = newtextbox;
+            newtextbox.setText(this._zka.getNodeDataAsString(node));
+        } else {
+            
+        }
     }
 
     /**
@@ -223,19 +276,30 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
     
     @Wire
-    Tree        nodes;
+    private Tree    nodes;
 	
-    @Wire
-    Textbox     parameters;
+    //@Wire
+    //Textbox     parameters;
     
     @Wire
-    Menuitem        addnode;
+    private Tabs    maintabs;
     
     @Wire
-    Menuitem        delnode;
+    private Tabpanels    maintabpanels;
     
     @Wire
-    Menuitem        save;
+    private Menuitem        addnode;
+    
+    @Wire
+    private Menuitem        delnode;
+    
+    @Wire
+    private Menuitem        save;
+    
+    @Wire
+    private Caption         status;
+    
+    private final Map<String, Textbox>  _textboxs = new HashMap<>();
     
 	@WireVariable("zkagent")
 	private ZKAgent _zka;
