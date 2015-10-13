@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.jocean.idiom.ExceptionUtils;
+import org.jocean.idiom.Triple;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.model.SimpleTreeModel.Node;
 import org.slf4j.Logger;
@@ -207,31 +208,33 @@ public class AdminComposer extends SelectorComposer<Window>{
 	
     private void displayNodeData(final Node node) throws Exception {
         final String path = this._zka.getNodePath(node);
-        Textbox textbox = this._textboxs.get(path);
-        if (null == textbox ) {
+        final Triple<Tab,Tabpanel,Textbox> content = this._contents.get(path);
+        
+        if (null != content ) {
+            content.first.setSelected(true);
+        } else {
+            final Tab newtab;
+            final Tabpanel newtabpanel;
             final Textbox newtextbox = new Textbox();
             newtextbox.setWidth("100%");
             newtextbox.setHeight("100%");
             newtextbox.setMultiline(true);
-            this._textboxs.put(path, newtextbox);
-            maintabs.appendChild(new Tab(path) {
+            maintabs.appendChild(newtab = new Tab(path) {
                 private static final long serialVersionUID = 1L;{
                     this.setClosable(true);
                     this.addEventListener(Events.ON_CLOSE, new EventListener<Event>() {
-
                         @Override
                         public void onEvent(Event event) throws Exception {
-                            _textboxs.remove(path);
+                            _contents.remove(path);
                         }});
                 }});
-            maintabpanels.appendChild(new Tabpanel() {
+            maintabpanels.appendChild(newtabpanel = new Tabpanel() {
                 private static final long serialVersionUID = 1L; {
                     this.appendChild(newtextbox);
                 }});
-            textbox = newtextbox;
             newtextbox.setText(this._zka.getNodeDataAsString(node));
-        } else {
-            
+            this._contents.put(path, Triple.of(newtab, newtabpanel, newtextbox));
+            newtab.setSelected(true);
         }
     }
 
@@ -299,7 +302,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     @Wire
     private Caption         status;
     
-    private final Map<String, Textbox>  _textboxs = new HashMap<>();
+    private final Map<String, Triple<Tab,Tabpanel,Textbox>>  _contents = new HashMap<>();
     
 	@WireVariable("zkagent")
 	private ZKAgent _zka;
