@@ -14,7 +14,6 @@ import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.event.SelectEvent;
-import org.zkoss.zk.ui.metainfo.EventHandler;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
 import org.zkoss.zk.ui.select.annotation.Wire;
@@ -23,7 +22,6 @@ import org.zkoss.zul.Button;
 import org.zkoss.zul.Caption;
 import org.zkoss.zul.Menuitem;
 import org.zkoss.zul.Messagebox;
-import org.zkoss.zul.Messagebox.ClickEvent;
 import org.zkoss.zul.Tab;
 import org.zkoss.zul.Tabpanel;
 import org.zkoss.zul.Tabpanels;
@@ -202,6 +200,7 @@ public class AdminComposer extends SelectorComposer<Window>{
             enableSaveOperation(content._isModified);
             this._currentContent = content;
         } else {
+            final NodeContent newcontent = new NodeContent(node);
             final Tab newtab;
             final Tabpanel newtabpanel;
             final Textbox newtextbox = new Textbox();
@@ -209,41 +208,39 @@ public class AdminComposer extends SelectorComposer<Window>{
             newtextbox.setHeight("100%");
             newtextbox.setMultiline(true);
             maintabs.appendChild(newtab = new Tab(path) {
+                void doClose() {
+                    super.close();
+                    _contents.remove(path);
+                }
+                
                 /* (non-Javadoc)
                  * @see org.zkoss.zul.Tab#close()
                  */
                 @Override
                 public void close() {
-                    Messagebox.show("Are you sure to save?", "Confirm Dialog", 
-                            Messagebox.OK | Messagebox.IGNORE  | Messagebox.CANCEL, 
-                            Messagebox.QUESTION, 
-                            new EventListener<Event>() {
-                        public void onEvent(Event evt) throws InterruptedException {
-                            if (evt.getName().equals("onOK")) {
-//                                Tab.this.close();
-                                alert("Data Saved !");
-                            } else if (evt.getName().equals("onIgnore")) {
-                                Messagebox.show("Ignore Save", "Warning", Messagebox.OK, Messagebox.EXCLAMATION);
-                            } else {
-                                alert("Save Canceled !");
-                            }
-                        }});
+                    if (newcontent.isModified()) {
+                        Messagebox.show("Content has modified, Are you sure to discard?", "Confirm Dialog", 
+                                Messagebox.OK | Messagebox.CANCEL, 
+                                Messagebox.QUESTION, 
+                                new EventListener<Event>() {
+                            public void onEvent(Event evt) throws InterruptedException {
+                                if (evt.getName().equals("onOK")) {
+                                    doClose();
+                                }
+                            }});
+                    } else {
+                        doClose();
+                    }
                 }
                 private static final long serialVersionUID = 1L;{
                     this.setClosable(true);
-                    this.addEventListener(Events.ON_CLOSE, new EventListener<Event>() {
-                        @Override
-                        public void onEvent(Event event) throws Exception {
-                            _contents.remove(path);
-                        }
-                    });
                 }});
             maintabpanels.appendChild(newtabpanel = new Tabpanel() {
                 private static final long serialVersionUID = 1L; {
                     this.appendChild(newtextbox);
                 }});
             newtextbox.setText(this._zka.getNodeDataAsString(node));
-            final NodeContent newcontent = new NodeContent(node, newtab, newtabpanel, newtextbox);
+            newcontent.fill(newtab, newtabpanel, newtextbox);
             this._contents.put(path, newcontent);
             newtextbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
                 @Override
@@ -330,19 +327,26 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     private class NodeContent {
         private final Node _node;
-        private final Tab _tab;
-        private final Tabpanel _tabpanel;
-        private final Textbox _textbox;
+        private Tab _tab;
+        private Tabpanel _tabpanel;
+        private Textbox _textbox;
         private boolean _isModified = false;
         
-        NodeContent(final Node node, final Tab tab, final Tabpanel tabpanel, final Textbox textbox) {
+        NodeContent(final Node node) {
             this._node = node;
+        }
+        
+        void fill(final Tab tab, final Tabpanel tabpanel, final Textbox textbox) {
             this._tab = tab;
             this._tabpanel = tabpanel;
             this._textbox = textbox;
         }
 
-        public void markModified() {
+        boolean isModified() {
+            return this._isModified;
+        }
+        
+        void markModified() {
             if (!this._isModified) {
                 this._isModified = true;
                 this._tab.setLabel(_zka.getNodePath(this._node) + " *");
