@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.jocean.idiom.ExceptionUtils;
-import org.jocean.idiom.Triple;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.model.SimpleTreeModel.Node;
 import org.slf4j.Logger;
@@ -14,19 +13,20 @@ import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.InputEvent;
+import org.zkoss.zk.ui.event.SelectEvent;
+import org.zkoss.zk.ui.metainfo.EventHandler;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
-import org.zkoss.zul.Borderlayout;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Caption;
-import org.zkoss.zul.Center;
 import org.zkoss.zul.Menuitem;
 import org.zkoss.zul.Messagebox;
+import org.zkoss.zul.Messagebox.ClickEvent;
 import org.zkoss.zul.Tab;
-import org.zkoss.zul.Tabpanels;
 import org.zkoss.zul.Tabpanel;
+import org.zkoss.zul.Tabpanels;
 import org.zkoss.zul.Tabs;
 import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Tree;
@@ -34,7 +34,6 @@ import org.zkoss.zul.Treecell;
 import org.zkoss.zul.Treeitem;
 import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
-import org.zkoss.zul.West;
 import org.zkoss.zul.Window;
 
 import com.google.common.base.Charsets;
@@ -53,20 +52,6 @@ public class AdminComposer extends SelectorComposer<Window>{
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
 		
-		/*
-		parameters.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
-            @Override
-            public void onEvent(final InputEvent event) throws Exception {
-                status.setLabel("editing...");
-            }});
-		
-        parameters.addEventListener(Events.ON_CHANGE, new EventListener<InputEvent>() {
-            @Override
-            public void onEvent(final InputEvent event) throws Exception {
-                status.setLabel("done");
-            }});
-            */
-        
 		nodes.setItemRenderer(new NodeTreeRenderer());
 		
 		nodes.addEventListener(Events.ON_SELECT, new EventListener<Event>() {
@@ -122,6 +107,7 @@ public class AdminComposer extends SelectorComposer<Window>{
                 refreshNodeTree();
             }});
         
+        enableSaveOperation(false);
         refreshNodeTree();
 	}
 
@@ -202,16 +188,19 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
     
 	private void saveCurrentContent(final Node node) throws Exception {
-	    // TODO
-	    //this._zka.setNodeDataAsString(node,  this.parameters.getText());
+	    if (null!=this._currentContent) {
+	        this._currentContent.saveNodeContent();
+	    }
     }
-	
+
     private void displayNodeData(final Node node) throws Exception {
         final String path = this._zka.getNodePath(node);
-        final Triple<Tab,Tabpanel,Textbox> content = this._contents.get(path);
+        final NodeContent content = this._contents.get(path);
         
         if (null != content ) {
-            content.first.setSelected(true);
+            content._tab.setSelected(true);
+            enableSaveOperation(content._isModified);
+            this._currentContent = content;
         } else {
             final Tab newtab;
             final Tabpanel newtabpanel;
@@ -220,21 +209,57 @@ public class AdminComposer extends SelectorComposer<Window>{
             newtextbox.setHeight("100%");
             newtextbox.setMultiline(true);
             maintabs.appendChild(newtab = new Tab(path) {
+                /* (non-Javadoc)
+                 * @see org.zkoss.zul.Tab#close()
+                 */
+                @Override
+                public void close() {
+                    Messagebox.show("Are you sure to save?", "Confirm Dialog", 
+                            Messagebox.OK | Messagebox.IGNORE  | Messagebox.CANCEL, 
+                            Messagebox.QUESTION, 
+                            new EventListener<Event>() {
+                        public void onEvent(Event evt) throws InterruptedException {
+                            if (evt.getName().equals("onOK")) {
+//                                Tab.this.close();
+                                alert("Data Saved !");
+                            } else if (evt.getName().equals("onIgnore")) {
+                                Messagebox.show("Ignore Save", "Warning", Messagebox.OK, Messagebox.EXCLAMATION);
+                            } else {
+                                alert("Save Canceled !");
+                            }
+                        }});
+                }
                 private static final long serialVersionUID = 1L;{
                     this.setClosable(true);
                     this.addEventListener(Events.ON_CLOSE, new EventListener<Event>() {
                         @Override
                         public void onEvent(Event event) throws Exception {
                             _contents.remove(path);
-                        }});
+                        }
+                    });
                 }});
             maintabpanels.appendChild(newtabpanel = new Tabpanel() {
                 private static final long serialVersionUID = 1L; {
                     this.appendChild(newtextbox);
                 }});
             newtextbox.setText(this._zka.getNodeDataAsString(node));
-            this._contents.put(path, Triple.of(newtab, newtabpanel, newtextbox));
+            final NodeContent newcontent = new NodeContent(node, newtab, newtabpanel, newtextbox);
+            this._contents.put(path, newcontent);
+            newtextbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
+                @Override
+                public void onEvent(final InputEvent event) throws Exception {
+                    newcontent.markModified();
+                    enableSaveOperation(true);
+                }});
             newtab.setSelected(true);
+            enableSaveOperation(false);
+            newtab.addEventListener(Events.ON_SELECT, new EventListener<SelectEvent<Tab, Object>>() {
+                @Override
+                public void onEvent(final SelectEvent<Tab, Object> event) throws Exception {
+                    enableSaveOperation(newcontent._isModified);
+                    status.setLabel(path);
+                }});
+            this._currentContent = newcontent;
         }
     }
 
@@ -265,6 +290,10 @@ public class AdminComposer extends SelectorComposer<Window>{
         return  null;
     }
 
+    private void enableSaveOperation(final boolean enabled) {
+        save.setDisabled(!enabled);
+    }
+
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
         public void render(final Treeitem item, final SimpleTreeModel.Node node, int index) 
                 throws Exception {
@@ -281,9 +310,6 @@ public class AdminComposer extends SelectorComposer<Window>{
     @Wire
     private Tree    nodes;
 	
-    //@Wire
-    //Textbox     parameters;
-    
     @Wire
     private Tabs    maintabs;
     
@@ -302,7 +328,37 @@ public class AdminComposer extends SelectorComposer<Window>{
     @Wire
     private Caption         status;
     
-    private final Map<String, Triple<Tab,Tabpanel,Textbox>>  _contents = new HashMap<>();
+    private class NodeContent {
+        private final Node _node;
+        private final Tab _tab;
+        private final Tabpanel _tabpanel;
+        private final Textbox _textbox;
+        private boolean _isModified = false;
+        
+        NodeContent(final Node node, final Tab tab, final Tabpanel tabpanel, final Textbox textbox) {
+            this._node = node;
+            this._tab = tab;
+            this._tabpanel = tabpanel;
+            this._textbox = textbox;
+        }
+
+        public void markModified() {
+            if (!this._isModified) {
+                this._isModified = true;
+                this._tab.setLabel(_zka.getNodePath(this._node) + " *");
+            }
+        }
+
+        void saveNodeContent() throws Exception{
+            _zka.setNodeDataAsString( this._node,  this._textbox.getText());
+            this._isModified = false;
+            this._tab.setLabel(_zka.getNodePath(this._node));
+        }
+    }
+    
+    private NodeContent _currentContent;
+    
+    private final Map<String, NodeContent>  _contents = new HashMap<>();
     
 	@WireVariable("zkagent")
 	private ZKAgent _zka;
