@@ -14,11 +14,8 @@ import org.zkoss.zul.Tabs;
 
 import rx.functions.Action0;
 
-public class NodeContent {
-    NodeContent(
-            final String title, 
-            final Tabs tabs, 
-            final Tabpanels tabpanels) {
+public class EditableTab {
+    public EditableTab(final String title) {
         this._title = title;
         this._tab = new Tab(title) {
             void doClose() {
@@ -51,7 +48,6 @@ public class NodeContent {
             {
                 this.setClosable(true);
             }};
-        tabs.appendChild(this._tab);
         this._apply = new Menuitem("Apply") {
             private static final long serialVersionUID = 1L;
         {
@@ -71,22 +67,31 @@ public class NodeContent {
                     }
                 });
             }};
-        tabpanels.appendChild(this._tabpanel);
-        this._tab.setSelected(true);
     }
     
-    public NodeContent setOnClose(final Action0 onClose) {
+    public EditableTab setOnClose(final Action0 onClose) {
         this._onClose = onClose;
         return this;
     }
     
-    public NodeContent setOnApply(final Action0 onApply) {
+    public EditableTab setOnApply(final Action0 onApply) {
         this._onApply = onApply;
         return this;
     }
     
-    public NodeContent appendToTab(final Component component) {
+    public EditableTab appendChild(final Component component) {
         this._tabpanel.appendChild(component);
+        return this;
+    }
+    
+    public EditableTab appendToTabs(final Tabs tabs) {
+        tabs.appendChild(this._tab);
+        this._tab.setSelected(true);
+        return this;
+    }
+    
+    public EditableTab appendToTabpanels(final Tabpanels tabpanels) {
+        tabpanels.appendChild(this._tabpanel);
         return this;
     }
     

@@ -169,7 +169,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     private void displayNodeData(final Node node) throws Exception {
         final String path = this._zka.getNodePath(node);
-        final NodeContent content = this._contents.get(path);
+        final EditableTab content = this._contents.get(path);
         
         if (null != content ) {
             content.select();
@@ -179,7 +179,7 @@ public class AdminComposer extends SelectorComposer<Window>{
         }
     }
 
-    private NodeContent buildNewContent(final Node node, final String path) {
+    private EditableTab buildNewContent(final Node node, final String path) {
         final Textbox textbox = new Textbox() {
             private static final long serialVersionUID = 1L;
             {
@@ -188,7 +188,7 @@ public class AdminComposer extends SelectorComposer<Window>{
                 this.setMultiline(true);
                 this.setText( _zka.getNodeDataAsString(node));
             }};
-        final NodeContent content = new NodeContent(path, this.maintabs, this.maintabpanels)
+        final EditableTab content = new EditableTab(path)
                 .setOnClose(new Action0() {
                     @Override
                     public void call() {
@@ -204,7 +204,10 @@ public class AdminComposer extends SelectorComposer<Window>{
                                 path, ExceptionUtils.exception2detail(e));
                     }
                 }})
-            .appendToTab(textbox);
+            .appendChild(textbox)
+            .appendToTabs(this.maintabs)
+            .appendToTabpanels(this.maintabpanels);
+        
         textbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
             @Override
             public void onEvent(final InputEvent event) throws Exception {
@@ -270,7 +273,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     @Wire
     private Caption         status;
     
-    private final Map<String, NodeContent>  _contents = new HashMap<>();
+    private final Map<String, EditableTab>  _contents = new HashMap<>();
     
 	@WireVariable("zkagent") ZKAgent _zka;
 	
