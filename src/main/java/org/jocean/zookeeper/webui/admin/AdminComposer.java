@@ -13,13 +13,13 @@ import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.InputEvent;
-import org.zkoss.zk.ui.event.SelectEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Caption;
+import org.zkoss.zul.Menubar;
 import org.zkoss.zul.Menuitem;
 import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Tab;
@@ -87,17 +87,6 @@ public class AdminComposer extends SelectorComposer<Window>{
                 }
             }});
         
-        save.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
-
-            @Override
-            public void onEvent(final Event event) throws Exception {
-                final SimpleTreeModel.Node node = currentSelectedNode();
-                if ( null != node ) {
-                    LOG.info("try to save current content for path:{}", node.getData());
-                    saveCurrentContent(node);
-                }
-            }});
-        
         EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
         .subscribe(new EventListener<Event>() {
             @Override
@@ -105,13 +94,12 @@ public class AdminComposer extends SelectorComposer<Window>{
                 refreshNodeTree();
             }});
         
-        enableSaveOperation(false);
         refreshNodeTree();
 	}
 
     private void configNodesMenus(final boolean nodeSelected) {
-        addnode.setDisabled(!nodeSelected);
-        delnode.setDisabled(!nodeSelected);
+        this.addnode.setDisabled(!nodeSelected);
+        this.delnode.setDisabled(!nodeSelected);
     }
 
     private void addNodeFor(final Node node) {
@@ -185,78 +173,15 @@ public class AdminComposer extends SelectorComposer<Window>{
             }});
     }
     
-	private void saveCurrentContent(final Node node) throws Exception {
-	    if (null!=this._currentContent) {
-	        this._currentContent.saveNodeContent();
-	    }
-    }
-
     private void displayNodeData(final Node node) throws Exception {
         final String path = this._zka.getNodePath(node);
         final NodeContent content = this._contents.get(path);
         
         if (null != content ) {
-            content._tab.setSelected(true);
-            enableSaveOperation(content._isModified);
-            this._currentContent = content;
+            content.select();
         } else {
-            final NodeContent newcontent = new NodeContent(node);
-            final Tab newtab;
-            final Tabpanel newtabpanel;
-            final Textbox newtextbox = new Textbox();
-            newtextbox.setWidth("100%");
-            newtextbox.setHeight("100%");
-            newtextbox.setMultiline(true);
-            maintabs.appendChild(newtab = new Tab(path) {
-                void doClose() {
-                    super.close();
-                    _contents.remove(path);
-                }
-                
-                /* (non-Javadoc)
-                 * @see org.zkoss.zul.Tab#close()
-                 */
-                @Override
-                public void close() {
-                    if (newcontent.isModified()) {
-                        Messagebox.show("Content has modified, Are you sure to discard?", "Confirm Dialog", 
-                                Messagebox.OK | Messagebox.CANCEL, 
-                                Messagebox.QUESTION, 
-                                new EventListener<Event>() {
-                            public void onEvent(Event evt) throws InterruptedException {
-                                if (evt.getName().equals("onOK")) {
-                                    doClose();
-                                }
-                            }});
-                    } else {
-                        doClose();
-                    }
-                }
-                private static final long serialVersionUID = 1L;{
-                    this.setClosable(true);
-                }});
-            maintabpanels.appendChild(newtabpanel = new Tabpanel() {
-                private static final long serialVersionUID = 1L; {
-                    this.appendChild(newtextbox);
-                }});
-            newtextbox.setText(this._zka.getNodeDataAsString(node));
-            newcontent.fill(newtab, newtabpanel, newtextbox);
-            this._contents.put(path, newcontent);
-            newtextbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
-                @Override
-                public void onEvent(final InputEvent event) throws Exception {
-                    newcontent.markModified();
-                    enableSaveOperation(true);
-                }});
-            newtab.setSelected(true);
-            enableSaveOperation(false);
-            newtab.addEventListener(Events.ON_SELECT, new EventListener<SelectEvent<Tab, Object>>() {
-                @Override
-                public void onEvent(final SelectEvent<Tab, Object> event) throws Exception {
-                    enableSaveOperation(newcontent._isModified);
-                    status.setLabel(path);
-                }});
-            this._currentContent = newcontent;
+            this._contents.put(path, 
+                new NodeContent(node, path, this.maintabs, this.maintabpanels));
         }
     }
 
@@ -285,10 +210,6 @@ public class AdminComposer extends SelectorComposer<Window>{
             }
         }
         return  null;
-    }
-
-    private void enableSaveOperation(final boolean enabled) {
-        save.setDisabled(!enabled);
     }
 
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
@@ -320,47 +241,109 @@ public class AdminComposer extends SelectorComposer<Window>{
     private Menuitem        delnode;
     
     @Wire
-    private Menuitem        save;
-    
-    @Wire
     private Caption         status;
     
     private class NodeContent {
         private final Node _node;
-        private Tab _tab;
-        private Tabpanel _tabpanel;
-        private Textbox _textbox;
+        private final Tab _tab;
+        private final Textbox _textbox;
+        private final Menuitem _save;
         private boolean _isModified = false;
         
-        NodeContent(final Node node) {
+        NodeContent(final Node node, 
+                final String path, 
+                final Tabs tabs, 
+                final Tabpanels tabpanels) {
             this._node = node;
+            this._tab = new Tab(path) {
+                void doClose() {
+                    super.close();
+                    _contents.remove(path);
+                }
+                
+                /* (non-Javadoc)
+                 * @see org.zkoss.zul.Tab#close()
+                 */
+                @Override
+                public void close() {
+                    if (isModified()) {
+                        Messagebox.show("Content has modified, Are you sure to discard?", "Confirm Dialog", 
+                                Messagebox.OK | Messagebox.CANCEL, 
+                                Messagebox.QUESTION, 
+                                new EventListener<Event>() {
+                            public void onEvent(Event evt) throws InterruptedException {
+                                if (evt.getName().equals("onOK")) {
+                                    doClose();
+                                }
+                            }});
+                    } else {
+                        doClose();
+                    }
+                }
+                private static final long serialVersionUID = 1L;
+                {
+                    this.setClosable(true);
+                }};
+            tabs.appendChild(this._tab);
+            this._textbox = new Textbox() {
+                private static final long serialVersionUID = 1L;
+            {
+                this.setWidth("100%");
+                this.setHeight("100%");
+                this.setMultiline(true);
+                this.setText(_zka.getNodeDataAsString(node));
+            }};
+            this._textbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
+                @Override
+                public void onEvent(final InputEvent event) throws Exception {
+                    markModified();
+                }});
+            this._save = new Menuitem("save") {
+                private static final long serialVersionUID = 1L;
+            {
+                this.setDisabled(true);
+            }};
+            this._save.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                @Override
+                public void onEvent(final Event event) throws Exception {
+                    saveContentToZK();
+                }});
+            tabpanels.appendChild(new Tabpanel() {
+                private static final long serialVersionUID = 1L; {
+                    this.appendChild(new Menubar() {
+                        private static final long serialVersionUID = 1L;
+                        {
+                            this.appendChild(_save);
+                        }
+                    });
+                    this.appendChild(_textbox);
+                }});
+            this._tab.setSelected(true);
         }
         
-        void fill(final Tab tab, final Tabpanel tabpanel, final Textbox textbox) {
-            this._tab = tab;
-            this._tabpanel = tabpanel;
-            this._textbox = textbox;
+        void select() {
+            this._tab.setSelected(true);
         }
 
-        boolean isModified() {
+        private boolean isModified() {
             return this._isModified;
         }
         
-        void markModified() {
+        private void markModified() {
             if (!this._isModified) {
                 this._isModified = true;
                 this._tab.setLabel(_zka.getNodePath(this._node) + " *");
+                this._save.setDisabled(false);
             }
         }
-
-        void saveNodeContent() throws Exception{
+        
+        private void saveContentToZK() throws Exception {
             _zka.setNodeDataAsString( this._node,  this._textbox.getText());
             this._isModified = false;
             this._tab.setLabel(_zka.getNodePath(this._node));
+            this._save.setDisabled(true);
         }
     }
-    
-    private NodeContent _currentContent;
     
     private final Map<String, NodeContent>  _contents = new HashMap<>();
     
