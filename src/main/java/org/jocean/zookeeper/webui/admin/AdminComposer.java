@@ -12,6 +12,7 @@ import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
+import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
 import org.zkoss.zk.ui.select.annotation.Wire;
@@ -173,14 +174,43 @@ public class AdminComposer extends SelectorComposer<Window>{
         if (null != content ) {
             content.select();
         } else {
-            this._contents.put(path, 
-                new NodeContent(this._zka, node, path, this.maintabs, this.maintabpanels,
-                        new Action0() {
-                            @Override
-                            public void call() {
-                                _contents.remove(path);
-                            }}));
+            this._contents.put(path, buildNewContent(node, path));
+            
         }
+    }
+
+    private NodeContent buildNewContent(final Node node, final String path) {
+        final Textbox textbox = new Textbox() {
+            private static final long serialVersionUID = 1L;
+            {
+                this.setWidth("100%");
+                this.setHeight("100%");
+                this.setMultiline(true);
+                this.setText( _zka.getNodeDataAsString(node));
+            }};
+        final NodeContent content = new NodeContent(path, this.maintabs, this.maintabpanels)
+                .setOnClose(new Action0() {
+                    @Override
+                    public void call() {
+                        _contents.remove(path);
+                    }})
+            .setOnApply(new Action0() {
+                @Override
+                public void call() {
+                    try {
+                        _zka.setNodeDataAsString(node,  textbox.getText());
+                    } catch (Exception e) {
+                        LOG.warn("exception when save data for {}, detail:{}",
+                                path, ExceptionUtils.exception2detail(e));
+                    }
+                }})
+            .appendToTab(textbox);
+        textbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
+            @Override
+            public void onEvent(final InputEvent event) throws Exception {
+                content.markModified();
+            }});
+        return content;
     }
 
     /**

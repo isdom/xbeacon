@@ -1,10 +1,9 @@
 package org.jocean.zookeeper.webui.admin;
 
-import org.jocean.zkoss.model.SimpleTreeModel.Node;
+import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
-import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zul.Menubar;
 import org.zkoss.zul.Menuitem;
 import org.zkoss.zul.Messagebox;
@@ -12,30 +11,21 @@ import org.zkoss.zul.Tab;
 import org.zkoss.zul.Tabpanel;
 import org.zkoss.zul.Tabpanels;
 import org.zkoss.zul.Tabs;
-import org.zkoss.zul.Textbox;
 
 import rx.functions.Action0;
 
-class NodeContent {
-    private final ZKAgent _zka;
-    private final Node _node;
-    private final Tab _tab;
-    private final Textbox _textbox;
-    private final Menuitem _save;
-    private boolean _isModified = false;
-    
-    NodeContent(final ZKAgent zka, 
-            final Node node, 
-            final String path, 
+public class NodeContent {
+    NodeContent(
+            final String title, 
             final Tabs tabs, 
-            final Tabpanels tabpanels,
-            final Action0 onClose) {
-        this._zka = zka;
-        this._node = node;
-        this._tab = new Tab(path) {
+            final Tabpanels tabpanels) {
+        this._title = title;
+        this._tab = new Tab(title) {
             void doClose() {
                 super.close();
-                onClose.call();
+                if (null!= _onClose) {
+                    _onClose.call();
+                }
             }
             
             /* (non-Javadoc)
@@ -62,43 +52,45 @@ class NodeContent {
                 this.setClosable(true);
             }};
         tabs.appendChild(this._tab);
-        this._textbox = new Textbox() {
-            private static final long serialVersionUID = 1L;
-        {
-            this.setWidth("100%");
-            this.setHeight("100%");
-            this.setMultiline(true);
-            this.setText(NodeContent.this._zka.getNodeDataAsString(node));
-        }};
-        this._textbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
-            @Override
-            public void onEvent(final InputEvent event) throws Exception {
-                markModified();
-            }});
-        this._save = new Menuitem("save") {
+        this._apply = new Menuitem("Apply") {
             private static final long serialVersionUID = 1L;
         {
             this.setDisabled(true);
         }};
-        this._save.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+        this._apply.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
-                saveContentToZK();
+                doApply();
             }});
-        tabpanels.appendChild(new Tabpanel() {
+        this._tabpanel = new Tabpanel() {
             private static final long serialVersionUID = 1L; {
                 this.appendChild(new Menubar() {
                     private static final long serialVersionUID = 1L;
                     {
-                        this.appendChild(_save);
+                        this.appendChild(_apply);
                     }
                 });
-                this.appendChild(_textbox);
-            }});
+            }};
+        tabpanels.appendChild(this._tabpanel);
         this._tab.setSelected(true);
     }
     
-    void select() {
+    public NodeContent setOnClose(final Action0 onClose) {
+        this._onClose = onClose;
+        return this;
+    }
+    
+    public NodeContent setOnApply(final Action0 onApply) {
+        this._onApply = onApply;
+        return this;
+    }
+    
+    public NodeContent appendToTab(final Component component) {
+        this._tabpanel.appendChild(component);
+        return this;
+    }
+    
+    public void select() {
         this._tab.setSelected(true);
     }
 
@@ -106,18 +98,28 @@ class NodeContent {
         return this._isModified;
     }
     
-    private void markModified() {
+    public void markModified() {
         if (!this._isModified) {
             this._isModified = true;
-            this._tab.setLabel(this._zka.getNodePath(this._node) + " *");
-            this._save.setDisabled(false);
+            this._tab.setLabel(this._title + " *");
+            this._apply.setDisabled(false);
         }
     }
     
-    private void saveContentToZK() throws Exception {
-        this._zka.setNodeDataAsString( this._node,  this._textbox.getText());
+    private void doApply() {
+        if (null!=this._onApply) {
+            this._onApply.call();
+        }
         this._isModified = false;
-        this._tab.setLabel(this._zka.getNodePath(this._node));
-        this._save.setDisabled(true);
+        this._tab.setLabel(this._title);
+        this._apply.setDisabled(true);
     }
+
+    private final String _title;
+    private final Tab _tab;
+    private final Tabpanel _tabpanel;
+    private final Menuitem _apply;
+    private boolean _isModified = false;
+    private Action0 _onClose = null;
+    private Action0 _onApply = null;
 }
