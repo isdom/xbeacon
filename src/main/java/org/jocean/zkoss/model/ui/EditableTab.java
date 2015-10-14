@@ -1,4 +1,4 @@
-package org.jocean.zookeeper.webui.admin;
+package org.jocean.zkoss.model.ui;
 
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.event.Event;
@@ -48,11 +48,8 @@ public class EditableTab {
             {
                 this.setClosable(true);
             }};
-        this._apply = new Menuitem("Apply") {
-            private static final long serialVersionUID = 1L;
-        {
-            this.setDisabled(true);
-        }};
+        this._apply = new Menuitem("Apply");
+        this._apply.setDisabled(true);
         this._apply.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
@@ -95,7 +92,7 @@ public class EditableTab {
         return this;
     }
     
-    public void select() {
+    public void setSelected() {
         this._tab.setSelected(true);
     }
 

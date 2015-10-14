@@ -6,6 +6,7 @@ import java.util.Map;
 import org.jocean.idiom.ExceptionUtils;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.model.SimpleTreeModel.Node;
+import org.jocean.zkoss.model.ui.EditableTab;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.event.Event;
@@ -53,7 +54,7 @@ public class AdminComposer extends SelectorComposer<Window>{
 			@Override
 			public void onEvent(final Event event) throws Exception {
 				final SimpleTreeModel.Node node = currentSelectedNode();
-				configNodesMenus(null!=node);
+				enableNodesMenus(null!=node);
 				if ( null != node ) {
 					LOG.info("select node:{}", node.getData());
 					displayNodeData(node);
@@ -91,9 +92,9 @@ public class AdminComposer extends SelectorComposer<Window>{
         refreshNodeTree();
 	}
 
-    private void configNodesMenus(final boolean nodeSelected) {
-        this.addnode.setDisabled(!nodeSelected);
-        this.delnode.setDisabled(!nodeSelected);
+    private void enableNodesMenus(final boolean enabled) {
+        this.addnode.setDisabled(!enabled);
+        this.delnode.setDisabled(!enabled);
     }
 
     private void addNodeFor(final Node node) {
@@ -167,32 +168,29 @@ public class AdminComposer extends SelectorComposer<Window>{
             }});
     }
     
-    private void displayNodeData(final Node node) throws Exception {
+    private void displayNodeData(final Node node) {
         final String path = this._zka.getNodePath(node);
-        final EditableTab content = this._contents.get(path);
+        final EditableTab tab = this._tabs.get(path);
         
-        if (null != content ) {
-            content.select();
+        if (null != tab ) {
+            tab.setSelected();
         } else {
-            this._contents.put(path, buildNewContent(node, path));
+            this._tabs.put(path, buildNewTab(node, path));
             
         }
     }
 
-    private EditableTab buildNewContent(final Node node, final String path) {
-        final Textbox textbox = new Textbox() {
-            private static final long serialVersionUID = 1L;
-            {
-                this.setWidth("100%");
-                this.setHeight("100%");
-                this.setMultiline(true);
-                this.setText( _zka.getNodeDataAsString(node));
-            }};
-        final EditableTab content = new EditableTab(path)
+    private EditableTab buildNewTab(final Node node, final String path) {
+        final Textbox textbox = new Textbox();
+        textbox.setWidth("100%");
+        textbox.setHeight("100%");
+        textbox.setMultiline(true);
+        textbox.setText( this._zka.getNodeDataAsString(node));
+        final EditableTab tab = new EditableTab(path)
                 .setOnClose(new Action0() {
                     @Override
                     public void call() {
-                        _contents.remove(path);
+                        _tabs.remove(path);
                     }})
             .setOnApply(new Action0() {
                 @Override
@@ -211,18 +209,14 @@ public class AdminComposer extends SelectorComposer<Window>{
         textbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
             @Override
             public void onEvent(final InputEvent event) throws Exception {
-                content.markModified();
+                tab.markModified();
             }});
-        return content;
+        return tab;
     }
 
-    /**
-	 * @throws Exception 
-	 * 
-	 */
 	private void refreshNodeTree() throws Exception {
-		nodes.setModel( _zka.getModel() );
-		configNodesMenus(false);
+		this.nodes.setModel(this._zka.getModel() );
+		enableNodesMenus(false);
 	}
 	
     private String concatParentAndChild(final String fullpath,
@@ -273,7 +267,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     @Wire
     private Caption         status;
     
-    private final Map<String, EditableTab>  _contents = new HashMap<>();
+    private final Map<String, EditableTab>  _tabs = new HashMap<>();
     
 	@WireVariable("zkagent") ZKAgent _zka;
 	
