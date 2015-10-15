@@ -35,6 +35,7 @@ import org.zkoss.zul.Window;
 import com.google.common.base.Charsets;
 
 import rx.functions.Action0;
+import rx.functions.Action1;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class AdminComposer extends SelectorComposer<Window>{
@@ -182,6 +183,7 @@ public class AdminComposer extends SelectorComposer<Window>{
 
     private EditableTab buildNewTab(final Node node, final String path) {
         final Textbox textbox = new Textbox();
+        textbox.setDisabled(true);
         textbox.setWidth("100%");
         textbox.setHeight("100%");
         textbox.setMultiline(true);
@@ -201,6 +203,11 @@ public class AdminComposer extends SelectorComposer<Window>{
                         LOG.warn("exception when save data for {}, detail:{}",
                                 path, ExceptionUtils.exception2detail(e));
                     }
+                }})
+            .setOnEnableEdit(new Action1<Boolean> () {
+                @Override
+                public void call(final Boolean editEnabled) {
+                    textbox.setDisabled(!editEnabled);
                 }})
             .appendChild(textbox)
             .appendToTabs(this.maintabs)
@@ -267,10 +274,11 @@ public class AdminComposer extends SelectorComposer<Window>{
     @Wire
     private Caption         status;
     
-    private final Map<String, EditableTab>  _tabs = new HashMap<>();
-    
-	@WireVariable("zkagent") ZKAgent _zka;
+	@WireVariable("zkagent") 
+	private ZKAgent _zka;
 	
     @WireVariable("rootPath")
     private String _rootPath;
+    
+    private final Map<String, EditableTab>  _tabs = new HashMap<>();
 }

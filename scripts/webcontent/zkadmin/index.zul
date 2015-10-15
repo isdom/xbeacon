@@ -3,6 +3,7 @@
         apply="org.jocean.zookeeper.webui.admin.AdminComposer">
         <menubar>
              <menuitem id="addnode" label="Add Node"/>
+             <menuseparator/>
              <menuitem id="delnode" label="Delete Node"/>
         </menubar>
         <borderlayout>

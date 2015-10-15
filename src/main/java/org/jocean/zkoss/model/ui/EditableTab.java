@@ -1,18 +1,22 @@
 package org.jocean.zkoss.model.ui;
 
 import org.zkoss.zk.ui.Component;
+import org.zkoss.zk.ui.event.CheckEvent;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
-import org.zkoss.zul.Menubar;
-import org.zkoss.zul.Menuitem;
+import org.zkoss.zul.Checkbox;
 import org.zkoss.zul.Messagebox;
+import org.zkoss.zul.Separator;
 import org.zkoss.zul.Tab;
 import org.zkoss.zul.Tabpanel;
 import org.zkoss.zul.Tabpanels;
 import org.zkoss.zul.Tabs;
+import org.zkoss.zul.Toolbar;
+import org.zkoss.zul.Toolbarbutton;
 
 import rx.functions.Action0;
+import rx.functions.Action1;
 
 public class EditableTab {
     public EditableTab(final String title) {
@@ -48,18 +52,34 @@ public class EditableTab {
             {
                 this.setClosable(true);
             }};
-        this._apply = new Menuitem("Apply");
+        this._apply = new Toolbarbutton("Apply");
         this._apply.setDisabled(true);
         this._apply.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
                 doApply();
             }});
+        final Checkbox cb = new Checkbox("Enable Edit");
+        cb.addEventListener(Events.ON_CHECK, new EventListener<CheckEvent>() {
+            @Override
+            public void onEvent(final CheckEvent event) throws Exception {
+                if (null!=_onEnableEdit) {
+                    _onEnableEdit.call(event.isChecked());
+                }
+            }});
         this._tabpanel = new Tabpanel() {
             private static final long serialVersionUID = 1L; {
-                this.appendChild(new Menubar() {
+                this.appendChild(new Toolbar() {
                     private static final long serialVersionUID = 1L;
                     {
+                        this.appendChild(cb);
+                        this.appendChild(new Separator() {
+                            private static final long serialVersionUID = 1L;
+                        {
+                            this.setOrient("vertical");
+                            this.setBar(true);
+                            this.setSpacing("40px");
+                        }});
                         this.appendChild(_apply);
                     }
                 });
@@ -73,6 +93,11 @@ public class EditableTab {
     
     public EditableTab setOnApply(final Action0 onApply) {
         this._onApply = onApply;
+        return this;
+    }
+    
+    public EditableTab setOnEnableEdit(final Action1<Boolean> onEnableEdit) {
+        this._onEnableEdit = onEnableEdit;
         return this;
     }
     
@@ -120,8 +145,9 @@ public class EditableTab {
     private final String _title;
     private final Tab _tab;
     private final Tabpanel _tabpanel;
-    private final Menuitem _apply;
+    private final Toolbarbutton _apply;
     private boolean _isModified = false;
     private Action0 _onClose = null;
     private Action0 _onApply = null;
+    private Action1<Boolean> _onEnableEdit = null;
 }
