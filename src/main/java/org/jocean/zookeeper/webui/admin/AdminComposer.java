@@ -91,7 +91,7 @@ public class AdminComposer extends SelectorComposer<Window>{
             public void onEvent(final Event event) throws Exception {
                 final SimpleTreeModel.Node node = currentSelectedNode();
                 if ( null != node ) {
-                    LOG.info("try to backup sub-tree for path:{}", node);
+                    LOG.info("try to backup from sub-tree :{}", node);
                     backupNode(node);
                 }
             }});
@@ -101,8 +101,8 @@ public class AdminComposer extends SelectorComposer<Window>{
             public void onEvent(final Event event) throws Exception {
                 final SimpleTreeModel.Node node = currentSelectedNode();
                 if ( null != node ) {
-                    LOG.info("try to add node for path:{}", node);
-                    restoreNodeFrom(node);
+                    LOG.info("try to restore sub-tree from :{}", node);
+                    restoreFromNode(node);
                 }
             }});
         
@@ -116,8 +116,62 @@ public class AdminComposer extends SelectorComposer<Window>{
         refreshNodeTree();
 	}
 
-    private void restoreNodeFrom(final Node node) {
+    private void restoreFromNode(final Node node) {
+        final String path = _zka.getNodePath(node);
+        final Window dialog = new Window("Restore From Node [" + path + "], to ...", "normal", true);
+        dialog.setWidth("300px");
+        dialog.setHeight("200px");
+        dialog.setSizable(false);
+        dialog.setPage(this.getPage());
         
+        final Textbox tbNodename = new Textbox() {
+            private static final long serialVersionUID = 1L; 
+            {
+                this.setWidth("260px");
+            }};
+        final Button btnOK = new Button("OK") {
+            private static final long serialVersionUID = 1L;
+            {
+                this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                    @Override
+                    public void onEvent(Event event) throws Exception {
+                        final String createdPath = doRestoreTo(node, tbNodename.getText());
+                        dialog.detach();
+                        if (null!=createdPath) {
+                            alert(path + " restore to " + createdPath + " succeed!");
+                        } else {
+                            alert(path + " restore failed!");
+                        }
+                    }});
+            }
+            };
+        final Button btnCancel = new Button("Cancel") {
+            private static final long serialVersionUID = 1L;
+            {
+                this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                    @Override
+                    public void onEvent(Event event) throws Exception {
+                        dialog.detach();
+                    }});
+            }
+            };
+        dialog.appendChild(tbNodename);
+        dialog.appendChild(btnOK);
+        dialog.appendChild(btnCancel);
+        dialog.doModal();
+    }
+    
+    private String doRestoreTo(final Node node, final String restoreTo) {
+        final Yaml yaml = new Yaml(new Constructor(UnitDescription.class));
+        final UnitDescription root = (UnitDescription)yaml.load(this._zka.getNodeDataAsString(node));
+        try {
+            return this._zka.importNode(restoreTo, root);
+        } catch (Exception e) {
+            LOG.warn("exception when createZKNode for path {}, detail: {}",
+                    restoreTo, ExceptionUtils.exception2detail(e));
+        }
+        
+        return null;
     }
 
     private void backupNode(final Node node) {

@@ -9,6 +9,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
+import org.apache.zookeeper.CreateMode;
 import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.Pair;
 import org.jocean.j2se.unit.model.UnitDescription;
@@ -25,7 +26,9 @@ import com.google.common.base.Charsets;
 public class ZKAgent {
     
     private static final UnitDescription[] EMPTY_UNITDESCS = new UnitDescription[0];
+    private static final byte[] EMPTY_BYTES = new byte[0];
     private static final String[] PATH_ROOT = new String[]{"/"};
+    
     private static final Logger LOG = 
             LoggerFactory.getLogger(ZKAgent.class);
 
@@ -181,7 +184,7 @@ public class ZKAgent {
                 if (null!=childDesc) {
                     descs.add(childDesc);
                 } else {
-                    System.out.println(path + "/" + child + " is EphemeralNode, not export.");
+                    LOG.info("{}/{} is EphemeralNode, not export.", path, child);
                 }
             }
             if (!descs.isEmpty()) {
@@ -208,6 +211,37 @@ public class ZKAgent {
         return 0 != this._zkclient.checkExists().forPath(path).getEphemeralOwner();
     }
 
+    public String importNode(final String path, final UnitDescription desc) {
+        try {
+            final String createdPath = importContent(path, desc);
+            for (UnitDescription child : desc.getChildren()) {
+                importNode(createdPath, child);
+            }
+            return createdPath;
+        } catch (Exception e) {
+            LOG.warn("exception when importNode for path {}, detail: {}",
+                    path, ExceptionUtils.exception2detail(e));
+            return null;
+        }
+    }
+
+    private String importContent(final String path, final UnitDescription desc) 
+            throws Exception {
+        return this._zkclient.create()
+                .creatingParentsIfNeeded()
+                .withMode(CreateMode.PERSISTENT)
+                .forPath(path + "/" + desc.getName(), 
+                        genBytes(desc.getParameters()));
+    }
+
+    private static byte[] genBytes(final String parameters) {
+        if (null!=parameters) {
+            return parameters.getBytes(Charsets.UTF_8);
+        } else {
+            return EMPTY_BYTES;
+        }
+    }
+    
     private TreeCache _treecache;
     private CuratorFramework _zkclient;
     private WebApp _webapp;

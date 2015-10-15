@@ -6,9 +6,9 @@
              <menuseparator/>
              <menuitem id="delnode" label="Delete Node"/>
              <menuseparator/>
-             <menuitem id="backup" label="Backup To"/>
+             <menuitem id="backup" label="Backup From"/>
              <menuseparator/>
-             <menuitem id="restore" label="Restore From"/>
+             <menuitem id="restore" label="Restore To"/>
         </menubar>
         <borderlayout>
             <west size="200px" splittable="true" flex="true" collapsible="true" title="Nodes"> 
