@@ -1,12 +1,17 @@
 package org.jocean.zookeeper.webui.admin;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
+import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.Pair;
+import org.jocean.j2se.unit.model.UnitDescription;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +24,7 @@ import com.google.common.base.Charsets;
 
 public class ZKAgent {
     
+    private static final UnitDescription[] EMPTY_UNITDESCS = new UnitDescription[0];
     private static final String[] PATH_ROOT = new String[]{"/"};
     private static final Logger LOG = 
             LoggerFactory.getLogger(ZKAgent.class);
@@ -153,6 +159,53 @@ public class ZKAgent {
 
     private void notifyModelChanged(final String path) {
         this._eventqueue.publish(new Event("modelChanged"));
+    }
+
+    public UnitDescription node2desc(final SimpleTreeModel.Node node) {
+        try {
+            return dumpNode(getNodePath(node));
+        } catch (Exception e) {
+            LOG.warn("exception when dumpNode for node {}, detail: {}",
+                    node, ExceptionUtils.exception2detail(e));
+            return null;
+        }
+    }
+    
+    private UnitDescription dumpNode(final String path) throws Exception {
+        final UnitDescription desc = dumpContent(path);
+        if (null!=desc) {
+            final List<String> children = this._zkclient.getChildren().forPath(path);
+            final List<UnitDescription>  descs = new ArrayList<>();
+            for (String child : children) {
+                final UnitDescription childDesc = dumpNode(path + "/" + child);
+                if (null!=childDesc) {
+                    descs.add(childDesc);
+                } else {
+                    System.out.println(path + "/" + child + " is EphemeralNode, not export.");
+                }
+            }
+            if (!descs.isEmpty()) {
+                desc.setChildren(descs.toArray(EMPTY_UNITDESCS));
+            }
+        }
+        return desc;
+    }
+
+    private UnitDescription dumpContent(final String path) throws Exception {
+        if (isEphemeralNode(path) ) {
+            return null;
+        }
+        final UnitDescription desc = new UnitDescription();
+        desc.setName(FilenameUtils.getName(path));
+        final byte[] content = this._zkclient.getData().forPath(path);
+        if (null != content) {
+            desc.setParameters(new String(content, Charsets.UTF_8));
+        }
+        return desc;
+    }
+
+    private boolean isEphemeralNode(final String path) throws Exception {
+        return 0 != this._zkclient.checkExists().forPath(path).getEphemeralOwner();
     }
 
     private TreeCache _treecache;

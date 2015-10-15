@@ -4,11 +4,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.jocean.idiom.ExceptionUtils;
+import org.jocean.j2se.unit.model.UnitDescription;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.model.SimpleTreeModel.Node;
 import org.jocean.zkoss.model.ui.EditableTab;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.Constructor;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueues;
@@ -83,6 +86,26 @@ public class AdminComposer extends SelectorComposer<Window>{
                 }
             }});
         
+        backup.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+            @Override
+            public void onEvent(final Event event) throws Exception {
+                final SimpleTreeModel.Node node = currentSelectedNode();
+                if ( null != node ) {
+                    LOG.info("try to backup sub-tree for path:{}", node);
+                    backupNode(node);
+                }
+            }});
+        
+        restore.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+            @Override
+            public void onEvent(final Event event) throws Exception {
+                final SimpleTreeModel.Node node = currentSelectedNode();
+                if ( null != node ) {
+                    LOG.info("try to add node for path:{}", node);
+                    restoreNodeFrom(node);
+                }
+            }});
+        
         EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
         .subscribe(new EventListener<Event>() {
             @Override
@@ -93,9 +116,78 @@ public class AdminComposer extends SelectorComposer<Window>{
         refreshNodeTree();
 	}
 
+    private void restoreNodeFrom(final Node node) {
+        
+    }
+
+    private void backupNode(final Node node) {
+        final String path = _zka.getNodePath(node);
+        final Window dialog = new Window("Backup Node for [" + path + "], to ...", "normal", true);
+        dialog.setWidth("300px");
+        dialog.setHeight("200px");
+        dialog.setSizable(false);
+        dialog.setPage(this.getPage());
+        
+        final Textbox tbNodename = new Textbox() {
+            private static final long serialVersionUID = 1L; 
+            {
+                this.setWidth("260px");
+            }};
+        final Button btnOK = new Button("OK") {
+            private static final long serialVersionUID = 1L;
+            {
+                this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                    @Override
+                    public void onEvent(Event event) throws Exception {
+                        final String createdPath = doBackupFor(node, tbNodename.getText());
+                        dialog.detach();
+                        if (null!=createdPath) {
+                            alert(path + " backup to " + createdPath + " succeed!");
+                        } else {
+                            alert(path + " backup failed!");
+                        }
+                    }});
+            }
+            };
+        final Button btnCancel = new Button("Cancel") {
+            private static final long serialVersionUID = 1L;
+            {
+                this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                    @Override
+                    public void onEvent(Event event) throws Exception {
+                        dialog.detach();
+                    }});
+            }
+            };
+        dialog.appendChild(tbNodename);
+        dialog.appendChild(btnOK);
+        dialog.appendChild(btnCancel);
+        dialog.doModal();
+    }
+
+    private String doBackupFor(final Node node, final String backupTo) {
+        
+        final UnitDescription root = this._zka.node2desc(node);
+        if (null!=root) {
+            final Yaml yaml = new Yaml(new Constructor(UnitDescription.class));
+            final String backupcontent = yaml.dump(root);
+            
+            try {
+                return _zka.createZKNode(backupTo, backupcontent.getBytes(Charsets.UTF_8));
+            } catch (Exception e) {
+                LOG.warn("exception when createZKNode for path {}, detail: {}",
+                        backupTo, ExceptionUtils.exception2detail(e));
+            }
+        }
+        
+        return null;
+    }
+    
     private void enableNodesMenus(final boolean enabled) {
         this.addnode.setDisabled(!enabled);
         this.delnode.setDisabled(!enabled);
+        this.backup.setDisabled(!enabled);
+        this.restore.setDisabled(!enabled);
     }
 
     private void addNodeFor(final Node node) {
@@ -103,7 +195,7 @@ public class AdminComposer extends SelectorComposer<Window>{
         final Window dialog = new Window("Add Node for [" + path + "]", "normal", true);
         dialog.setWidth("300px");
         dialog.setHeight("550px");
-        dialog.setSizable(false);
+        dialog.setSizable(true);
         dialog.setPage(this.getPage());
         
         final Textbox tbNodename = new Textbox() {
@@ -185,7 +277,7 @@ public class AdminComposer extends SelectorComposer<Window>{
         final Textbox textbox = new Textbox();
         textbox.setDisabled(true);
         textbox.setWidth("100%");
-        textbox.setHeight("100%");
+        textbox.setHeight("90%");
         textbox.setMultiline(true);
         textbox.setText( this._zka.getNodeDataAsString(node));
         final EditableTab tab = new EditableTab(path)
@@ -270,6 +362,12 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     @Wire
     private Menuitem        delnode;
+    
+    @Wire
+    private Menuitem        backup;
+    
+    @Wire
+    private Menuitem        restore;
     
     @Wire
     private Caption         status;

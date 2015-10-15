@@ -5,6 +5,10 @@
              <menuitem id="addnode" label="Add Node"/>
              <menuseparator/>
              <menuitem id="delnode" label="Delete Node"/>
+             <menuseparator/>
+             <menuitem id="backup" label="Backup To"/>
+             <menuseparator/>
+             <menuitem id="restore" label="Restore From"/>
         </menubar>
         <borderlayout>
             <west size="200px" splittable="true" flex="true" collapsible="true" title="Nodes"> 
