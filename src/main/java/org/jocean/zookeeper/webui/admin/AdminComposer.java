@@ -330,6 +330,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     private EditableTab buildNewTab(final Node node, final String path) {
         final Textbox textbox = new Textbox();
         textbox.setDisabled(true);
+        textbox.setStyle("font-family:Courier New");
         textbox.setWidth("100%");
         textbox.setHeight("90%");
         textbox.setMultiline(true);
