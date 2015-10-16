@@ -166,7 +166,7 @@ public class ZKAgent {
 
     public UnitDescription node2desc(final SimpleTreeModel.Node node) {
         try {
-            return dumpNode(getNodePath(node));
+            return dumpNode(node);
         } catch (Exception e) {
             LOG.warn("exception when dumpNode for node {}, detail: {}",
                     node, ExceptionUtils.exception2detail(e));
@@ -174,17 +174,17 @@ public class ZKAgent {
         }
     }
     
-    private UnitDescription dumpNode(final String path) throws Exception {
-        final UnitDescription desc = dumpContent(path);
+    private UnitDescription dumpNode(final SimpleTreeModel.Node node) {
+        final UnitDescription desc = dumpContent(node);
         if (null!=desc) {
-            final List<String> children = this._zkclient.getChildren().forPath(path);
             final List<UnitDescription>  descs = new ArrayList<>();
-            for (String child : children) {
-                final UnitDescription childDesc = dumpNode(path + "/" + child);
+            for (int idx = 0; idx < node.getChildCount(); idx++) {
+                final SimpleTreeModel.Node child = node.getChild(idx);
+                final UnitDescription childDesc = dumpNode(child);
                 if (null!=childDesc) {
                     descs.add(childDesc);
                 } else {
-                    LOG.info("{}/{} is EphemeralNode, not export.", path, child);
+                    LOG.info("{}/{} is EphemeralNode, not export.", node, child);
                 }
             }
             if (!descs.isEmpty()) {
@@ -194,21 +194,28 @@ public class ZKAgent {
         return desc;
     }
 
-    private UnitDescription dumpContent(final String path) throws Exception {
+    private UnitDescription dumpContent(final SimpleTreeModel.Node node) {
+        final String path = this.getNodePath(node);
         if (isEphemeralNode(path) ) {
             return null;
         }
         final UnitDescription desc = new UnitDescription();
         desc.setName(FilenameUtils.getName(path));
-        final byte[] content = this._zkclient.getData().forPath(path);
+        final String content = this.getNodeDataAsString(node);
         if (null != content) {
-            desc.setParameters(new String(content, Charsets.UTF_8));
+            desc.setParameters(content);
         }
         return desc;
     }
 
-    private boolean isEphemeralNode(final String path) throws Exception {
-        return 0 != this._zkclient.checkExists().forPath(path).getEphemeralOwner();
+    private boolean isEphemeralNode(final String path) {
+        try {
+            return 0 != this._zkclient.checkExists().forPath(path).getEphemeralOwner();
+        } catch (Exception e) {
+            LOG.warn("exception when isEphemeralNode for {}, detail:{}",
+                    path, ExceptionUtils.exception2detail(e));
+            return false;
+        }
     }
 
     public String importNode(final String path, final UnitDescription desc) {

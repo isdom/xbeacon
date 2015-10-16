@@ -95,15 +95,16 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
             return  parent;
         }
         
-		private Object getChild(final int idx) {
-			return	this._children.get(idx);
+		@SuppressWarnings("unchecked")
+        public <T> T getChild(final int idx) {
+			return	(T)this._children.get(idx);
 		}
 		
         private void removeChild(final Node child) {
             this._children.remove(child);
         }
 
-		private int getChildCount() {
+		public int getChildCount() {
 			return	this._children.size();
 		}
 		
