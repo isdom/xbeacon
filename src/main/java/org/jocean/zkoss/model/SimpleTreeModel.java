@@ -1,8 +1,8 @@
 package org.jocean.zkoss.model;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.zkoss.zul.AbstractTreeModel;
 
@@ -131,7 +131,7 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 
 		private final String _name;
         private Object _data;
-		private final List<Object> _children = new ArrayList<Object>();
+		private final List<Object> _children = new CopyOnWriteArrayList<Object>();
 	}
 	
 	public SimpleTreeModel(final Node root) {
