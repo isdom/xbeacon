@@ -14,7 +14,6 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
-import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
@@ -106,12 +105,12 @@ public class AdminComposer extends SelectorComposer<Window>{
                 }
             }});
         
-        EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
-        .subscribe(new EventListener<Event>() {
-            @Override
-            public void onEvent(final Event event) throws Exception {
-                refreshNodeTree();
-            }});
+//        EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
+//        .subscribe(new EventListener<Event>() {
+//            @Override
+//            public void onEvent(final Event event) throws Exception {
+//                refreshNodeTree();
+//            }});
         
         refreshNodeTree();
 	}

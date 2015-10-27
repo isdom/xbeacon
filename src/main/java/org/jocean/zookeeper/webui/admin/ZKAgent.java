@@ -18,8 +18,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.WebApp;
 import org.zkoss.zk.ui.event.Event;
+import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueue;
 import org.zkoss.zk.ui.event.EventQueues;
+import org.zkoss.zul.event.TreeDataEvent;
 
 import com.google.common.base.Charsets;
 
@@ -33,7 +35,22 @@ public class ZKAgent {
             LoggerFactory.getLogger(ZKAgent.class);
 
     public SimpleTreeModel getModel() {
-        return new SimpleTreeModel(this._rootNode);
+        final SimpleTreeModel model = new SimpleTreeModel(this._rootNode) {
+            private static final long serialVersionUID = 1L;
+            {
+                _eventqueue.subscribe(new EventListener<Event>() {
+                    @Override
+                    public void onEvent(final Event event) throws Exception {
+                        final TreeDataEvent treeDataEvent = (TreeDataEvent)event.getData();
+                        fireEvent(treeDataEvent.getType(), 
+                                treeDataEvent.getPath(), 
+                                treeDataEvent.getIndexFrom(), 
+                                treeDataEvent.getIndexTo(), 
+                                treeDataEvent.getAffectedPath());
+                    }});
+            }
+        };
+        return model;
     }
     
     /**
@@ -53,6 +70,7 @@ public class ZKAgent {
     public void setRoot(final String rootPath) {
         this._rootPath = rootPath;
         this._rootNode = new SimpleTreeModel.Node(this._rootPath);
+        this._model = new SimpleTreeModel(this._rootNode);
     }
     
     public void start() throws Exception {
@@ -67,13 +85,13 @@ public class ZKAgent {
                     throws Exception {
                 switch (event.getType()) {
                 case NODE_ADDED:
-                    addNode(event);
+                    onNodeAdded(event);
                     break;
                 case NODE_REMOVED:
-                    removeNode(event);
+                    onNodeRemoved(event);
                     break;
                 case NODE_UPDATED:
-                    updateNode(event);
+                    onNodeUpdated(event);
                     break;
                 default:
                     if (LOG.isDebugEnabled()) {
@@ -128,10 +146,10 @@ public class ZKAgent {
         }
     }
 
-    private void addNode(final TreeCacheEvent event) {
+    private void onNodeAdded(final TreeCacheEvent event) {
         final String[] path = buildPath(event);
         if (LOG.isDebugEnabled()) {
-            LOG.debug("addNode: {}", Arrays.toString(path));
+            LOG.debug("onNodeAdded: {}", Arrays.toString(path));
         }
         final SimpleTreeModel.Node node = 
                 this._rootNode.addChildrenIfAbsent(path);
@@ -139,29 +157,54 @@ public class ZKAgent {
                 null != event.getData().getData() 
                     ? new String(event.getData().getData(), Charsets.UTF_8)
                     : null));
-        notifyModelChanged(event.getData().getPath());
+        final SimpleTreeModel.Node parent = node.getParent();
+        notifyModelChanged(new TreeDataEvent(null, 
+                TreeDataEvent.INTERVAL_ADDED, 
+                this._model.getPath(parent),
+                this._model.getIndexOfChild(parent, node),
+                parent.getChildCount() - 1,
+                this._model.getPath(node)
+                ));
     }
 
-    private void removeNode(final TreeCacheEvent event) {
-        if (null!=this._rootNode.removeChild(buildPath(event))) {
-            notifyModelChanged(event.getData().getPath());
+    private void onNodeRemoved(final TreeCacheEvent event) {
+        final String[] path = buildPath(event);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("onNodeRemoved: {}", Arrays.toString(path));
+        }
+        final SimpleTreeModel.Node node = this._rootNode.getDescendant(path);
+        if (null!=node) {
+            final int[] affectedPath = this._model.getPath(node);
+            final int idx = this._model.getIndexOfChild(node.getParent(), node);
+            final SimpleTreeModel.Node parent = node.getParent();
+            this._rootNode.removeChild(path);
+            notifyModelChanged(new TreeDataEvent(null, 
+                    TreeDataEvent.INTERVAL_REMOVED, 
+                    this._model.getPath(parent),
+                    idx,
+                    idx,
+                    affectedPath));
         }
     }
 
-    private void updateNode(final TreeCacheEvent event) {
+    private void onNodeUpdated(final TreeCacheEvent event) {
+        final String[] path = buildPath(event);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("onNodeUpdated: {}", Arrays.toString(path));
+        }
         final SimpleTreeModel.Node node = 
-                this._rootNode.getDescendant(buildPath(event));
+                this._rootNode.getDescendant(path);
         if (null!=node) {
             node.setData(Pair.of(event.getData().getPath(), 
                     null != event.getData().getData() 
                         ? new String(event.getData().getData(), Charsets.UTF_8)
                         : null));
-            notifyModelChanged(event.getData().getPath());
+//            notifyModelChanged(event.getData().getPath());
         }
     }
 
-    private void notifyModelChanged(final String path) {
-        this._eventqueue.publish(new Event("modelChanged"));
+    private void notifyModelChanged(final TreeDataEvent treeDataEvent) {
+        this._eventqueue.publish(new Event("modelChanged", null, treeDataEvent));
     }
 
     public UnitDescription node2desc(final SimpleTreeModel.Node node) {
@@ -256,4 +299,5 @@ public class ZKAgent {
     private EventQueue<Event> _eventqueue;
     
     private SimpleTreeModel.Node _rootNode;
+    private SimpleTreeModel _model;
 }

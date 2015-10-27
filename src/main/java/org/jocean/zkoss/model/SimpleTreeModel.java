@@ -19,6 +19,10 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 			this._name = name;
 		}
 		
+		public Node getParent() {
+		    return this._parent;
+		}
+		
 		public Node addChildIfAbsent(final String nameForAdd) {
 			for ( Object child : this._children ) {
 				if ( child instanceof Node ) {
@@ -29,6 +33,7 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 			}
 			
 			final Node toAdd = new Node(nameForAdd);
+			toAdd._parent = this;
 			this._children.add(toAdd);
 			return	toAdd;
 		}
@@ -43,16 +48,24 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 		}
 		
 		public Node addChild(final Object child) {
+            if ( child instanceof Node ) {
+                ((Node)child)._parent = this;
+            }
 			this._children.add(child);
 			return	this;
 		}
 
 		public <T> Node addChildren(final Collection<T> children) {
+		    for (Object child : children) {
+                if ( child instanceof Node ) {
+                    ((Node)child)._parent = this;
+                }
+            }
 			this._children.addAll(children);
 			return	this;
 		}
 		
-        public <T> Node removeChild(final String[] path) {
+        public Node removeChild(final String[] path) {
             Node parent = null, child = this;
             for (String name : path) {
                 parent = child;
@@ -131,6 +144,7 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 
 		private final String _name;
         private Object _data;
+        private Node _parent = null;
 		private final List<Object> _children = new CopyOnWriteArrayList<Object>();
 	}
 	

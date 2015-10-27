@@ -27,12 +27,12 @@ dependencies {
     
     
     /* zkoss */
-    compile 'org.zkoss.zk:zkplus:7.0.3'
-    compile 'org.zkoss.zk:zhtml:7.0.3'
-    compile 'org.zkoss.zk:zkbind:7.0.3'
-    compile 'org.zkoss.zk:zul:7.0.3'
+    compile "org.zkoss.zk:zkplus:${zkossVersion}"
+    compile "org.zkoss.zk:zhtml:${zkossVersion}"
+    compile "org.zkoss.zk:zkbind:${zkossVersion}"
+    compile "org.zkoss.zk:zul:${zkossVersion}"
+    compile "org.zkoss.theme:sapphire:${zkossVersion}"
     compile('org.zkoss.zk:zkspring-core:3.1.1') { transitive = false }
-    compile 'org.zkoss.theme:sapphire:7.0.3'
     compile 'org.zkoss.theme:atlantic:1.1.1'
     
     /* spring */
