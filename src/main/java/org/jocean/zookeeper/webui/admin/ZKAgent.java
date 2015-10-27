@@ -199,7 +199,14 @@ public class ZKAgent {
                     null != event.getData().getData() 
                         ? new String(event.getData().getData(), Charsets.UTF_8)
                         : null));
-//            notifyModelChanged(event.getData().getPath());
+            final SimpleTreeModel.Node parent = node.getParent();
+            final int idx = this._model.getIndexOfChild(parent, node);
+            notifyModelChanged(new TreeDataEvent(null, 
+                    TreeDataEvent.CONTENTS_CHANGED,
+                    this._model.getPath(parent),
+                    idx,
+                    idx,
+                    this._model.getPath(node)));
         }
     }
 

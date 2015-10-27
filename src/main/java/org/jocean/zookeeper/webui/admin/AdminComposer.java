@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.jocean.idiom.ExceptionUtils;
+import org.jocean.idiom.Pair;
 import org.jocean.j2se.unit.model.UnitDescription;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.model.SimpleTreeModel.Node;
@@ -28,11 +29,14 @@ import org.zkoss.zul.Tabpanels;
 import org.zkoss.zul.Tabs;
 import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Tree;
+import org.zkoss.zul.TreeModel;
 import org.zkoss.zul.Treecell;
 import org.zkoss.zul.Treeitem;
 import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
+import org.zkoss.zul.event.TreeDataEvent;
+import org.zkoss.zul.event.TreeDataListener;
 
 import com.google.common.base.Charsets;
 
@@ -104,13 +108,6 @@ public class AdminComposer extends SelectorComposer<Window>{
                     restoreFromNode(node);
                 }
             }});
-        
-//        EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
-//        .subscribe(new EventListener<Event>() {
-//            @Override
-//            public void onEvent(final Event event) throws Exception {
-//                refreshNodeTree();
-//            }});
         
         refreshNodeTree();
 	}
@@ -316,17 +313,17 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     private void displayNodeData(final Node node) {
         final String path = this._zka.getNodePath(node);
-        final EditableTab tab = this._tabs.get(path);
+        final Pair<Textbox,EditableTab> pair = this._tabs.get(path);
         
-        if (null != tab ) {
-            tab.setSelected();
+        if (null != pair ) {
+            pair.second.setSelected();
         } else {
             this._tabs.put(path, buildNewTab(node, path));
             
         }
     }
 
-    private EditableTab buildNewTab(final Node node, final String path) {
+    private Pair<Textbox,EditableTab> buildNewTab(final Node node, final String path) {
         final Textbox textbox = new Textbox();
         textbox.setDisabled(true);
         textbox.setStyle("font-family:Courier New");
@@ -364,12 +361,26 @@ public class AdminComposer extends SelectorComposer<Window>{
             public void onEvent(final InputEvent event) throws Exception {
                 tab.markModified();
             }});
-        return tab;
+        return Pair.of(textbox,tab);
     }
 
 	private void refreshNodeTree() throws Exception {
-		this.nodes.setModel(this._zka.getModel() );
+	    final TreeModel<?> model = this._zka.getModel();
+		this.nodes.setModel(model);
 		enableNodesMenus(false);
+		model.addTreeDataListener(new TreeDataListener() {
+            @Override
+            public void onChange(final TreeDataEvent event) {
+                if (event.getType() == TreeDataEvent.CONTENTS_CHANGED) {
+                    final SimpleTreeModel.Node node = 
+                            (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
+                    final String path = _zka.getNodePath(node);
+                    final Pair<Textbox,EditableTab> pair = _tabs.get(path);
+                    if (null!=pair) {
+                        pair.first.setText(_zka.getNodeDataAsString(node));
+                    }
+                }
+            }});
 	}
 	
     private String concatParentAndChild(final String fullpath,
@@ -432,5 +443,5 @@ public class AdminComposer extends SelectorComposer<Window>{
     @WireVariable("rootPath")
     private String _rootPath;
     
-    private final Map<String, EditableTab>  _tabs = new HashMap<>();
+    private final Map<String, Pair<Textbox,EditableTab>>  _tabs = new HashMap<>();
 }
