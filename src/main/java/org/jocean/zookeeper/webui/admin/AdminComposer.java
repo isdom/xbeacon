@@ -15,6 +15,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
+import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
@@ -110,7 +111,23 @@ public class AdminComposer extends SelectorComposer<Window>{
             }});
         
         refreshNodeTree();
+        
+        EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
+            .subscribe(new EventListener<Event>() {
+                @Override
+                public void onEvent(final Event event) throws Exception {
+                    if (event.getName().equals("nodeRemoved")) {
+                        onZKNodeRemoved((String)event.getData());
+                    }
+                }});;
 	}
+
+    private void onZKNodeRemoved(final String path) {
+        final Pair<Textbox,EditableTab> pair = this._tabs.get(path);
+        if (null!=pair) {
+            pair.second.close();
+        }
+    }
 
     private void restoreFromNode(final Node node) {
         final String path = _zka.getNodePath(node);
@@ -372,17 +389,31 @@ public class AdminComposer extends SelectorComposer<Window>{
             @Override
             public void onChange(final TreeDataEvent event) {
                 if (event.getType() == TreeDataEvent.CONTENTS_CHANGED) {
-                    final SimpleTreeModel.Node node = 
-                            (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
-                    final String path = _zka.getNodePath(node);
-                    final Pair<Textbox,EditableTab> pair = _tabs.get(path);
-                    if (null!=pair) {
-                        pair.first.setText(_zka.getNodeDataAsString(node));
-                    }
+                    onContentChanged(event);
                 }
             }});
 	}
 	
+    private void onContentChanged(final TreeDataEvent event) {
+        final SimpleTreeModel.Node node = 
+                (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
+        final String path = this._zka.getNodePath(node);
+        final Pair<Textbox,EditableTab> pair = this._tabs.get(path);
+        if (null!=pair) {
+            pair.first.setText(_zka.getNodeDataAsString(node));
+        }
+    }
+
+    private void onNodeRemoved(final TreeDataEvent event) {
+        final SimpleTreeModel.Node node = 
+                (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
+        final String path = _zka.getNodePath(node);
+        final Pair<Textbox,EditableTab> pair = _tabs.get(path);
+        if (null!=pair) {
+            pair.first.setText(_zka.getNodeDataAsString(node));
+        }
+    }
+    
     private String concatParentAndChild(final String fullpath,
             final String child) {
         return fullpath + (!fullpath.endsWith("/") ? "/" : "") + child;

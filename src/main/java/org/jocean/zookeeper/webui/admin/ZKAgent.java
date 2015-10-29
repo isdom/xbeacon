@@ -41,12 +41,14 @@ public class ZKAgent {
                 _eventqueue.subscribe(new EventListener<Event>() {
                     @Override
                     public void onEvent(final Event event) throws Exception {
-                        final TreeDataEvent treeDataEvent = (TreeDataEvent)event.getData();
-                        fireEvent(treeDataEvent.getType(), 
-                                treeDataEvent.getPath(), 
-                                treeDataEvent.getIndexFrom(), 
-                                treeDataEvent.getIndexTo(), 
-                                treeDataEvent.getAffectedPath());
+                        if ( event.getName().equals("modelChanged")) {
+                            final TreeDataEvent treeDataEvent = (TreeDataEvent)event.getData();
+                            fireEvent(treeDataEvent.getType(), 
+                                    treeDataEvent.getPath(), 
+                                    treeDataEvent.getIndexFrom(), 
+                                    treeDataEvent.getIndexTo(), 
+                                    treeDataEvent.getAffectedPath());
+                        }
                     }});
             }
         };
@@ -184,6 +186,7 @@ public class ZKAgent {
                     idx,
                     idx,
                     affectedPath));
+            notifyZKChanged("nodeRemoved", getNodePath(node));
         }
     }
 
@@ -212,6 +215,10 @@ public class ZKAgent {
 
     private void notifyModelChanged(final TreeDataEvent treeDataEvent) {
         this._eventqueue.publish(new Event("modelChanged", null, treeDataEvent));
+    }
+
+    private void notifyZKChanged(final String event, final String nodePath) {
+        this._eventqueue.publish(new Event(event, null, nodePath));
     }
 
     public UnitDescription node2desc(final SimpleTreeModel.Node node) {

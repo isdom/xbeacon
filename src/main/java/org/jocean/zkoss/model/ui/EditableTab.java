@@ -86,6 +86,10 @@ public class EditableTab {
             }};
     }
     
+    public void close() {
+        this._tab.close();
+    }
+    
     public EditableTab setOnClose(final Action0 onClose) {
         this._onClose = onClose;
         return this;
