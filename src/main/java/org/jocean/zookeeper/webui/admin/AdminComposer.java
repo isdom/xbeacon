@@ -110,6 +110,14 @@ public class AdminComposer extends SelectorComposer<Window>{
                 }
             }});
         
+        closeall.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+            @Override
+            public void onEvent(final Event event) throws Exception {
+                while (!_tabs.values().isEmpty()) {
+                    _tabs.values().iterator().next().second.close();
+                }
+            }});
+        
         refreshNodeTree();
         
         EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
@@ -404,16 +412,6 @@ public class AdminComposer extends SelectorComposer<Window>{
         }
     }
 
-    private void onNodeRemoved(final TreeDataEvent event) {
-        final SimpleTreeModel.Node node = 
-                (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
-        final String path = _zka.getNodePath(node);
-        final Pair<Textbox,EditableTab> pair = _tabs.get(path);
-        if (null!=pair) {
-            pair.first.setText(_zka.getNodeDataAsString(node));
-        }
-    }
-    
     private String concatParentAndChild(final String fullpath,
             final String child) {
         return fullpath + (!fullpath.endsWith("/") ? "/" : "") + child;
@@ -464,6 +462,9 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     @Wire
     private Menuitem        restore;
+    
+    @Wire
+    private Menuitem        closeall;
     
     @Wire
     private Caption         status;

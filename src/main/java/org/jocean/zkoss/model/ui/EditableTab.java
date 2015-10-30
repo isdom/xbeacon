@@ -87,6 +87,7 @@ public class EditableTab {
     }
     
     public void close() {
+        this._isModified = false;
         this._tab.close();
     }
     

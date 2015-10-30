@@ -9,6 +9,9 @@
              <menuitem id="backup" label="Backup From"/>
              <menuseparator/>
              <menuitem id="restore" label="Restore To"/>
+             <menuseparator/>
+             <menuitem id="closeall" label="Close All"/>
+             <menuseparator/>
         </menubar>
         <borderlayout>
             <west size="200px" splittable="true" flex="true" collapsible="true" title="Nodes"> 
