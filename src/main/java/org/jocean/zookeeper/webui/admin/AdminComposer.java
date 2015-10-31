@@ -62,7 +62,6 @@ public class AdminComposer extends SelectorComposer<Window>{
 			@Override
 			public void onEvent(final Event event) throws Exception {
 				final SimpleTreeModel.Node node = currentSelectedNode();
-				enableNodesMenus(null!=node);
 				if ( null != node ) {
 					LOG.info("select node:{}", node.getData());
 					displayNodeData(node);
@@ -398,6 +397,10 @@ public class AdminComposer extends SelectorComposer<Window>{
             public void onChange(final TreeDataEvent event) {
                 if (event.getType() == TreeDataEvent.CONTENTS_CHANGED) {
                     onContentChanged(event);
+                } else if (event.getType() == TreeDataEvent.SELECTION_CHANGED) {
+                    enableNodesMenus(null!=currentSelectedNode());
+                } else if (event.getType() == TreeDataEvent.INTERVAL_REMOVED) {
+                    enableNodesMenus(false);
                 }
             }});
 	}
