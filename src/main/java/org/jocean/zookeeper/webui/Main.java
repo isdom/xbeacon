@@ -4,7 +4,9 @@
 package org.jocean.zookeeper.webui;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
 
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.slf4j.Logger;
@@ -26,6 +28,13 @@ public class Main {
 	 */
 	public static void main(String[] args) throws Exception {
         final Server server = new Server(7080);
+        
+     // Setup JMX
+        final MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        server.addEventListener(mbContainer);
+        server.addBean(mbContainer);
+        
+        //        mbContainer.addBean(Log.getLog());
         
         final WebAppContext context = new WebAppContext();
         context.setContextPath("/zkwebui");
