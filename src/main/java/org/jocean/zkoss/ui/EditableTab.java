@@ -1,4 +1,4 @@
-package org.jocean.zkoss.model.ui;
+package org.jocean.zkoss.ui;
 
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.event.CheckEvent;

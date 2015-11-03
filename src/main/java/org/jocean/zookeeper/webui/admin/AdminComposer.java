@@ -8,7 +8,7 @@ import org.jocean.idiom.Pair;
 import org.jocean.j2se.unit.model.UnitDescription;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.model.SimpleTreeModel.Node;
-import org.jocean.zkoss.model.ui.EditableTab;
+import org.jocean.zkoss.ui.EditableTab;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;

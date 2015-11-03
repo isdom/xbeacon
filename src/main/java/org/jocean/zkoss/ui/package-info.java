@@ -5,4 +5,4 @@
  * @author isdom
  *
  */
-package org.jocean.zkoss.model.ui;
+package org.jocean.zkoss.ui;
