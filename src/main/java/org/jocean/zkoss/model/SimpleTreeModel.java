@@ -10,11 +10,21 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 	
 	private static final long serialVersionUID = -6720368595112891822L;
 
-	static public class Node {
+	static public class Node implements Cloneable {
 		
 		public Node(final String name) {
 			this._name = name;
 		}
+		
+		@Override
+        public Node clone() {
+		    final Node cloned = new Node(this._name);
+		    for (Node child : this._children) {
+		        cloned.addChild(child.clone());
+		    }
+		    cloned._data = this._data;
+            return cloned;
+        }
 		
 		public Node getParent() {
 		    return this._parent;
