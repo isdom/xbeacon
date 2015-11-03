@@ -8,9 +8,6 @@ import org.zkoss.zul.AbstractTreeModel;
 
 public class SimpleTreeModel extends AbstractTreeModel<Object> {
 	
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = -6720368595112891822L;
 
 	static public class Node {
@@ -24,11 +21,9 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 		}
 		
 		public Node addChildIfAbsent(final String nameForAdd) {
-			for ( Object child : this._children ) {
-				if ( child instanceof Node ) {
-					if ( ((Node)child)._name.equals(nameForAdd) ) {
-						return	(Node)child;
-					}
+			for ( Node child : this._children ) {
+				if ( child._name.equals(nameForAdd) ) {
+					return	child;
 				}
 			}
 			
@@ -47,19 +42,15 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 			return	parent;
 		}
 		
-		public Node addChild(final Object child) {
-            if ( child instanceof Node ) {
-                ((Node)child)._parent = this;
-            }
+		public Node addChild(final Node child) {
+            child._parent = this;
 			this._children.add(child);
 			return	this;
 		}
 
-		public <T> Node addChildren(final Collection<T> children) {
-		    for (Object child : children) {
-                if ( child instanceof Node ) {
-                    ((Node)child)._parent = this;
-                }
+		public Node addChildren(final Collection<Node> children) {
+		    for (Node child : children) {
+                child._parent = this;
             }
 			this._children.addAll(children);
 			return	this;
@@ -85,11 +76,9 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 		}
 		
         public Node getChild(final String name) {
-            for ( Object child : this._children ) {
-                if ( child instanceof Node ) {
-                    if ( ((Node)child)._name.equals(name) ) {
-                        return  (Node)child;
-                    }
+            for ( Node child : this._children ) {
+                if ( child._name.equals(name) ) {
+                    return  child;
                 }
             }
             
@@ -108,9 +97,8 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
             return  parent;
         }
         
-		@SuppressWarnings("unchecked")
-        public <T> T getChild(final int idx) {
-			return	(T)this._children.get(idx);
+        public Node getChild(final int idx) {
+			return	this._children.get(idx);
 		}
 		
         private void removeChild(final Node child) {
@@ -145,7 +133,7 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 		private final String _name;
         private Object _data;
         private Node _parent = null;
-		private final List<Object> _children = new CopyOnWriteArrayList<Object>();
+		private final List<Node> _children = new CopyOnWriteArrayList<>();
 	}
 	
 	public SimpleTreeModel(final Node root) {
