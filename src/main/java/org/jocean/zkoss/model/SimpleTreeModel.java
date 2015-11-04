@@ -6,7 +6,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.zkoss.zul.AbstractTreeModel;
 
-public class SimpleTreeModel extends AbstractTreeModel<Object> {
+public class SimpleTreeModel extends AbstractTreeModel<SimpleTreeModel.Node> {
 	
 	private static final long serialVersionUID = -6720368595112891822L;
 
@@ -151,21 +151,17 @@ public class SimpleTreeModel extends AbstractTreeModel<Object> {
 	}
 
 	@Override
-	public boolean isLeaf(final Object node) {
+	public boolean isLeaf(final Node node) {
 		return getChildCount(node)==0;
 	}
 
 	@Override
-	public Object getChild(final Object parent, int index) {
-		return ( parent instanceof Node) 
-				? ((Node)parent).getChild(index)
-				: null;
+	public Node getChild(final Node parent, int index) {
+		return parent.getChild(index);
 	}
 
 	@Override
-	public int getChildCount(final Object parent) {
-		return ( parent instanceof Node) 
-				? ((Node)parent).getChildCount()
-				: 0;
+	public int getChildCount(final Node parent) {
+		return parent.getChildCount();
 	}
 }
