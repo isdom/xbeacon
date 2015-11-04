@@ -3,6 +3,10 @@ package org.jocean.zookeeper.webui.admin;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -34,24 +38,21 @@ public class ZKAgent {
     private static final Logger LOG = 
             LoggerFactory.getLogger(ZKAgent.class);
 
-    public SimpleTreeModel getModel() {
-        final SimpleTreeModel model = new SimpleTreeModel(this._rootNode) {
-            private static final long serialVersionUID = 1L;
-            {
-                _eventqueue.subscribe(new EventListener<Event>() {
-                    @Override
-                    public void onEvent(final Event event) throws Exception {
-                        if ( event.getName().equals("modelChanged")) {
-                            final TreeDataEvent treeDataEvent = (TreeDataEvent)event.getData();
-                            fireEvent(treeDataEvent.getType(), 
-                                    treeDataEvent.getPath(), 
-                                    treeDataEvent.getIndexFrom(), 
-                                    treeDataEvent.getIndexTo(), 
-                                    treeDataEvent.getAffectedPath());
-                        }
-                    }});
-            }
-        };
+    public SimpleTreeModel getModel() throws Exception {
+        final ZKTreeModel model = 
+                this._executorService.submit(new Callable<ZKTreeModel>() {
+            @Override
+            public ZKTreeModel call() throws Exception {
+                return new ZKTreeModel(_rootNode.clone());
+            }} ).get();
+        _eventqueue.subscribe(new EventListener<Event>() {
+            @Override
+            public void onEvent(final Event event) throws Exception {
+                if ( event.getName().equals("zkChanged")) {
+                    final TreeCacheEvent treeCacheEvent = (TreeCacheEvent)event.getData();
+                    model.onZKChanged(treeCacheEvent);
+                }
+            }});
         return model;
     }
     
@@ -72,36 +73,21 @@ public class ZKAgent {
     public void setRoot(final String rootPath) {
         this._rootPath = rootPath;
         this._rootNode = new SimpleTreeModel.Node(this._rootPath);
-        this._model = new SimpleTreeModel(this._rootNode);
+        this._model = new ZKTreeModel(this._rootNode);
     }
     
     public void start() throws Exception {
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
         this._treecache = TreeCache.newBuilder(_zkclient, _rootPath)
                 .setCacheData(true)
+                .setExecutor(this._executorService)
                 .build();
         this._treecache.getListenable().addListener(new TreeCacheListener() {
-
             @Override
             public void childEvent(CuratorFramework client, TreeCacheEvent event)
                     throws Exception {
-                switch (event.getType()) {
-                case NODE_ADDED:
-                    onNodeAdded(event);
-                    break;
-                case NODE_REMOVED:
-                    onNodeRemoved(event);
-                    break;
-                case NODE_UPDATED:
-                    onNodeUpdated(event);
-                    break;
-                default:
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("unhandle event ({}), just ignore.", 
-                                event);
-                    }
-                    break;
-                }
+                _model.onZKChanged(event);
+                _eventqueue.publish(new Event("zkChanged", null, event));
             }});
         this._treecache.start();
     }
@@ -137,8 +123,7 @@ public class ZKAgent {
             .forPath(nodepath);
     }
     
-    private static String[] buildPath(final TreeCacheEvent event) {
-        final String rawpath = event.getData().getPath();
+    private static String[] buildPath(final String rawpath) {
         final String[] path = rawpath.split("/");
         if ( 0 == path.length) {
             return PATH_ROOT;
@@ -148,78 +133,105 @@ public class ZKAgent {
         }
     }
 
-    private void onNodeAdded(final TreeCacheEvent event) {
-        final String[] path = buildPath(event);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("onNodeAdded: {}", Arrays.toString(path));
-        }
-        final SimpleTreeModel.Node node = 
-                this._rootNode.addChildrenIfAbsent(path);
-        node.setData(Pair.of(event.getData().getPath(), 
-                null != event.getData().getData() 
-                    ? new String(event.getData().getData(), Charsets.UTF_8)
-                    : null));
-        final SimpleTreeModel.Node parent = node.getParent();
-        notifyModelChanged(new TreeDataEvent(null, 
-                TreeDataEvent.INTERVAL_ADDED, 
-                this._model.getPath(parent),
-                this._model.getIndexOfChild(parent, node),
-                parent.getChildCount() - 1,
-                this._model.getPath(node)
-                ));
-    }
+    class ZKTreeModel extends SimpleTreeModel {
 
-    private void onNodeRemoved(final TreeCacheEvent event) {
-        final String[] path = buildPath(event);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("onNodeRemoved: {}", Arrays.toString(path));
+        public ZKTreeModel(final Node root) {
+            super(root);
         }
-        final SimpleTreeModel.Node node = this._rootNode.getDescendant(path);
-        if (null!=node) {
-            final int[] affectedPath = this._model.getPath(node);
-            final int idx = this._model.getIndexOfChild(node.getParent(), node);
-            final SimpleTreeModel.Node parent = node.getParent();
-            this._rootNode.removeChild(path);
-            notifyModelChanged(new TreeDataEvent(null, 
-                    TreeDataEvent.INTERVAL_REMOVED, 
-                    this._model.getPath(parent),
-                    idx,
-                    idx,
-                    affectedPath));
-            notifyZKChanged("nodeRemoved", getNodePath(node));
+        
+        void onZKChanged(final TreeCacheEvent event) {
+            switch (event.getType()) {
+            case NODE_ADDED:
+                onNodeAdded(event);
+                break;
+            case NODE_REMOVED:
+                onNodeRemoved(event);
+                break;
+            case NODE_UPDATED:
+                onNodeUpdated(event);
+                break;
+            default:
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("unhandle event ({}), just ignore.", 
+                            event);
+                }
+                break;
+            }
         }
-    }
-
-    private void onNodeUpdated(final TreeCacheEvent event) {
-        final String[] path = buildPath(event);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("onNodeUpdated: {}", Arrays.toString(path));
-        }
-        final SimpleTreeModel.Node node = 
-                this._rootNode.getDescendant(path);
-        if (null!=node) {
+        
+        private void onNodeAdded(final TreeCacheEvent event) {
+            final String[] path = buildPath(event.getData().getPath());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("onNodeAdded: {}", Arrays.toString(path));
+            }
+            final SimpleTreeModel.Node node = 
+                    this.getRoot().addChildrenIfAbsent(path);
             node.setData(Pair.of(event.getData().getPath(), 
                     null != event.getData().getData() 
                         ? new String(event.getData().getData(), Charsets.UTF_8)
                         : null));
             final SimpleTreeModel.Node parent = node.getParent();
-            final int idx = this._model.getIndexOfChild(parent, node);
-            notifyModelChanged(new TreeDataEvent(null, 
-                    TreeDataEvent.CONTENTS_CHANGED,
-                    this._model.getPath(parent),
-                    idx,
-                    idx,
-                    this._model.getPath(node)));
+            fireEvent(
+                    TreeDataEvent.INTERVAL_ADDED, 
+                    this.getPath(parent),
+                    this.getIndexOfChild(parent, node),
+                    parent.getChildCount() - 1,
+                    this.getPath(node)
+                    );
+        }
+
+        private void onNodeRemoved(final TreeCacheEvent event) {
+            final String[] path = buildPath(event.getData().getPath());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("onNodeRemoved: {}", Arrays.toString(path));
+            }
+            final SimpleTreeModel.Node node = this.getRoot().getDescendant(path);
+            if (null!=node) {
+                final int[] affectedPath = this.getPath(node);
+                final int idx = this.getIndexOfChild(node.getParent(), node);
+                final SimpleTreeModel.Node parent = node.getParent();
+                this.getRoot().removeChild(path);
+                fireEvent(
+                        TreeDataEvent.INTERVAL_REMOVED, 
+                        this.getPath(parent),
+                        idx,
+                        idx,
+                        affectedPath);
+//                notifyZKChanged("nodeRemoved", getNodePath(node));
+            }
+        }
+
+        private void onNodeUpdated(final TreeCacheEvent event) {
+            final String[] path = buildPath(event.getData().getPath());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("onNodeUpdated: {}", Arrays.toString(path));
+            }
+            final SimpleTreeModel.Node node = 
+                    this.getRoot().getDescendant(path);
+            if (null!=node) {
+                node.setData(Pair.of(event.getData().getPath(), 
+                        null != event.getData().getData() 
+                            ? new String(event.getData().getData(), Charsets.UTF_8)
+                            : null));
+                final SimpleTreeModel.Node parent = node.getParent();
+                final int idx = this.getIndexOfChild(parent, node);
+                fireEvent(
+                        TreeDataEvent.CONTENTS_CHANGED,
+                        this.getPath(parent),
+                        idx,
+                        idx,
+                        this.getPath(node));
+            }
         }
     }
 
-    private void notifyModelChanged(final TreeDataEvent treeDataEvent) {
-        this._eventqueue.publish(new Event("modelChanged", null, treeDataEvent));
-    }
-
-    private void notifyZKChanged(final String event, final String nodePath) {
-        this._eventqueue.publish(new Event(event, null, nodePath));
-    }
+//    private void notifyModelChanged(final TreeDataEvent treeDataEvent) {
+//        this._eventqueue.publish(new Event("modelChanged", null, treeDataEvent));
+//    }
+//
+//    private void notifyZKChanged(final String event, final String nodePath) {
+//        this._eventqueue.publish(new Event(event, null, nodePath));
+//    }
 
     public UnitDescription node2desc(final SimpleTreeModel.Node node) {
         try {
@@ -306,6 +318,13 @@ public class ZKAgent {
         }
     }
     
+    private final ExecutorService _executorService = Executors.newSingleThreadExecutor(new ThreadFactory() {
+        @Override
+        public Thread newThread(Runnable r) {
+            final Thread thread = new Thread(r);
+            thread.setName("zkagent-0");
+            return thread;
+        }});
     private TreeCache _treecache;
     private CuratorFramework _zkclient;
     private WebApp _webapp;
@@ -313,5 +332,5 @@ public class ZKAgent {
     private EventQueue<Event> _eventqueue;
     
     private SimpleTreeModel.Node _rootNode;
-    private SimpleTreeModel _model;
+    private ZKTreeModel _model;
 }
