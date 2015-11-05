@@ -32,6 +32,7 @@ import com.google.common.base.Charsets;
 
 public class ZKAgent {
     
+    private static final String EVENT_ZK_CHANGED = "zkChanged";
     private static final UnitDescription[] EMPTY_UNITDESCS = new UnitDescription[0];
     private static final byte[] EMPTY_BYTES = new byte[0];
     private static final String[] PATH_ROOT = new String[]{"/"};
@@ -44,7 +45,7 @@ public class ZKAgent {
         this._eventqueue.subscribe(new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
-                if ( event.getName().equals("zkChanged")) {
+                if ( event.getName().equals(EVENT_ZK_CHANGED)) {
                     @SuppressWarnings("unchecked")
                     final Pair<Integer, TreeCacheEvent> pair = (Pair<Integer, TreeCacheEvent>)event.getData();
                     modelref.get().onZKChanged(pair.first, pair.second);
@@ -91,7 +92,7 @@ public class ZKAgent {
                     throws Exception {
                 _treeVersion++;
                 _model.onZKChanged(_treeVersion, event);
-                _eventqueue.publish(new Event("zkChanged", null, Pair.of(_treeVersion, event)));
+                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, Pair.of(_treeVersion, event)));
             }});
         this._treecache.start();
     }
@@ -147,6 +148,8 @@ public class ZKAgent {
         
         void onZKChanged(final int version, final TreeCacheEvent event) {
             if (version <= this._startVersion) {
+                LOG.info("zk changed notify's version {}, <= start version {}, just ignore.",
+                        version, this._startVersion);
                 //  just ignore
                 return;
             }
@@ -205,7 +208,6 @@ public class ZKAgent {
                         idx,
                         idx,
                         affectedPath);
-//                notifyZKChanged("nodeRemoved", getNodePath(node));
             }
         }
 
@@ -233,14 +235,6 @@ public class ZKAgent {
         
         private final int _startVersion = _treeVersion;
     }
-
-//    private void notifyModelChanged(final TreeDataEvent treeDataEvent) {
-//        this._eventqueue.publish(new Event("modelChanged", null, treeDataEvent));
-//    }
-//
-//    private void notifyZKChanged(final String event, final String nodePath) {
-//        this._eventqueue.publish(new Event(event, null, nodePath));
-//    }
 
     public UnitDescription node2desc(final SimpleTreeModel.Node node) {
         try {

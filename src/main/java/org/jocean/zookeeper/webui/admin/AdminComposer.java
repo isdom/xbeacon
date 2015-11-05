@@ -1,5 +1,6 @@
 package org.jocean.zookeeper.webui.admin;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,7 +16,6 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
-import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.InputEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
@@ -118,15 +118,6 @@ public class AdminComposer extends SelectorComposer<Window>{
             }});
         
         refreshNodeTree();
-        
-        EventQueues.lookup("zktree", EventQueues.APPLICATION, true)
-            .subscribe(new EventListener<Event>() {
-                @Override
-                public void onEvent(final Event event) throws Exception {
-                    if (event.getName().equals("nodeRemoved")) {
-                        onZKNodeRemoved((String)event.getData());
-                    }
-                }});;
 	}
 
     private void onZKNodeRemoved(final String path) {
@@ -336,18 +327,19 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
     
     private void displayNodeData(final Node node) {
+        final String treepath = Arrays.toString(this._model.getPath(node));
         final String path = this._zka.getNodePath(node);
-        final Pair<Textbox,EditableTab> pair = this._tabs.get(path);
+        final Pair<Textbox,EditableTab> pair = this._tabs.get(treepath);
         
         if (null != pair ) {
             pair.second.setSelected();
         } else {
-            this._tabs.put(path, buildNewTab(node, path));
+            this._tabs.put(treepath, buildNewTab(node, path, treepath));
             
         }
     }
 
-    private Pair<Textbox,EditableTab> buildNewTab(final Node node, final String path) {
+    private Pair<Textbox,EditableTab> buildNewTab(final Node node, final String path, final String treepath) {
         final Textbox textbox = new Textbox();
         textbox.setDisabled(true);
         textbox.setStyle("font-family:Courier New");
@@ -359,7 +351,7 @@ public class AdminComposer extends SelectorComposer<Window>{
                 .setOnClose(new Action0() {
                     @Override
                     public void call() {
-                        _tabs.remove(path);
+                        _tabs.remove(treepath);
                     }})
             .setOnApply(new Action0() {
                 @Override
@@ -389,10 +381,10 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
 
 	private void refreshNodeTree() throws Exception {
-	    final TreeModel<?> model = this._zka.getModel();
-		this.nodes.setModel(model);
+	    this._model = this._zka.getModel();
+		this.nodes.setModel(_model);
 		enableNodesMenus(false);
-		model.addTreeDataListener(new TreeDataListener() {
+		_model.addTreeDataListener(new TreeDataListener() {
             @Override
             public void onChange(final TreeDataEvent event) {
                 if (event.getType() == TreeDataEvent.CONTENTS_CHANGED) {
@@ -401,16 +393,17 @@ public class AdminComposer extends SelectorComposer<Window>{
                     enableNodesMenus(null!=currentSelectedNode());
                 } else if (event.getType() == TreeDataEvent.INTERVAL_REMOVED) {
                     enableNodesMenus(false);
+                    onZKNodeRemoved(Arrays.toString(event.getAffectedPath()));
                 }
             }});
 	}
 	
     private void onContentChanged(final TreeDataEvent event) {
-        final SimpleTreeModel.Node node = 
-                (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
-        final String path = this._zka.getNodePath(node);
-        final Pair<Textbox,EditableTab> pair = this._tabs.get(path);
+        final String treepath = Arrays.toString(event.getAffectedPath());
+        final Pair<Textbox,EditableTab> pair = this._tabs.get(treepath);
         if (null!=pair) {
+            final SimpleTreeModel.Node node = 
+                    (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
             pair.first.setText(_zka.getNodeDataAsString(node));
         }
     }
@@ -447,6 +440,8 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     @Wire
     private Tree    nodes;
+    
+    private TreeModel<SimpleTreeModel.Node> _model;
 	
     @Wire
     private Tabs    maintabs;
