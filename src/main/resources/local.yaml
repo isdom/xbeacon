@@ -1,0 +1,16 @@
+name: units
+parameters: |
+  __spring.xml=zkagent.xml
+  zk.address = 127.0.0.1:2181
+  root.path=/
+children:
+  - name: jmxsrv
+    parameters: |
+      jmxmp.port = 9879
+      jmxhtml.port = 7083
+  - name: jettywebapp
+    parameters: |
+      webapp.host = 0.0.0.0
+      webapp.path = /zkwebui
+      webapp.category = demo
+      webapp.priority = 100

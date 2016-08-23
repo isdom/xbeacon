@@ -1,2 +1,2 @@
-Main-Class: org.jocean.zookeeper.webui.Booter
+Main-Class: org.jocean.booter.Booter
 Class-Path: ../../etc/ 

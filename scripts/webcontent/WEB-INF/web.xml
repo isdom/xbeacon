@@ -4,11 +4,11 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"> 
  
-    <description><![CDATA[My ZK Application]]></description>
-    <display-name>MyApp</display-name>
+    <description><![CDATA[ZKWebUI]]></description>
+    <display-name>ZKWebUI</display-name>
     <context-param>
         <param-name>contextConfigLocation</param-name>
-        <param-value>classpath:services.xml</param-value>
+        <param-value>classpath:webapp/dummy.xml</param-value>
     </context-param>
     <listener>
         <description>ZK listener for session cleanup</description>
@@ -17,7 +17,7 @@
     <listener>
         <description>Used to init spring context</description>
         <display-name>Spring Context Initor</display-name>
-        <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+        <listener-class>org.jocean.jetty.JoceanContextLoaderListener</listener-class>
     </listener>
     <servlet>
         <description>ZK loader for ZUML pages</description>
