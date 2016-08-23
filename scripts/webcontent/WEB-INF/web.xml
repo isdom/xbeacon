@@ -8,7 +8,7 @@
     <display-name>ZKWebUI</display-name>
     <context-param>
         <param-name>contextConfigLocation</param-name>
-        <param-value>classpath:webapp/dummy.xml</param-value>
+        <param-value>classpath:zkagent.xml</param-value>
     </context-param>
     <listener>
         <description>ZK listener for session cleanup</description>

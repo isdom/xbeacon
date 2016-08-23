@@ -4,18 +4,6 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
-    <bean id="zkClient" class="org.apache.curator.framework.CuratorFrameworkFactory"
-        factory-method="newClient"
-        init-method="start">
-        <constructor-arg value="${zk.address}"/>
-        <constructor-arg>
-            <bean class="org.apache.curator.retry.ExponentialBackoffRetry">
-                <constructor-arg value="1000"/>
-                <constructor-arg value="3"/>
-            </bean>
-        </constructor-arg>
-    </bean>
-    
     <bean id="rootPath" class="java.lang.String">
         <constructor-arg value="${root.path:/}"/>
     </bean>
