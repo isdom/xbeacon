@@ -10,6 +10,10 @@
         <param-name>contextConfigLocation</param-name>
         <param-value>classpath:zkagent.xml</param-value>
     </context-param>
+    <context-param>
+        <param-name>contextInitializerClasses</param-name>
+        <param-value>org.jocean.jetty.SetPlaceholderConfigurerInitializer</param-value>
+    </context-param>
     <listener>
         <description>ZK listener for session cleanup</description>
         <listener-class>org.zkoss.zk.ui.http.HttpSessionListener</listener-class>
