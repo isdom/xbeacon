@@ -4,15 +4,15 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd"> 
  
-    <description><![CDATA[ZKWebUI]]></description>
-    <display-name>ZKWebUI</display-name>
+    <description><![CDATA[ZK-WebUI]]></description>
+    <display-name>ZK-WebUI</display-name>
     <context-param>
         <param-name>contextConfigLocation</param-name>
         <param-value>classpath:zkagent.xml</param-value>
     </context-param>
     <context-param>
         <param-name>contextInitializerClasses</param-name>
-        <param-value>org.jocean.jetty.SetPlaceholderConfigurerInitializer</param-value>
+        <param-value>org.jocean.jetty.JoceanWebApplicationContextInitializer</param-value>
     </context-param>
     <listener>
         <description>ZK listener for session cleanup</description>
