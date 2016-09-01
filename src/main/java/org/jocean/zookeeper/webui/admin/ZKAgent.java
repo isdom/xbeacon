@@ -88,7 +88,7 @@ public class ZKAgent {
                 .build();
         this._treecache.getListenable().addListener(new TreeCacheListener() {
             @Override
-            public void childEvent(CuratorFramework client, TreeCacheEvent event)
+            public void childEvent(final CuratorFramework client, final TreeCacheEvent event)
                     throws Exception {
                 _treeVersion++;
                 _model.onZKChanged(_treeVersion, event);
