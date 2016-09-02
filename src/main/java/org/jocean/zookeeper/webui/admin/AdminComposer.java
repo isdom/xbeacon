@@ -63,7 +63,7 @@ public class AdminComposer extends SelectorComposer<Window>{
 			public void onEvent(final Event event) throws Exception {
 				final SimpleTreeModel.Node node = currentSelectedNode();
 				if ( null != node ) {
-					LOG.info("select node:{}", node.getData());
+					LOG.info("select node:{}", (Object)node.getData());
 					displayNodeData(node);
 				}
 			}		
