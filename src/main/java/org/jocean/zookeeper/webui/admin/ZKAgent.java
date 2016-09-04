@@ -51,6 +51,12 @@ public class ZKAgent {
                     modelref.get().onZKChanged(pair.first, pair.second);
                 }
             }});
+        //	ensure clone invoke inside treecache's service executor
+        //	so :
+        //	1.  zk tree's model is consistent bcs of treecahce's update and zk tree node's update 
+        //		is serialized
+        //	2.  record this model's start tree version, so the early tree changed notify will be 
+        //		ignore correct
         modelref.set( 
                 this._executorService.submit(new Callable<ZKTreeModel>() {
             @Override
