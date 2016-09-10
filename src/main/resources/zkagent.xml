@@ -8,7 +8,7 @@
         <constructor-arg value="${root.path:/}"/>
     </bean>
     
-    <bean id="zkagent" class="org.jocean.zookeeper.webui.admin.ZKAgent"
+    <bean id="treemgr" class="org.jocean.zookeeper.webui.admin.ZKTreeManager"
         init-method="start"
         destroy-method="stop">
         <property name="zkclient" ref="zkClient"/>

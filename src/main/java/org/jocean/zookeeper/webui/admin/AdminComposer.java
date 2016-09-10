@@ -128,7 +128,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
 
     private void restoreFromNode(final Node node) {
-        final String path = _zka.getNodePath(node);
+        final String path = _zkmgr.getNodePath(node);
         final Window dialog = new Window("Restore From Node [" + path + "], to ...", "normal", true);
         dialog.setWidth("300px");
         dialog.setHeight("200px");
@@ -174,9 +174,9 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     private String doRestoreTo(final Node node, final String restoreTo) {
         final Yaml yaml = new Yaml(new Constructor(UnitDescription.class));
-        final UnitDescription root = (UnitDescription)yaml.load(this._zka.getNodeDataAsString(node));
+        final UnitDescription root = (UnitDescription)yaml.load(this._zkmgr.getNodeDataAsString(node));
         try {
-            return this._zka.importNode(restoreTo, root);
+            return this._zkmgr.importNode(restoreTo, root);
         } catch (Exception e) {
             LOG.warn("exception when createZKNode for path {}, detail: {}",
                     restoreTo, ExceptionUtils.exception2detail(e));
@@ -186,7 +186,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
 
     private void backupNode(final Node node) {
-        final String path = _zka.getNodePath(node);
+        final String path = _zkmgr.getNodePath(node);
         final Window dialog = new Window("Backup Node for [" + path + "], to ...", "normal", true);
         dialog.setWidth("300px");
         dialog.setHeight("200px");
@@ -232,13 +232,13 @@ public class AdminComposer extends SelectorComposer<Window>{
 
     private String doBackupFor(final Node node, final String backupTo) {
         
-        final UnitDescription root = this._zka.node2desc(node);
+        final UnitDescription root = this._zkmgr.node2desc(node);
         if (null!=root) {
             final Yaml yaml = new Yaml(new Constructor(UnitDescription.class));
             final String backupcontent = yaml.dump(root);
             
             try {
-                return _zka.createZKNode(backupTo, backupcontent.getBytes(Charsets.UTF_8));
+                return _zkmgr.createZKNode(backupTo, backupcontent.getBytes(Charsets.UTF_8));
             } catch (Exception e) {
                 LOG.warn("exception when createZKNode for path {}, detail: {}",
                         backupTo, ExceptionUtils.exception2detail(e));
@@ -256,7 +256,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
 
     private void addNodeFor(final Node node) {
-        final String path = _zka.getNodePath(node);
+        final String path = _zkmgr.getNodePath(node);
         final Window dialog = new Window("Add Node for [" + path + "]", "normal", true);
         dialog.setWidth("300px");
         dialog.setHeight("550px");
@@ -283,7 +283,7 @@ public class AdminComposer extends SelectorComposer<Window>{
                     public void onEvent(Event event) throws Exception {
                         final String nodepath = concatParentAndChild(path, tbNodename.getText());
                         final byte[] nodecontent = tbNodecontent.getText().getBytes(Charsets.UTF_8);
-                        final String createdPath = _zka.createZKNode(nodepath, nodecontent);
+                        final String createdPath = _zkmgr.createZKNode(nodepath, nodecontent);
                         dialog.detach();
                         alert(createdPath + " created!");
                     }});
@@ -307,7 +307,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
 
     private void delNodeFor(final Node node) {
-        final String path = _zka.getNodePath(node);
+        final String path = _zkmgr.getNodePath(node);
         Messagebox.show("Are you sure to delete node(" + path + ")?", 
             "Confirm Dialog", 
             Messagebox.OK | Messagebox.CANCEL, 
@@ -316,7 +316,7 @@ public class AdminComposer extends SelectorComposer<Window>{
                 public void onEvent(Event evt) throws InterruptedException {
                     if (evt.getName().equals("onOK")) {
                         try {
-                            _zka.removeZKNode(path);
+                            _zkmgr.removeZKNode(path);
                             alert(path + " deleted!");
                         } catch (Exception e) {
                             alert(ExceptionUtils.exception2detail(e));
@@ -328,7 +328,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     
     private void displayNodeData(final Node node) {
         final String treepath = Arrays.toString(this._model.getPath(node));
-        final String path = this._zka.getNodePath(node);
+        final String path = this._zkmgr.getNodePath(node);
         final Pair<Textbox,EditableTab> pair = this._tabs.get(treepath);
         
         if (null != pair ) {
@@ -346,7 +346,7 @@ public class AdminComposer extends SelectorComposer<Window>{
         textbox.setWidth("100%");
         textbox.setHeight("90%");
         textbox.setMultiline(true);
-        textbox.setText( this._zka.getNodeDataAsString(node));
+        textbox.setText( this._zkmgr.getNodeDataAsString(node));
         final EditableTab tab = new EditableTab(path)
                 .setOnClose(new Action0() {
                     @Override
@@ -357,7 +357,7 @@ public class AdminComposer extends SelectorComposer<Window>{
                 @Override
                 public void call() {
                     try {
-                        _zka.setNodeDataAsString(node,  textbox.getText());
+                        _zkmgr.setNodeDataAsString(node,  textbox.getText());
                     } catch (Exception e) {
                         LOG.warn("exception when save data for {}, detail:{}",
                                 path, ExceptionUtils.exception2detail(e));
@@ -381,7 +381,7 @@ public class AdminComposer extends SelectorComposer<Window>{
     }
 
 	private void refreshNodeTree() throws Exception {
-	    this._model = this._zka.getModel();
+	    this._model = this._zkmgr.getModel();
 		this.nodes.setModel(_model);
 		enableNodesMenus(false);
 		_model.addTreeDataListener(new TreeDataListener() {
@@ -404,7 +404,7 @@ public class AdminComposer extends SelectorComposer<Window>{
         if (null!=pair) {
             final SimpleTreeModel.Node node = 
                     (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
-            pair.first.setText(_zka.getNodeDataAsString(node));
+            pair.first.setText(_zkmgr.getNodeDataAsString(node));
         }
     }
 
@@ -467,8 +467,8 @@ public class AdminComposer extends SelectorComposer<Window>{
     @Wire
     private Caption         status;
     
-	@WireVariable("zkagent") 
-	private ZKAgent _zka;
+	@WireVariable("treemgr") 
+	private ZKTreeManager _zkmgr;
 	
     @WireVariable("rootPath")
     private String _rootPath;
