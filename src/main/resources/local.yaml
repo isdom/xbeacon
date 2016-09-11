@@ -1,7 +1,8 @@
 name: units
 parameters: |
-  __spring.xml=zkclient.xml
+  __spring.xml=zkagent.xml
   zk.address = 192.168.8.8:2181
+  zk.root.path = /
 children:
   - name: jmxsrv
     parameters: |
@@ -11,6 +12,7 @@ children:
     parameters: |
       root.path=/test
       webapp.host = 127.0.0.1
+      webapp.port = 7080
       webapp.path = /zkwebui
       webapp.category = demo
       webapp.priority = 100
