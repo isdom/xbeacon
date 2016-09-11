@@ -3,6 +3,7 @@ package org.jocean.zookeeper.webui.admin;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.zookeeper.CreateMode;
@@ -23,7 +24,7 @@ import org.zkoss.zul.event.TreeDataEvent;
 
 import com.google.common.base.Charsets;
 
-import rx.functions.Action1;
+import rx.functions.Action2;
 
 public class ZKTreeManager {
     
@@ -44,13 +45,65 @@ public class ZKTreeManager {
     
     public SimpleTreeModel getModel() throws Exception {
         final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node(this._rootPath));
+        final UUID myid = UUID.randomUUID();
+        
         this._eventqueue.subscribe(new EventListener<Event>() {
             @SuppressWarnings("unchecked")
             @Override
             public void onEvent(final Event event) throws Exception {
                 if ( event.getName().equals(EVENT_ZK_CHANGED)) {
-                    ((Action1<ZKAgent.Listener>)event.getData()).call(model);
+                    ((Action2<UUID, ZKAgent.Listener>)event.getData()).call(myid, model);
                 }
+            }});
+        this._zkagent.addListener(new ZKAgent.Listener() {
+            @Override
+            public void onAdded(final int version, final String path, final byte[] data)
+                    throws Exception {
+                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
+                    @Override
+                    public void call(final UUID id, final Listener listener) {
+                        if (id.equals(myid)) {
+                            try {
+                                listener.onAdded(version, path, data);
+                            } catch (Exception e) {
+                                LOG.warn("exception when onAdded for path {}, detail: {}",
+                                        path, ExceptionUtils.exception2detail(e));
+                            }
+                        }
+                    }}));
+            }
+
+            @Override
+            public void onUpdated(final int version, final String path, final byte[] data)
+                    throws Exception {
+                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
+                    @Override
+                    public void call(final UUID id, final Listener listener) {
+                        if (id.equals(myid)) {
+                            try {
+                                listener.onUpdated(version, path, data);
+                            } catch (Exception e) {
+                                LOG.warn("exception when onUpdated for path {}, detail: {}",
+                                        path, ExceptionUtils.exception2detail(e));
+                            }
+                        }
+                    }}));
+            }
+
+            @Override
+            public void onRemoved(final int version, final String path) throws Exception {
+                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
+                    @Override
+                    public void call(final UUID id, final Listener listener) {
+                        if (id.equals(myid)) {
+                            try {
+                                listener.onRemoved(version, path);
+                            } catch (Exception e) {
+                                LOG.warn("exception when onRemoved for path {}, detail: {}",
+                                        path, ExceptionUtils.exception2detail(e));
+                            }
+                        }
+                    }}));
             }});
         //	ensure clone invoke inside treecache's service executor
         //	so :
@@ -81,59 +134,59 @@ public class ZKTreeManager {
 //        this._zkagent = zkclient;
 //    }
     
-//    public void setRoot(final String rootPath) {
+    public void setRoot(final String rootPath) {
 //        this._rootPath = rootPath;
 //        this._rootNode = new SimpleTreeModel.Node(this._rootPath);
 //        this._model = new ZKTreeModel(this._rootNode);
-//    }
+    }
     
     public void start() throws Exception {
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
-        this._stopListen = this._zkagent.addListener(new ZKAgent.Listener() {
-
-            @Override
-            public void onAdded(final int version, final String path, final byte[] data)
-                    throws Exception {
-                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action1<ZKAgent.Listener>() {
-                    @Override
-                    public void call(final Listener listener) {
-                        try {
-                            listener.onAdded(version, path, data);
-                        } catch (Exception e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                    }}));
-            }
-
-            @Override
-            public void onUpdated(final int version, final String path, final byte[] data)
-                    throws Exception {
-                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action1<ZKAgent.Listener>() {
-                    @Override
-                    public void call(final Listener listener) {
-                        try {
-                            listener.onUpdated(version, path, data);
-                        } catch (Exception e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                    }}));
-            }
-
-            @Override
-            public void onRemoved(final int version, final String path) throws Exception {
-                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action1<ZKAgent.Listener>() {
-                    @Override
-                    public void call(final Listener listener) {
-                        try {
-                            listener.onRemoved(version, path);
-                        } catch (Exception e) {
-                            // TODO Auto-generated catch block
-                            e.printStackTrace();
-                        }
-                    }}));
-            }});
+//        this._stopListen = this._zkagent.addListener(new ZKAgent.Listener() {
+//
+//            @Override
+//            public void onAdded(final int version, final String path, final byte[] data)
+//                    throws Exception {
+//                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action1<ZKAgent.Listener>() {
+//                    @Override
+//                    public void call(final Listener listener) {
+//                        try {
+//                            listener.onAdded(version, path, data);
+//                        } catch (Exception e) {
+//                            LOG.warn("exception when onAdded for path {}, detail: {}",
+//                                    path, ExceptionUtils.exception2detail(e));
+//                        }
+//                    }}));
+//            }
+//
+//            @Override
+//            public void onUpdated(final int version, final String path, final byte[] data)
+//                    throws Exception {
+//                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action1<ZKAgent.Listener>() {
+//                    @Override
+//                    public void call(final Listener listener) {
+//                        try {
+//                            listener.onUpdated(version, path, data);
+//                        } catch (Exception e) {
+//                            LOG.warn("exception when onUpdated for path {}, detail: {}",
+//                                    path, ExceptionUtils.exception2detail(e));
+//                        }
+//                    }}));
+//            }
+//
+//            @Override
+//            public void onRemoved(final int version, final String path) throws Exception {
+//                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action1<ZKAgent.Listener>() {
+//                    @Override
+//                    public void call(final Listener listener) {
+//                        try {
+//                            listener.onRemoved(version, path);
+//                        } catch (Exception e) {
+//                            LOG.warn("exception when onRemoved for path {}, detail: {}",
+//                                    path, ExceptionUtils.exception2detail(e));
+//                        }
+//                    }}));
+//            }});
         /*
         this._treecache = TreeCache.newBuilder(_zkagent, _rootPath)
                 .setCacheData(true)
@@ -152,8 +205,9 @@ public class ZKTreeManager {
     }
     
     public void stop() {
-        this._stopListen.run();
+//        this._stopListen.run();
 //        this._treecache.close();
+        EventQueues.remove("zktree", this._webapp);
     }
 
     @SuppressWarnings("unchecked")
@@ -361,7 +415,7 @@ public class ZKTreeManager {
 //            return thread;
 //        }});
     private ZKAgent _zkagent;
-    private Runnable _stopListen;
+//    private Runnable _stopListen;
     private WebApp _webapp;
     private String _rootPath;
     private EventQueue<Event> _eventqueue;

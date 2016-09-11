@@ -11,7 +11,7 @@
     <bean id="treemgr" class="org.jocean.zookeeper.webui.admin.ZKTreeManager"
         init-method="start"
         destroy-method="stop">
-        <property name="zkclient" ref="zkClient"/>
+        <constructor-arg name="zkagent" ref="zkAgent"/>
         <property name="root" value="${root.path:/}"/>
         <property name="webapp">
             <bean class="org.jocean.zookeeper.webui.MyWebAppInit" 
