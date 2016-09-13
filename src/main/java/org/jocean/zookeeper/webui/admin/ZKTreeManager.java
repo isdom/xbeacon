@@ -57,16 +57,16 @@ public class ZKTreeManager {
             }});
         this._zkagent.addListener(new ZKAgent.Listener() {
             @Override
-            public void onAdded(final int version, final String path, final byte[] data)
+            public void onAdded(final String path, final byte[] data)
                     throws Exception {
-                LOG.debug("publish/onAdded : ({})/({})", version, path);
+                LOG.debug("publish/onAdded : ({})/({})", path);
                 _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
                     @Override
                     public void call(final UUID id, final Listener listener) {
                         if (id.equals(myid)) {
                             try {
-                                LOG.debug("subscribe/onAdded : ({})/({})", version, path);
-                                listener.onAdded(version, path, data);
+                                LOG.debug("subscribe/onAdded : ({})/({})", path);
+                                listener.onAdded(path, data);
                             } catch (Exception e) {
                                 LOG.warn("exception when onAdded for path {}, detail: {}",
                                         path, ExceptionUtils.exception2detail(e));
@@ -78,14 +78,14 @@ public class ZKTreeManager {
             }
 
             @Override
-            public void onUpdated(final int version, final String path, final byte[] data)
+            public void onUpdated(final String path, final byte[] data)
                     throws Exception {
                 _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
                     @Override
                     public void call(final UUID id, final Listener listener) {
                         if (id.equals(myid)) {
                             try {
-                                listener.onUpdated(version, path, data);
+                                listener.onUpdated(path, data);
                             } catch (Exception e) {
                                 LOG.warn("exception when onUpdated for path {}, detail: {}",
                                         path, ExceptionUtils.exception2detail(e));
@@ -95,13 +95,13 @@ public class ZKTreeManager {
             }
 
             @Override
-            public void onRemoved(final int version, final String path) throws Exception {
+            public void onRemoved(final String path) throws Exception {
                 _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
                     @Override
                     public void call(final UUID id, final Listener listener) {
                         if (id.equals(myid)) {
                             try {
-                                listener.onRemoved(version, path);
+                                listener.onRemoved(path);
                             } catch (Exception e) {
                                 LOG.warn("exception when onRemoved for path {}, detail: {}",
                                         path, ExceptionUtils.exception2detail(e));
@@ -259,75 +259,65 @@ public class ZKTreeManager {
             super(root);
         }
         
-//        private final int _startVersion = _treeVersion;
+        @Override
+        public void onAdded(final String path, final byte[] data) throws Exception {
+            final String[] paths = buildPath(path);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("onNodeAdded: {}", Arrays.toString(paths));
+            }
+            final SimpleTreeModel.Node node = 
+                    this.getRoot().addChildrenIfAbsent(paths);
+            node.setData(Pair.of(path, null != data
+                                    ? new String(data, Charsets.UTF_8)
+                                    : null));
+            final SimpleTreeModel.Node parent = node.getParent();
+            fireEvent(TreeDataEvent.INTERVAL_ADDED, 
+                    this.getPath(parent),
+                    this.getIndexOfChild(parent, node),
+                    parent.getChildCount() - 1,
+                    this.getPath(node)
+                    );
+        }
 
         @Override
-        public void onAdded(final int version, final String path, final byte[] data)
-                throws Exception {
-            if (null != path) {
-                final String[] paths = buildPath(path);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("onNodeAdded: {}", Arrays.toString(paths));
-                }
-                final SimpleTreeModel.Node node = 
-                        this.getRoot().addChildrenIfAbsent(paths);
-                node.setData(Pair.of(path, null != data
+        public void onUpdated(final String path, final byte[] data) throws Exception {
+            final String[] paths = buildPath(path);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("onNodeUpdated: {}", Arrays.toString(paths));
+            }
+            final SimpleTreeModel.Node node = 
+                    this.getRoot().getDescendant(paths);
+            if (null!=node) {
+                node.setData(Pair.of(path, null != data 
                                         ? new String(data, Charsets.UTF_8)
                                         : null));
                 final SimpleTreeModel.Node parent = node.getParent();
-                fireEvent(TreeDataEvent.INTERVAL_ADDED, 
+                final int idx = this.getIndexOfChild(parent, node);
+                fireEvent(TreeDataEvent.CONTENTS_CHANGED,
                         this.getPath(parent),
-                        this.getIndexOfChild(parent, node),
-                        parent.getChildCount() - 1,
-                        this.getPath(node)
-                        );
+                        idx,
+                        idx,
+                        this.getPath(node));
             }
         }
 
         @Override
-        public void onUpdated(final int version, final String path, final byte[] data)
-                throws Exception {
-            if (null != path) {
-                final String[] paths = buildPath(path);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("onNodeUpdated: {}", Arrays.toString(paths));
-                }
-                final SimpleTreeModel.Node node = 
-                        this.getRoot().getDescendant(paths);
-                if (null!=node) {
-                    node.setData(Pair.of(path, null != data 
-                                            ? new String(data, Charsets.UTF_8)
-                                            : null));
-                    final SimpleTreeModel.Node parent = node.getParent();
-                    final int idx = this.getIndexOfChild(parent, node);
-                    fireEvent(TreeDataEvent.CONTENTS_CHANGED,
-                            this.getPath(parent),
-                            idx,
-                            idx,
-                            this.getPath(node));
-                }
+        public void onRemoved(final String path) throws Exception {
+            final String[] paths = buildPath(path);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("onNodeRemoved: {}", Arrays.toString(paths));
             }
-        }
-
-        @Override
-        public void onRemoved(int version, String path) throws Exception {
-            if (null != path) {
-                final String[] paths = buildPath(path);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("onNodeRemoved: {}", Arrays.toString(paths));
-                }
-                final SimpleTreeModel.Node node = this.getRoot().getDescendant(paths);
-                if (null!=node) {
-                    final int[] affectedPath = this.getPath(node);
-                    final int idx = this.getIndexOfChild(node.getParent(), node);
-                    final SimpleTreeModel.Node parent = node.getParent();
-                    this.getRoot().removeChild(paths);
-                    fireEvent(TreeDataEvent.INTERVAL_REMOVED, 
-                            this.getPath(parent),
-                            idx,
-                            idx,
-                            affectedPath);
-                }
+            final SimpleTreeModel.Node node = this.getRoot().getDescendant(paths);
+            if (null!=node) {
+                final int[] affectedPath = this.getPath(node);
+                final int idx = this.getIndexOfChild(node.getParent(), node);
+                final SimpleTreeModel.Node parent = node.getParent();
+                this.getRoot().removeChild(paths);
+                fireEvent(TreeDataEvent.INTERVAL_REMOVED, 
+                        this.getPath(parent),
+                        idx,
+                        idx,
+                        affectedPath);
             }
         }
     }
