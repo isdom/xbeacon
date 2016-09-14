@@ -17,5 +17,4 @@
 	<listener>
 	    <listener-class>org.jocean.zookeeper.webui.MyWebAppInit</listener-class>
 	</listener>
-	
 </zk>
