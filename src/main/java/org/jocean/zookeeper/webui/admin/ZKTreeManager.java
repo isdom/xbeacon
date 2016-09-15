@@ -127,9 +127,6 @@ public class ZKTreeManager {
     }
 
     public void setRoot(final String rootPath) {
-//        this._rootPath = rootPath;
-//        this._rootNode = new SimpleTreeModel.Node(this._rootPath);
-//        this._model = new ZKTreeModel(this._rootNode);
     }
     
     public void start() throws Exception {
@@ -186,7 +183,8 @@ public class ZKTreeManager {
         }
         
         @Override
-        public void onAdded(final String path, final byte[] data) throws Exception {
+        public void onAdded(final String absolutepath, final byte[] data) throws Exception {
+            final String path = absolute2relative(absolutepath);
             final String[] paths = buildPath(path);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("onNodeAdded: {}", Arrays.toString(paths));
@@ -206,7 +204,8 @@ public class ZKTreeManager {
         }
 
         @Override
-        public void onUpdated(final String path, final byte[] data) throws Exception {
+        public void onUpdated(final String absolutepath, final byte[] data) throws Exception {
+            final String path = absolute2relative(absolutepath);
             final String[] paths = buildPath(path);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("onNodeUpdated: {}", Arrays.toString(paths));
@@ -228,7 +227,8 @@ public class ZKTreeManager {
         }
 
         @Override
-        public void onRemoved(final String path) throws Exception {
+        public void onRemoved(final String absolutepath) throws Exception {
+            final String path = absolute2relative(absolutepath);
             final String[] paths = buildPath(path);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("onNodeRemoved: {}", Arrays.toString(paths));
@@ -323,6 +323,10 @@ public class ZKTreeManager {
                 .withMode(CreateMode.PERSISTENT)
                 .forPath(path + "/" + desc.getName(), 
                         genBytes(desc.getParameters()));
+    }
+
+    private String absolute2relative(final String rawpath) {
+        return rawpath.substring(_rootPath.length());
     }
 
     private static byte[] genBytes(final String parameters) {
