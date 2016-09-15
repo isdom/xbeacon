@@ -326,7 +326,11 @@ public class ZKTreeManager {
     }
 
     private String absolute2relative(final String rawpath) {
-        return rawpath.substring(_rootPath.length());
+        return rawpath.substring(rootPathSize());
+    }
+
+    private int rootPathSize() {
+        return this._rootPath.length() - ( this._rootPath.endsWith("/") ? 1 : 0);
     }
 
     private static byte[] genBytes(final String parameters) {
