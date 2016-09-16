@@ -44,6 +44,10 @@ public class ZKTreeManager {
         this._rootPath = zkagent.root();
     }
     
+    public void setRoot(final String rootPath) {
+        this._rootPath = rootPath;
+    }
+    
     public SimpleTreeModel getModel() throws Exception {
         final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node(this._rootPath));
         final UUID myid = UUID.randomUUID();
@@ -126,9 +130,6 @@ public class ZKTreeManager {
         this._webapp = webapp;
     }
 
-    public void setRoot(final String rootPath) {
-    }
-    
     public void start() throws Exception {
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
     }
@@ -184,6 +185,9 @@ public class ZKTreeManager {
         
         @Override
         public void onAdded(final String absolutepath, final byte[] data) throws Exception {
+            if (!isManagedPath(absolutepath)) {
+                return;
+            }
             final String path = absolute2relative(absolutepath);
             final String[] paths = buildPath(path);
             if (LOG.isDebugEnabled()) {
@@ -205,6 +209,9 @@ public class ZKTreeManager {
 
         @Override
         public void onUpdated(final String absolutepath, final byte[] data) throws Exception {
+            if (!isManagedPath(absolutepath)) {
+                return;
+            }
             final String path = absolute2relative(absolutepath);
             final String[] paths = buildPath(path);
             if (LOG.isDebugEnabled()) {
@@ -228,6 +235,9 @@ public class ZKTreeManager {
 
         @Override
         public void onRemoved(final String absolutepath) throws Exception {
+            if (!isManagedPath(absolutepath)) {
+                return;
+            }
             final String path = absolute2relative(absolutepath);
             final String[] paths = buildPath(path);
             if (LOG.isDebugEnabled()) {
@@ -331,6 +341,10 @@ public class ZKTreeManager {
 
     private int rootPathSize() {
         return this._rootPath.length() - ( this._rootPath.endsWith("/") ? 1 : 0);
+    }
+
+    private boolean isManagedPath(final String absolutepath) {
+        return absolutepath.startsWith(this._rootPath);
     }
 
     private static byte[] genBytes(final String parameters) {

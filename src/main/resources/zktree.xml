@@ -4,15 +4,11 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
-    <bean id="rootPath" class="java.lang.String">
-        <constructor-arg value="${root.path:/}"/>
-    </bean>
-    
     <bean id="treemgr" class="org.jocean.zookeeper.webui.admin.ZKTreeManager"
         init-method="start"
         destroy-method="stop">
         <constructor-arg name="zkagent" ref="zkAgent"/>
-        <property name="root" value="${root.path:/}"/>
+        <property name="root" value="${managed.root.path:/}"/>
         <property name="webapp">
             <bean class="org.jocean.zookeeper.webui.MyWebAppInit" 
                 factory-method="getWebapp"/>
