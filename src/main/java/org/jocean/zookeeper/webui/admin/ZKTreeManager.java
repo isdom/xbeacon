@@ -11,7 +11,6 @@ import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.Pair;
 import org.jocean.j2se.unit.model.UnitDescription;
 import org.jocean.j2se.zk.ZKAgent;
-import org.jocean.j2se.zk.ZKAgent.Listener;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,15 +18,12 @@ import org.zkoss.zk.ui.Desktop;
 import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.WebApp;
 import org.zkoss.zk.ui.event.Event;
-import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueue;
 import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.util.DesktopCleanup;
 import org.zkoss.zul.event.TreeDataEvent;
 
 import com.google.common.base.Charsets;
-
-import rx.functions.Action2;
 
 public class ZKTreeManager {
     
@@ -50,69 +46,14 @@ public class ZKTreeManager {
     
     public SimpleTreeModel getModel() throws Exception {
         final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node(this._rootPath));
-        final UUID myid = UUID.randomUUID();
+        final InvokeInEventQueue<ZKAgent.Listener> iieq = 
+                new InvokeInEventQueue<>(ZKAgent.Listener.class,
+                        this._eventqueue,
+                        EVENT_ZK_CHANGED,
+                        UUID.randomUUID().toString());
         
-        this._eventqueue.subscribe(new EventListener<Event>() {
-            @SuppressWarnings("unchecked")
-            @Override
-            public void onEvent(final Event event) throws Exception {
-                if ( event.getName().equals(EVENT_ZK_CHANGED)) {
-                    ((Action2<UUID, ZKAgent.Listener>)event.getData()).call(myid, model);
-                }
-            }});
-
-        final Runnable stop = this._zkagent.addListener(new ZKAgent.Listener() {
-            @Override
-            public void onAdded(final String path, final byte[] data)
-                    throws Exception {
-                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
-                    @Override
-                    public void call(final UUID id, final Listener listener) {
-                        if (id.equals(myid)) {
-                            try {
-                                listener.onAdded(path, data);
-                            } catch (Exception e) {
-                                LOG.warn("exception when onAdded for path {}, detail: {}",
-                                        path, ExceptionUtils.exception2detail(e));
-                            }
-                        } else {
-                            LOG.info("id {} NOT equals {}, just ignore.", id, myid);
-                        }
-                    }}));
-            }
-
-            @Override
-            public void onUpdated(final String path, final byte[] data)
-                    throws Exception {
-                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
-                    @Override
-                    public void call(final UUID id, final Listener listener) {
-                        if (id.equals(myid)) {
-                            try {
-                                listener.onUpdated(path, data);
-                            } catch (Exception e) {
-                                LOG.warn("exception when onUpdated for path {}, detail: {}",
-                                        path, ExceptionUtils.exception2detail(e));
-                            }
-                        }
-                    }}));
-            }
-
-            @Override
-            public void onRemoved(final String path) throws Exception {
-                _eventqueue.publish(new Event(EVENT_ZK_CHANGED, null, new Action2<UUID, ZKAgent.Listener>() {
-                    @Override
-                    public void call(final UUID id, final Listener listener) {
-                        if (id.equals(myid)) {
-                            try {
-                                listener.onRemoved(path);
-                            } catch (Exception e) {
-                                LOG.warn("exception when onRemoved for path {}, detail: {}",
-                                        path, ExceptionUtils.exception2detail(e));
-                            }
-                        }
-                    }}));
-            }});
+        this._eventqueue.subscribe(iieq.asEventListener(model));
+        final Runnable stop = this._zkagent.addListener(iieq.buildInvoker());
         final Desktop desktop = Executions.getCurrent().getDesktop();
         desktop.addListener(new DesktopCleanup() {
             @Override
