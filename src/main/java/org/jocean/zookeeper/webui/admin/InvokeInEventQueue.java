@@ -6,6 +6,7 @@ package org.jocean.zookeeper.webui.admin;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.UUID;
 
 import org.jocean.idiom.ExceptionUtils;
 import org.slf4j.Logger;
@@ -14,7 +15,7 @@ import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueue;
 
-import rx.functions.Action2;
+import rx.functions.Action1;
 
 /**
  * @author isdom
@@ -43,34 +44,26 @@ public class InvokeInEventQueue<T> implements InvocationHandler {
         } else if (method.getName().equals("toString")) {
             return this.toString();
         }
-        final Action2<String, T> action = new Action2<String, T>() {
+        final Action1<T> action = new Action1<T>() {
             @Override
-            public void call(final String id, final T t) {
-                if (id.equals(_id)) {
-                    try {
-                        method.invoke(t, args);
-                    } catch (Exception e) {
-                        LOG.warn("exception when invoke {}/{} for args {}, detail: {}",
-                                t, method, args, ExceptionUtils.exception2detail(e));
-                    }
-                } else {
-                    LOG.info("invoke {}, id {} NOT equals {}, just ignore.", 
-                            method, id, _id);
+            public void call(final T t) {
+                try {
+                    method.invoke(t, args);
+                } catch (Exception e) {
+                    LOG.warn("exception when invoke {}/{} for args {}, detail: {}",
+                            t, method, args, ExceptionUtils.exception2detail(e));
                 }
             }};
-        this._eventqueue.publish(new Event(this._eventname, null, action));
+        this._eventqueue.publish(new Event(this._eventid, null, action));
         return null;
     }
 
     @SuppressWarnings("unchecked")
     public InvokeInEventQueue(final Class<T> intf, 
-            final EventQueue<Event> eventqueue, 
-            final String eventname, 
-            final String id) {
+            final EventQueue<Event> eventqueue) {
         this._intfs = new Class[]{intf};
         this._eventqueue = eventqueue;
-        this._eventname = eventname;
-        this._id = id;
+        this._eventid = UUID.randomUUID().toString();
     }
     
     @SuppressWarnings("unchecked")
@@ -84,14 +77,13 @@ public class InvokeInEventQueue<T> implements InvocationHandler {
             @SuppressWarnings("unchecked")
             @Override
             public void onEvent(final Event event) throws Exception {
-                if ( event.getName().equals(_eventname)) {
-                    ((Action2<String, T>)event.getData()).call(_id, t);
+                if ( event.getName().equals(_eventid)) {
+                    ((Action1<T>)event.getData()).call(t);
                 }
             }};
     }
 
     private final Class<T>[] _intfs;
     private final EventQueue<Event> _eventqueue;
-    private final String _eventname;
-    private final String _id;
+    private final String _eventid;
 }

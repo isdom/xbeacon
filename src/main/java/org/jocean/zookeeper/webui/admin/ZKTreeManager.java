@@ -3,7 +3,6 @@ package org.jocean.zookeeper.webui.admin;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.UUID;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.zookeeper.CreateMode;
@@ -27,7 +26,6 @@ import com.google.common.base.Charsets;
 
 public class ZKTreeManager {
     
-    private static final String EVENT_ZK_CHANGED = "zkChanged";
     private static final UnitDescription[] EMPTY_UNITDESCS = new UnitDescription[0];
     private static final byte[] EMPTY_BYTES = new byte[0];
     private static final String[] PATH_ROOT = new String[]{"/"};
@@ -47,10 +45,7 @@ public class ZKTreeManager {
     public SimpleTreeModel getModel() throws Exception {
         final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node(this._rootPath));
         final InvokeInEventQueue<ZKAgent.Listener> iieq = 
-                new InvokeInEventQueue<>(ZKAgent.Listener.class,
-                        this._eventqueue,
-                        EVENT_ZK_CHANGED,
-                        UUID.randomUUID().toString());
+                new InvokeInEventQueue<>(ZKAgent.Listener.class, this._eventqueue);
         
         this._eventqueue.subscribe(iieq.asEventListener(model));
         final Runnable stop = this._zkagent.addListener(iieq.buildInvoker());
