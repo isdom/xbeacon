@@ -2,26 +2,39 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
-       xmlns:jolokia="http://www.jolokia.org/jolokia-spring/schema/config"
+       xmlns:util="http://www.springframework.org/schema/util"
        xsi:schemaLocation="
-       http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans
              http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.jolokia.org/jolokia-spring/schema/config 
-             http://www.jolokia.org/jolokia-spring/schema/config/jolokia-config.xsd
        http://www.springframework.org/schema/context
              http://www.springframework.org/schema/context/spring-context.xsd
-       ">
+       http://www.springframework.org/schema/util
+             http://www.springframework.org/schema/util/spring-util.xsd"
+       >
 
-  <jolokia:agent lookupConfig="false" systemPropertiesMode="never">
-    <jolokia:config
-            autoStart="true"
-            host="0.0.0.0"
-            port="8778"
-            />
-  </jolokia:agent>
-  
-  <context:mbean-export server="jolokiaServer"/>
-  
-  <jolokia:mbean-server id="jolokiaServer"/>
+  <bean name="server" id="jolokia" class="org.jolokia.jvmagent.spring.SpringJolokiaAgent">
+    <property name="lookupConfig" value="false"/>
+    <property name="systemPropertiesMode" value="fallback"/>
+    <property name="config">
+      <bean class="org.jolokia.jvmagent.spring.SpringJolokiaConfigHolder">
+        <property name="config">
+          <util:map>
+            <entry key="autoStart" value="true"/>
+            <entry key="host" value="${jolokia.host:0.0.0.0}"/>
+            <entry key="port" value="${jolokia.port:0}"/>
+          </util:map>
+        </property>
+      </bean>
+    </property>
+  </bean>
+    
+  <bean class="org.springframework.jmx.export.MBeanExporter"
+        lazy-init="false">
+      <property name="beans">
+          <map>
+              <entry key="jolokia:type=agent" value-ref="jolokia"/>
+          </map>
+      </property>
+  </bean>
   
 </beans>
