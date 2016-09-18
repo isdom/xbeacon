@@ -44,11 +44,11 @@ public class ZKTreeManager {
     
     public SimpleTreeModel getModel() throws Exception {
         final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node(this._rootPath));
-        final InvokeInEventQueue<ZKAgent.Listener> iieq = 
-                new InvokeInEventQueue<>(ZKAgent.Listener.class, this._eventqueue);
+        final ForwarderOverEventQueue<ZKAgent.Listener> foeq = 
+                new ForwarderOverEventQueue<>(ZKAgent.Listener.class, this._eventqueue);
         
-        this._eventqueue.subscribe(iieq.asEventListener(model));
-        final Runnable stop = this._zkagent.addListener(iieq.buildInvoker());
+        foeq.subscribe(model);
+        final Runnable stop = this._zkagent.addListener(foeq.subject());
         final Desktop desktop = Executions.getCurrent().getDesktop();
         desktop.addListener(new DesktopCleanup() {
             @Override

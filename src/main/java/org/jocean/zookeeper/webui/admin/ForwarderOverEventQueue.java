@@ -21,9 +21,9 @@ import rx.functions.Action1;
  * @author isdom
  *
  */
-public class InvokeInEventQueue<T> implements InvocationHandler {
+public class ForwarderOverEventQueue<T> implements InvocationHandler {
     private static final Logger LOG =
-            LoggerFactory.getLogger(InvokeInEventQueue.class);
+            LoggerFactory.getLogger(ForwarderOverEventQueue.class);
 
     public Object invoke(final Object obj, final Method method, final Object[] args)
             throws Throwable {
@@ -59,7 +59,7 @@ public class InvokeInEventQueue<T> implements InvocationHandler {
     }
 
     @SuppressWarnings("unchecked")
-    public InvokeInEventQueue(final Class<T> intf, 
+    public ForwarderOverEventQueue(final Class<T> intf, 
             final EventQueue<Event> eventqueue) {
         this._intfs = new Class[]{intf};
         this._eventqueue = eventqueue;
@@ -67,18 +67,22 @@ public class InvokeInEventQueue<T> implements InvocationHandler {
     }
     
     @SuppressWarnings("unchecked")
-    public T buildInvoker() {
+    public T subject() {
         final ClassLoader cl = Thread.currentThread().getContextClassLoader();
         return (T) Proxy.newProxyInstance(cl, this._intfs, this);
     }
     
-    public EventListener<Event> asEventListener(final T t) {
+    public void subscribe(final T observer) {
+        this._eventqueue.subscribe(asEventListener(observer));
+    }
+    
+    private EventListener<Event> asEventListener(final T observer) {
         return new EventListener<Event>() {
             @SuppressWarnings("unchecked")
             @Override
             public void onEvent(final Event event) throws Exception {
                 if ( event.getName().equals(_eventid)) {
-                    ((Action1<T>)event.getData()).call(t);
+                    ((Action1<T>)event.getData()).call(observer);
                 }
             }};
     }
