@@ -280,7 +280,8 @@ public class ZKTreeManager {
     }
 
     private boolean isManagedPath(final String absolutepath) {
-        return absolutepath.startsWith(this._rootPath);
+        return absolutepath.equals(this._rootPath) ||
+                absolutepath.startsWith(this._rootPath + "/");
     }
 
     private static byte[] genBytes(final String parameters) {
