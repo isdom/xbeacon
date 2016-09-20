@@ -11,6 +11,7 @@ import org.jocean.idiom.Pair;
 import org.jocean.j2se.unit.model.UnitDescription;
 import org.jocean.j2se.zk.ZKAgent;
 import org.jocean.zkoss.model.SimpleTreeModel;
+import org.jocean.zkoss.util.EventQueueForwarder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.Desktop;
@@ -44,11 +45,11 @@ public class ZKTreeManager {
     
     public SimpleTreeModel getModel() throws Exception {
         final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node(this._rootPath));
-        final ForwarderOverEventQueue<ZKAgent.Listener> foeq = 
-                new ForwarderOverEventQueue<>(ZKAgent.Listener.class, this._eventqueue);
+        final EventQueueForwarder<ZKAgent.Listener> eqf = 
+                new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
         
-        foeq.subscribe(model);
-        final Runnable stop = this._zkagent.addListener(foeq.subject());
+        eqf.subscribe(model);
+        final Runnable stop = this._zkagent.addListener(eqf.subject());
         final Desktop desktop = Executions.getCurrent().getDesktop();
         desktop.addListener(new DesktopCleanup() {
             @Override
