@@ -470,8 +470,5 @@ public class AdminComposer extends SelectorComposer<Window>{
 	@WireVariable("treemgr") 
 	private ZKTreeManager _zkmgr;
 	
-    @WireVariable("rootPath")
-    private String _rootPath;
-    
     private final Map<String, Pair<Textbox,EditableTab>>  _tabs = new HashMap<>();
 }
