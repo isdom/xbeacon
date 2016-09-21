@@ -2,21 +2,18 @@ package org.jocean.jmxui;
 
 import java.net.URI;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.POST;
 
 import org.jocean.http.Feature;
 import org.jocean.http.rosa.SignalClient;
-import org.jocean.idiom.Pair;
+import org.jocean.jmxui.ListResponse.DomainInfo;
 import org.jocean.jmxui.ListResponse.MBeanInfo;
 import org.jocean.jmxui.ReadAttrResponse.AttrValue;
 import org.jocean.zkoss.builder.GridBuilder;
 import org.jocean.zkoss.model.SimpleTreeModel;
-import org.jocean.zkoss.ui.EditableTab;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.event.Event;
@@ -30,7 +27,6 @@ import org.zkoss.zul.Caption;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
 import org.zkoss.zul.Menuitem;
-import org.zkoss.zul.Textbox;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
 import org.zkoss.zul.Treeitem;
@@ -67,13 +63,12 @@ public class JmxComposer extends SelectorComposer<Window>{
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
 		final ListResponse resp = listMBeans();
-		LOG.info("search result {}", resp.getValue());
-		final Map<String, MBeanInfo[]> mbeaninfos = resp.getValue();
+		final DomainInfo[] domaininfos = resp.getDomains();
 		this._model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
-		for (Map.Entry<String, MBeanInfo[]> entry : mbeaninfos.entrySet()) {
+		for (DomainInfo domain : domaininfos) {
 		    final SimpleTreeModel.Node child = 
-		            this._model.getRoot().addChildIfAbsent(entry.getKey());
-		    for (MBeanInfo mbeaninfo : entry.getValue()) {
+		            this._model.getRoot().addChildIfAbsent(domain.getName());
+		    for (MBeanInfo mbeaninfo : domain.getMBeans()) {
 		        final SimpleTreeModel.Node mbeannode = 
 		                child.addChildrenIfAbsent(buildPath(
 		                        mbeaninfo.getObjectName().getKeyPropertyListString()));
@@ -86,7 +81,13 @@ public class JmxComposer extends SelectorComposer<Window>{
         
 		mbeans.setModel(this._model);
 		
-		mbeans.addEventListener(Events.ON_SELECT, new EventListener<Event>() {
+		mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
+		
+        refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
+	}
+
+    private EventListener<Event> refreshSelectedMBean() {
+        return new EventListener<Event>() {
             
             @Override
             public void onEvent(final Event event) throws Exception {
@@ -95,9 +96,9 @@ public class JmxComposer extends SelectorComposer<Window>{
                     LOG.info("select node:{}", (Object)node.getData());
                     displayMBeanInfo((MBeanInfo)node.getData());
                 }
-            }       
-        });
-	}
+            }
+        };
+    }
 	
 	private void displayMBeanInfo(final MBeanInfo mbeaninfo) {
 	    final ReadAttrResponse resp = queryAttrValue(mbeaninfo);

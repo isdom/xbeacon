@@ -281,6 +281,41 @@ public class ListResponse {
         }
     }
     
+    public static class DomainInfo implements Comparable<DomainInfo> {
+        @Override
+        public int compareTo(final DomainInfo o) {
+            return this._name.compareTo(o._name);
+        }
+        
+        public DomainInfo(final String name, final MBeanInfo[] mbeans) {
+            this._name = name;
+            this._mbeans = mbeans;
+        }
+        
+        public String getName() {
+            return this._name;
+        }
+        
+        public MBeanInfo[] getMBeans() {
+            return this._mbeans;
+        }
+        
+        /* (non-Javadoc)
+         * @see java.lang.Object#toString()
+         */
+        @Override
+        public String toString() {
+            StringBuilder builder = new StringBuilder();
+            builder.append("DomainInfo [domain=").append(_name)
+                    .append(", mbeans=").append(Arrays.toString(_mbeans))
+                    .append("]");
+            return builder.toString();
+        }
+
+        private String _name;
+        private MBeanInfo[] _mbeans;
+    }
+    
     @JSONField(name="request")
     public JolokiaRequest getRequest() {
         return _request;
@@ -292,13 +327,14 @@ public class ListResponse {
     }
 
     @JSONField(serialize=false)
-    public Map<String, MBeanInfo[]> getValue() {
-        return this._value;
+    public DomainInfo[] getDomains() {
+        return this._domains;
     }
 
     @JSONField(name="value")
-    public void setValue(final Map<String, Map<String, MBeanInfo>> value) {
-        this._value = Maps.newHashMap();
+    public void setDomains(final Map<String, Map<String, MBeanInfo>> value) {
+        this._domains = new DomainInfo[value.size()];
+        int domainidx = 0;
         for (Map.Entry<String, Map<String, MBeanInfo>> entry : value.entrySet()) {
             final MBeanInfo[] mbeans = new MBeanInfo[entry.getValue().size()];
             int idx = 0;
@@ -307,10 +343,12 @@ public class ListResponse {
                 mbeans[idx++] = mbeanentry.getValue();
             }
             Arrays.sort(mbeans);
-            this._value.put(entry.getKey(), mbeans);
+            final DomainInfo domain = new DomainInfo(entry.getKey(), mbeans);
+            this._domains[domainidx++] = domain;
         }
+        Arrays.sort(this._domains);
     }
 
     private JolokiaRequest _request;
-    private Map<String, MBeanInfo[]> _value;
+    private DomainInfo[] _domains;
 }
