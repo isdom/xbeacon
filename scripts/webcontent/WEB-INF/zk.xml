@@ -7,7 +7,7 @@
 <zk>
     <library-property>
         <name>org.zkoss.theme.preferred</name>
-        <value>atlantic</value>
+        <value>sapphire</value>
     </library-property>
 	<!-- device-config>
 		<device-type>ajax</device-type>
