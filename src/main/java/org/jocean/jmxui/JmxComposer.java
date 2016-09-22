@@ -3,6 +3,7 @@ package org.jocean.jmxui;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -99,7 +100,7 @@ public class JmxComposer extends SelectorComposer<Window>{
             GridBuilder.buildColumns(this, ServiceInfo.class);
         }});
         this.services.setModel( GridBuilder.buildListModel(ServiceInfo.class, 
-                100, 
+                infos.length, 
                 new Func2<Integer, Integer, List<ServiceInfo>>() {
                     @Override
                     public List<ServiceInfo> call(final Integer offset, final Integer count) {
@@ -109,6 +110,11 @@ public class JmxComposer extends SelectorComposer<Window>{
                     @Override
                     public Integer call() {
                         return infos.length;
+                    }},
+                new Action1<Comparator<ServiceInfo>>() {
+                    @Override
+                    public void call(final Comparator<ServiceInfo> cmpr) {
+                        Arrays.sort(infos, cmpr);
                     }})
                 );
     }

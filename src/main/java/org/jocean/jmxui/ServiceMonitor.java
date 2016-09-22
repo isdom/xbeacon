@@ -22,7 +22,6 @@ import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.MouseEvent;
 import org.zkoss.zk.ui.util.DesktopCleanup;
 import org.zkoss.zul.Button;
-import org.zkoss.zul.Row;
 
 import com.google.common.collect.Maps;
 
@@ -89,30 +88,58 @@ public class ServiceMonitor {
             this._buildNo = buildno;
         }
         
-        public static class ASC implements Comparator<Row> {
+        public static class HOST_ASC implements Comparator<ServiceInfo>  {
             @Override
-            public int compare(final Row o1, final Row o2) {
-                return ((String)o1.getValue()).compareTo((String)o2.getValue());
+            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
+                return o1._host.compareTo(o2._host);
             }
         }
         
-        public static class DSC implements Comparator<Row> {
+        public static class HOST_DSC implements Comparator<ServiceInfo> {
             @Override
-            public int compare(final Row o1, final Row o2) {
-                return ((String)o2.getValue()).compareTo((String)o1.getValue());
+            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
+                return o2._host.compareTo(o1._host);
             }
         }
         
-        @RowSource(name="主机", asc = ASC.class, dsc = DSC.class)
+        @RowSource(name="主机", asc = HOST_ASC.class, dsc = HOST_DSC.class)
         private final String _host;
         
-        @RowSource(name="用户", asc = ASC.class, dsc = DSC.class)
+        public static class USER_ASC implements Comparator<ServiceInfo>  {
+            @Override
+            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
+                return o1._user.compareTo(o2._user);
+            }
+        }
+        
+        public static class USER_DSC implements Comparator<ServiceInfo> {
+            @Override
+            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
+                return o2._user.compareTo(o1._user);
+            }
+        }
+        
+        @RowSource(name="用户", asc = USER_ASC.class, dsc = USER_DSC.class)
         private final String _user;
         
-        @RowSource(name="服务", asc = ASC.class, dsc = DSC.class)
+        public static class SRV_ASC implements Comparator<ServiceInfo>  {
+            @Override
+            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
+                return o1._service.compareTo(o2._service);
+            }
+        }
+        
+        public static class SRV_DSC implements Comparator<ServiceInfo> {
+            @Override
+            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
+                return o2._service.compareTo(o1._service);
+            }
+        }
+        
+        @RowSource(name="服务", asc = SRV_ASC.class, dsc = SRV_DSC.class)
         private final String _service;
         
-        @RowSource(name="构建号", asc = ASC.class, dsc = DSC.class)
+        @RowSource(name="构建号")
         private String _buildNo;
         
         @RowSource(name="JMX")
