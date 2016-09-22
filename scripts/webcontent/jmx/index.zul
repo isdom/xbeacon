@@ -1,38 +1,45 @@
 <zk>
     <window id="main" width="100%" height="100%" 
         apply="org.jocean.jmxui.JmxComposer">
-        <menubar>
-             <menuitem id="refresh" label="Refresh"/>
-             <menuseparator/>
-             <menuitem id="closeall" label="Close All"/>
-             <menuseparator/>
-        </menubar>
         <borderlayout>
-            <west size="200px" splittable="true" flex="true" collapsible="true" title="Nodes"> 
-                <tree id="mbeans" style="border:none"/>
-			</west>
-			<center id="center" flex="true" >
-                <tabbox>
-                    <tabs id="tabs">
-                        <tab label="属性" />
-                        <tab label="操作" />
-                    </tabs>
-                    <tabpanels>
-                        <tabpanel>
-                            <borderlayout>
-                                <center flex="true" >
-                                    <grid id="attrs"/>
-                                </center>
-                            </borderlayout>
-                        </tabpanel>
-                        <tabpanel>This is panel ops</tabpanel>
-                    </tabpanels>
-                </tabbox>
-                <!-- textbox id="parameters" multiline="true"/ -->
-			</center>
-			<south height="100px">
-				<caption id="status" label="..."/>
-			</south>
-		</borderlayout>
+            <west size="200px" splittable="true" flex="true" collapsible="true" title="Services">
+                <grid id="services" style="border:none"/>
+            </west>
+            <center flex="true" >
+                <borderlayout>
+                    <north>
+                        <caption id="servicetitle" label="服务: [未指定]">
+                                <toolbarbutton id="refresh" 
+                                    image="http://tstimg.iplusmed.com/appres/refresh.gif@18w"/> 
+                        </caption>
+                    </north>
+                    <west size="200px" splittable="true" flex="true" collapsible="true" title="JMX"> 
+                        <tree id="mbeans" style="border:none"/>
+                    </west>
+                    <center flex="true" >
+                        <tabbox>
+                            <tabs id="tabs">
+                                <tab label="属性" />
+                                <tab label="操作" />
+                            </tabs>
+                            <tabpanels>
+                                <tabpanel>
+                                    <borderlayout>
+                                        <center flex="true" >
+                                            <grid id="attrs"/>
+                                        </center>
+                                    </borderlayout>
+                                </tabpanel>
+                                <tabpanel>This is panel ops</tabpanel>
+                            </tabpanels>
+                        </tabbox>
+                        <!-- textbox id="parameters" multiline="true"/ -->
+                    </center>
+                    <south height="10px">
+                        <caption id="status" label="..."/>
+                    </south>
+                </borderlayout>
+            </center>
+        </borderlayout>
 	</window>
 </zk>

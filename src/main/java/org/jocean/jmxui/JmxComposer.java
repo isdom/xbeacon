@@ -1,6 +1,7 @@
 package org.jocean.jmxui;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -12,6 +13,7 @@ import org.jocean.http.rosa.SignalClient;
 import org.jocean.jmxui.ListResponse.DomainInfo;
 import org.jocean.jmxui.ListResponse.MBeanInfo;
 import org.jocean.jmxui.ReadAttrResponse.AttrValue;
+import org.jocean.jmxui.ServiceMonitor.ServiceInfo;
 import org.jocean.zkoss.builder.GridBuilder;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.slf4j.Logger;
@@ -34,6 +36,7 @@ import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
 
+import rx.functions.Action1;
 import rx.functions.Func0;
 import rx.functions.Func2;
 
@@ -62,33 +65,78 @@ public class JmxComposer extends SelectorComposer<Window>{
     
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
-		final ListResponse resp = listMBeans();
-		final DomainInfo[] domaininfos = resp.getDomains();
-		this._model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
-		for (DomainInfo domain : domaininfos) {
-		    final SimpleTreeModel.Node child = 
-		            this._model.getRoot().addChildIfAbsent(domain.getName());
-		    for (MBeanInfo mbeaninfo : domain.getMBeans()) {
-		        final SimpleTreeModel.Node mbeannode = 
-		                child.addChildrenIfAbsent(buildPath(
-		                        mbeaninfo.getObjectName().getKeyPropertyListString()));
-		        mbeannode.setData(mbeaninfo);
-		    }
-		}
 		
+        this.services.setRowRenderer(GridBuilder.buildRowRenderer(ServiceInfo.class));
         this.attrs.setRowRenderer(GridBuilder.buildRowRenderer(AttrValue.class));
-        mbeans.setItemRenderer(new NodeTreeRenderer());
+        this.mbeans.setItemRenderer(new NodeTreeRenderer());
         
-		mbeans.setModel(this._model);
-		
-		mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
-		
-        refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
+        this._serviceMonitor.monitorServices(new Action1<ServiceInfo[]>() {
+            @Override
+            public void call(final ServiceInfo[] serviceinfos) {
+                refreshServices(serviceinfos);
+            }}, 
+            new Action1<ServiceInfo>() {
+                @Override
+                public void call(final ServiceInfo serviceinfo) {
+                    try {
+                        refreshJMX(serviceinfo);
+                    } catch (URISyntaxException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }});
+        this.mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
+//        this.refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
 	}
+
+    private void refreshServices(final ServiceInfo[] infos) {
+        this.services.getChildren().clear();
+        this.services.appendChild(new Columns() {
+            private static final long serialVersionUID = 1L;
+        {
+            this.setSizable(true);
+            GridBuilder.buildColumns(this, ServiceInfo.class);
+        }});
+        this.services.setModel( GridBuilder.buildListModel(ServiceInfo.class, 
+                100, 
+                new Func2<Integer, Integer, List<ServiceInfo>>() {
+                    @Override
+                    public List<ServiceInfo> call(final Integer offset, final Integer count) {
+                        return Arrays.asList(Arrays.copyOfRange(infos, offset, offset + count - 1));
+                    }},
+                new Func0<Integer>() {
+                    @Override
+                    public Integer call() {
+                        return infos.length;
+                    }})
+                );
+    }
+    
+    private void refreshJMX(final ServiceInfo serviceinfo) throws URISyntaxException {
+        this._jolokiauri = new URI(serviceinfo.getJolokiaUrl());
+        this.servicetitle.setLabel("主机:" + serviceinfo.getHost() 
+        + "  用户:" + serviceinfo.getUser() 
+        + "  服务:" + serviceinfo.getService());
+        final ListResponse resp = listMBeans();
+        final DomainInfo[] domaininfos = resp.getDomains();
+        this._model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
+        for (DomainInfo domain : domaininfos) {
+            final SimpleTreeModel.Node child = 
+                    this._model.getRoot().addChildIfAbsent(domain.getName());
+            for (MBeanInfo mbeaninfo : domain.getMBeans()) {
+                final SimpleTreeModel.Node mbeannode = 
+                        child.addChildrenIfAbsent(buildPath(
+                                mbeaninfo.getObjectName().getKeyPropertyListString()));
+                mbeannode.setData(mbeaninfo);
+            }
+        }
+        
+        mbeans.setModel(this._model);
+    }
 
     private EventListener<Event> refreshSelectedMBean() {
         return new EventListener<Event>() {
-            
+             
             @Override
             public void onEvent(final Event event) throws Exception {
                 final SimpleTreeModel.Node node = currentSelectedNode();
@@ -168,7 +216,7 @@ public class JmxComposer extends SelectorComposer<Window>{
         this._signalClient.<ListResponse>defineInteraction(req, 
                 Feature.ENABLE_LOGGING,
                 Feature.ENABLE_COMPRESSOR,
-                new SignalClient.UsingUri(this._jolokiauri),
+                new SignalClient.UsingUri(_jolokiauri),
                 new SignalClient.UsingMethod(POST.class),
                 new SignalClient.DecodeResponseAs(ListResponse.class)
                 )
@@ -177,6 +225,12 @@ public class JmxComposer extends SelectorComposer<Window>{
         return resp;
     }
 
+    @Wire
+    private Grid    services;
+    
+    @Wire
+    private Caption servicetitle;
+    
     @Wire
     private Tree    mbeans;
     
@@ -194,7 +248,9 @@ public class JmxComposer extends SelectorComposer<Window>{
     @Wire
     private Caption         status;
     
-    @WireVariable("jolokiauri") 
+    @WireVariable("servicemonitor") 
+    private ServiceMonitor _serviceMonitor;
+    
     private URI _jolokiauri;
     
     @WireVariable("signalClient") 

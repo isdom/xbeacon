@@ -15,4 +15,15 @@
         </property>
     </bean>
     
+    <bean id="servicemonitor" class="org.jocean.jmxui.ServiceMonitor"
+        init-method="start"
+        destroy-method="stop">
+        <constructor-arg name="zkagent" ref="zkAgent"/>
+        <property name="root" value="${service.status.path:/service}"/>
+        <property name="webapp">
+            <bean class="org.jocean.zookeeper.webui.MyWebAppInit" 
+                factory-method="getWebapp"/>
+        </property>
+    </bean>
+    
 </beans>

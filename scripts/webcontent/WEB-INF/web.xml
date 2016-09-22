@@ -8,7 +8,7 @@
     <display-name>ZK-WebUI</display-name>
     <context-param>
         <param-name>contextConfigLocation</param-name>
-        <param-value>classpath:zktree.xml</param-value>
+        <param-value>classpath:zkservice.xml</param-value>
     </context-param>
     <context-param>
         <param-name>contextInitializerClasses</param-name>
