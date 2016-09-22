@@ -282,7 +282,13 @@ public class ZKTreeManager {
 
     private boolean isManagedPath(final String absolutepath) {
         return absolutepath.equals(this._rootPath) ||
-                absolutepath.startsWith(this._rootPath + "/");
+                absolutepath.startsWith(fullRootPath());
+    }
+
+    private String fullRootPath() {
+        return this._rootPath.endsWith("/")
+                ? this._rootPath 
+                : this._rootPath + "/";
     }
 
     private static byte[] genBytes(final String parameters) {
