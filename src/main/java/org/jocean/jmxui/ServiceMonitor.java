@@ -2,6 +2,7 @@ package org.jocean.jmxui;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Properties;
 
@@ -21,6 +22,7 @@ import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.MouseEvent;
 import org.zkoss.zk.ui.util.DesktopCleanup;
 import org.zkoss.zul.Button;
+import org.zkoss.zul.Row;
 
 import com.google.common.collect.Maps;
 
@@ -87,16 +89,30 @@ public class ServiceMonitor {
             this._buildNo = buildno;
         }
         
-        @RowSource(name="主机")
+        public static class ASC implements Comparator<Row> {
+            @Override
+            public int compare(final Row o1, final Row o2) {
+                return ((String)o1.getValue()).compareTo((String)o2.getValue());
+            }
+        }
+        
+        public static class DSC implements Comparator<Row> {
+            @Override
+            public int compare(final Row o1, final Row o2) {
+                return ((String)o2.getValue()).compareTo((String)o1.getValue());
+            }
+        }
+        
+        @RowSource(name="主机", asc = ASC.class, dsc = DSC.class)
         private final String _host;
         
-        @RowSource(name="用户")
+        @RowSource(name="用户", asc = ASC.class, dsc = DSC.class)
         private final String _user;
         
-        @RowSource(name="服务")
+        @RowSource(name="服务", asc = ASC.class, dsc = DSC.class)
         private final String _service;
         
-        @RowSource(name="构建号")
+        @RowSource(name="构建号", asc = ASC.class, dsc = DSC.class)
         private String _buildNo;
         
         @RowSource(name="JMX")

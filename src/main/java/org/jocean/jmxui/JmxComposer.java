@@ -67,6 +67,7 @@ public class JmxComposer extends SelectorComposer<Window>{
 		super.doAfterCompose(comp);
 		
         this.services.setRowRenderer(GridBuilder.buildRowRenderer(ServiceInfo.class));
+        this.services.setSizedByContent(true);
         this.attrs.setRowRenderer(GridBuilder.buildRowRenderer(AttrValue.class));
         this.mbeans.setItemRenderer(new NodeTreeRenderer());
         
