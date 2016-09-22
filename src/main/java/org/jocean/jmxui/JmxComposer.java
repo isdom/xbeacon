@@ -28,7 +28,7 @@ import org.zkoss.zk.ui.select.annotation.WireVariable;
 import org.zkoss.zul.Caption;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
-import org.zkoss.zul.Menuitem;
+import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
 import org.zkoss.zul.Treeitem;
@@ -86,7 +86,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                     }
                 }});
         this.mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
-//        this.refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
+        this.refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
 	}
 
     private void refreshServices(final ServiceInfo[] infos) {
@@ -240,10 +240,7 @@ public class JmxComposer extends SelectorComposer<Window>{
     private Grid            attrs;
     
     @Wire
-    private Menuitem        refresh;
-    
-    @Wire
-    private Menuitem        closeall;
+    private Toolbarbutton   refresh;
     
     @Wire
     private Caption         status;
