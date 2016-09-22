@@ -11,7 +11,6 @@ children:
       jmxhtml.port = 7083
   - name: jettywebapp
     parameters: |
-      managed.root.path=/test
       webapp.host = 127.0.0.1
       webapp.port = 7080
       webapp.path = /webui

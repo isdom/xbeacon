@@ -13,7 +13,7 @@
                                     image="http://tstimg.iplusmed.com/appres/refresh.gif@18w"/> 
                         </caption>
                     </north>
-                    <west size="200px" splittable="true" flex="true" collapsible="true" title="JMX"> 
+                    <west size="30%" splittable="true" flex="true" collapsible="true" title="JMX"> 
                         <tree id="mbeans" style="border:none"/>
                     </west>
                     <center flex="true" >
