@@ -1,6 +1,9 @@
 package org.jocean.jmxui;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.Map;
+import java.util.Properties;
 
 import org.jocean.j2se.zk.ZKAgent;
 import org.jocean.zkoss.annotation.RowSource;
@@ -19,7 +22,6 @@ import org.zkoss.zk.ui.event.MouseEvent;
 import org.zkoss.zk.ui.util.DesktopCleanup;
 import org.zkoss.zul.Button;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.Maps;
 
 import rx.functions.Action1;
@@ -73,10 +75,18 @@ public class ServiceMonitor {
         /**
          * @param jolokiaUrl the _jolokiaUrl to set
          */
-        public void setJolokiaUrl(String jolokiaUrl) {
+        public void setJolokiaUrl(final String jolokiaUrl) {
             this._jolokiaUrl = jolokiaUrl;
         }
 
+        public String getBuildNo() {
+            return this._buildNo;
+        }
+        
+        public void setBuildNo(final String buildno) {
+            this._buildNo = buildno;
+        }
+        
         @RowSource(name="主机")
         private final String _host;
         
@@ -85,6 +95,9 @@ public class ServiceMonitor {
         
         @RowSource(name="服务")
         private final String _service;
+        
+        @RowSource(name="构建号")
+        private String _buildNo;
         
         @RowSource(name="JMX")
         private final Button _btnShowJmx;
@@ -113,14 +126,14 @@ public class ServiceMonitor {
         eqf.subscribe(new ZKAgent.Listener() {
 
             @Override
-            public void onAdded(String absolutepath, byte[] data) throws Exception {
+            public void onAdded(final String absolutepath, final byte[] data) throws Exception {
                 if (!isServiceStatusPath(absolutepath)) {
                     return;
                 }
                 final String path = absolute2relative(absolutepath);
                 final ServiceInfo service = buildServiceInfo(path, onShowJmx);
                 if ( null != service ) {
-                    service.setJolokiaUrl(new String(data, Charsets.UTF_8));
+                    updateServiceInfo(service, data);
                     services.put(path, service);
                     onServiceChanged.call(services.values().toArray(EMPTY_INFO));
                 }
@@ -134,7 +147,7 @@ public class ServiceMonitor {
                 final String path = absolute2relative(absolutepath);
                 final ServiceInfo service = services.get(path);
                 if (null != service) {
-                    service.setJolokiaUrl(new String(data, Charsets.UTF_8));
+                    updateServiceInfo(service, data);
                     onServiceChanged.call(services.values().toArray(EMPTY_INFO));
                 }
             }
@@ -194,6 +207,14 @@ public class ServiceMonitor {
 
     private boolean isServiceStatusPath(final String absolutepath) {
         return absolutepath.startsWith(this._rootPath + "/");
+    }
+
+    private void updateServiceInfo(final ServiceInfo service, final byte[] data)
+            throws IOException {
+        final Properties prop = new Properties();
+        prop.load(new ByteArrayInputStream(data));
+        service.setBuildNo(prop.getProperty("build.no"));
+        service.setJolokiaUrl(prop.getProperty("jolokia.url"));
     }
 
     private ZKAgent _zkagent;

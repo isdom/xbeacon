@@ -64,9 +64,6 @@ dependencies {
     // compile 'org.jmxtrans.embedded:embedded-jmxtrans:1.1.3'
     // compile 'org.jmxtrans:jmxtrans-output-influxdb:259'
     
-    // hawtio embedded
-    // compile 'io.hawt:hawtio-embedded:1.4.65'
-    
     runtime 'org.jvnet.opendmk:jmxremote_optional:1.0_01-ea'
     
     testCompile 'junit:junit:4.12'
