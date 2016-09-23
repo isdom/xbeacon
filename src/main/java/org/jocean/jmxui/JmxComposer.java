@@ -1,10 +1,7 @@
-package org.jocean.jmxui;
+    package org.jocean.jmxui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.POST;
@@ -38,8 +35,6 @@ import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
 
 import rx.functions.Action1;
-import rx.functions.Func0;
-import rx.functions.Func2;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class JmxComposer extends SelectorComposer<Window>{
@@ -101,22 +96,9 @@ public class JmxComposer extends SelectorComposer<Window>{
         }});
         this.services.setModel( GridBuilder.buildListModel(ServiceInfo.class, 
                 infos.length, 
-                new Func2<Integer, Integer, List<ServiceInfo>>() {
-                    @Override
-                    public List<ServiceInfo> call(final Integer offset, final Integer count) {
-                        return Arrays.asList(Arrays.copyOfRange(infos, offset, offset + count - 1));
-                    }},
-                new Func0<Integer>() {
-                    @Override
-                    public Integer call() {
-                        return infos.length;
-                    }},
-                new Action1<Comparator<ServiceInfo>>() {
-                    @Override
-                    public void call(final Comparator<ServiceInfo> cmpr) {
-                        Arrays.sort(infos, cmpr);
-                    }})
-                );
+                GridBuilder.fetchPageOf(infos),
+                GridBuilder.fetchTotalSizeOf(infos),
+                GridBuilder.sortModelOf(infos)));
     }
     
     private void refreshJMX(final ServiceInfo serviceinfo) throws URISyntaxException {
@@ -166,18 +148,9 @@ public class JmxComposer extends SelectorComposer<Window>{
             GridBuilder.buildColumns(this, AttrValue.class);
         }});
 	    this.attrs.setModel( GridBuilder.buildListModel(AttrValue.class, 
-                100, 
-                new Func2<Integer, Integer, List<AttrValue>>() {
-                    @Override
-                    public List<AttrValue> call(final Integer offset, final Integer count) {
-                        return Arrays.asList(Arrays.copyOfRange(attrvalues, offset, offset + count - 1));
-                    }},
-                new Func0<Integer>() {
-                    @Override
-                    public Integer call() {
-                        return attrvalues.length;
-                    }})
-                );
+	            attrvalues.length, 
+                GridBuilder.fetchPageOf(attrvalues),
+                GridBuilder.fetchTotalSizeOf(attrvalues)));
     }
 
     private ReadAttrResponse queryAttrValue(final MBeanInfo mbeaninfo) {
