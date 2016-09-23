@@ -2,7 +2,7 @@
     <window id="main" width="100%" height="100%" 
         apply="org.jocean.jmxui.JmxComposer">
         <borderlayout>
-            <west size="50%" splittable="true" flex="true" collapsible="true" title="Services">
+            <west size="47%" splittable="true" flex="true" collapsible="true" title="Services">
                 <grid id="services" style="border:none"/>
             </west>
             <center flex="true" >
