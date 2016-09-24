@@ -1,0 +1,22 @@
+<zk>
+    <window id="main" width="100%" height="100%">
+        <borderlayout>
+            <center id="center" flex="true" >
+                <tabbox >
+                    <tabs>
+                        <tab label="ZooKeeper" />
+                        <tab label="服务面板" /> 
+                    </tabs>
+                    <tabpanels>
+                        <tabpanel>
+                            <include src="zkadmin/index.zul"/>
+                        </tabpanel>
+                        <tabpanel>
+                            <include src="jconsole/index.zul"/>
+                        </tabpanel>
+                    </tabpanels>
+                </tabbox>
+            </center>
+        </borderlayout>
+	</window>
+</zk>
