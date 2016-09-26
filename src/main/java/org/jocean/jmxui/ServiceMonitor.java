@@ -25,6 +25,9 @@ import org.zkoss.zul.Button;
 
 import com.google.common.collect.Maps;
 
+import h5chart.H5Chart;
+import h5chart.Multigraph;
+import h5chart.Serie;
 import rx.functions.Action1;
 
 public class ServiceMonitor {
@@ -43,6 +46,40 @@ public class ServiceMonitor {
                     public void onEvent(MouseEvent event) throws Exception {
                         onShowJmx.call(ServiceInfo.this);
                     }});
+            this._chartMemory = new H5Chart();
+            this._chartMemory.setWidth("200");
+            this._chartMemory.setHeight("80");
+            
+            final Multigraph multigraph = new Multigraph();
+            multigraph.setLeft("0");
+            multigraph.setTop("0");
+            multigraph.setWidth("200");
+            multigraph.setHeight("80");
+            multigraph.setAnimate(true);
+            //t.setOrientation(Piramid.ORIENTATION_DOWN);
+            multigraph.setMarks(true);
+            multigraph.setShowTooltip(true);
+            multigraph.setShowValues(true);
+            multigraph.setGrid(true);
+            multigraph.setLabelFont("bold 12px Arial");
+            multigraph.setLabelColor("grey");
+            
+            multigraph.addLabel("-10 minutes");
+            multigraph.addLabel("-9 minutes");
+            multigraph.addLabel("-8 minutes");
+            multigraph.addLabel("-7 minutes");
+            multigraph.addLabel("-6 minutes");
+            multigraph.addLabel("-5 minutes");
+            multigraph.addLabel("-4 minutes");
+            multigraph.addLabel("-3 minutes");
+            multigraph.addLabel("-2 minutes");
+            multigraph.addLabel("-1 minutes");
+            multigraph.addLabel("current");
+            
+            
+            _usedMemory = multigraph.addSerie(Multigraph.TYPE_LINE, "UsedMemory", Multigraph.FILL_VLINEAR, 1, false);
+            
+            _chartMemory.appendChild(multigraph);
         }
         
         /**
@@ -88,6 +125,20 @@ public class ServiceMonitor {
             this._buildNo = buildno;
         }
         
+        /**
+         * @return the _chartMemory
+         */
+        public H5Chart getChartMemory() {
+            return _chartMemory;
+        }
+
+        /**
+         * @return the usedMemory
+         */
+        public Serie getUsedMemory() {
+            return _usedMemory;
+        }
+
         public static class HOST_ASC implements Comparator<ServiceInfo>  {
             @Override
             public int compare(final ServiceInfo o1, final ServiceInfo o2) {
@@ -144,6 +195,11 @@ public class ServiceMonitor {
         
         @RowSource(name="JMX")
         private final Button _btnShowJmx;
+        
+        @RowSource(name="内存信息")
+        private final H5Chart _chartMemory;
+        
+        private final Serie _usedMemory;
         
         private String _jolokiaUrl;
     }

@@ -1,4 +1,4 @@
-    package org.jocean.jmxui;
+package org.jocean.jmxui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,6 +26,7 @@ import org.zkoss.zk.ui.select.annotation.WireVariable;
 import org.zkoss.zul.Caption;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
+import org.zkoss.zul.Timer;
 import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
@@ -84,7 +85,49 @@ public class JmxComposer extends SelectorComposer<Window>{
                 }});
         this.mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
         this.refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
+        
+        this.timer.addEventListener(Events.ON_TIMER, new EventListener<Event>() {
+            @Override
+            public void onEvent(Event event) throws Exception {
+                updateCharts();
+            }});
+        
+        timer.start();
 	}
+
+	private long queryUsedMemory(final String jolokiaUrl) {
+        final JolokiaRequest req = new JolokiaRequest();
+        req.setType("read");
+        req.setMBean("java.lang:type=Memory");
+        req.setAttribute("HeapMemoryUsage");
+        req.setPath("used");
+        
+        try {
+            final LongValueResponse resp = this._signalClient.<LongValueResponse>defineInteraction(req, 
+                    Feature.ENABLE_LOGGING,
+                    Feature.ENABLE_COMPRESSOR,
+                    new SignalClient.UsingUri(new URI(jolokiaUrl)),
+                    new SignalClient.UsingMethod(POST.class),
+                    new SignalClient.DecodeResponseAs(LongValueResponse.class)
+                    )
+            .timeout(1, TimeUnit.SECONDS)
+            .toBlocking().single();
+            return resp.getValue();
+        } catch (URISyntaxException e) {
+            return 0;
+        }
+	}
+	
+    private void updateCharts() {
+        for (ServiceInfo info : this._serviceInfos) {
+            final long usedMemory = queryUsedMemory(info.getJolokiaUrl());
+            info.getUsedMemory().add( (double)usedMemory/ 1024 / 1024);
+            while (info.getUsedMemory().size() > 11) {
+                info.getUsedMemory().remove(0);
+            }
+            info.getChartMemory().invalidate();
+        }
+    }
 
     private void refreshServices(final ServiceInfo[] infos) {
         this.services.getChildren().clear();
@@ -99,6 +142,8 @@ public class JmxComposer extends SelectorComposer<Window>{
                 GridBuilder.fetchPageOf(infos),
                 GridBuilder.fetchTotalSizeOf(infos),
                 GridBuilder.sortModelOf(infos)));
+        this._serviceInfos = infos;
+        updateCharts();
     }
     
     private void refreshJMX(final ServiceInfo serviceinfo) throws URISyntaxException {
@@ -208,6 +253,8 @@ public class JmxComposer extends SelectorComposer<Window>{
     @Wire
     private Grid    services;
     
+    private ServiceInfo[] _serviceInfos;
+    
     @Wire
     private Caption servicetitle;
     
@@ -232,4 +279,7 @@ public class JmxComposer extends SelectorComposer<Window>{
     
     @WireVariable("signalClient") 
     private SignalClient _signalClient;
+    
+    @Wire
+    private Timer timer;
 }
