@@ -35,6 +35,7 @@ import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
 
+import h5chart.Serie;
 import rx.functions.Action1;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
@@ -118,6 +119,16 @@ public class JmxComposer extends SelectorComposer<Window>{
         }
 	}
 	
+    private static double maxOf(final Serie serieUsedMemory) {
+        double max = 0;
+        for (int idx = 0; idx < serieUsedMemory.size(); idx++) {
+            if ( max < serieUsedMemory.getValue(idx) ) {
+                max = serieUsedMemory.getValue(idx);
+            }
+        }
+        return max;
+    }
+
     private void updateCharts() {
         for (ServiceInfo info : this._serviceInfos) {
             final long usedMemory = queryUsedMemory(info.getJolokiaUrl());
@@ -125,6 +136,10 @@ public class JmxComposer extends SelectorComposer<Window>{
             while (info.getUsedMemory().size() > 11) {
                 info.getUsedMemory().remove(0);
             }
+            info.getAxis().clearValues();
+            final double max = maxOf(info.getUsedMemory());
+            info.getAxis().addValue(max, (int)max + "M");
+            info.getAxis().addValue(0d, "0M");
             info.getChartMemory().invalidate();
         }
     }

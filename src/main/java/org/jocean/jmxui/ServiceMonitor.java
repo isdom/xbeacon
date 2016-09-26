@@ -25,6 +25,7 @@ import org.zkoss.zul.Button;
 
 import com.google.common.collect.Maps;
 
+import h5chart.Axis;
 import h5chart.H5Chart;
 import h5chart.Multigraph;
 import h5chart.Serie;
@@ -47,21 +48,21 @@ public class ServiceMonitor {
                         onShowJmx.call(ServiceInfo.this);
                     }});
             this._chartMemory = new H5Chart();
-            this._chartMemory.setWidth("200");
+            this._chartMemory.setWidth("240");
             this._chartMemory.setHeight("80");
             
             final Multigraph multigraph = new Multigraph();
-            multigraph.setLeft("0");
-            multigraph.setTop("0");
+            multigraph.setLeft("40");
+            multigraph.setTop("-10");
             multigraph.setWidth("200");
-            multigraph.setHeight("80");
+            multigraph.setHeight("90");
             multigraph.setAnimate(true);
             //t.setOrientation(Piramid.ORIENTATION_DOWN);
             multigraph.setMarks(true);
-            multigraph.setShowTooltip(true);
+            multigraph.setShowTooltip(false);
             multigraph.setShowValues(true);
             multigraph.setGrid(true);
-            multigraph.setLabelFont("bold 12px Arial");
+            multigraph.setLabelFont("12px Arial");
             multigraph.setLabelColor("grey");
             
             multigraph.addLabel("-10 minutes");
@@ -79,7 +80,25 @@ public class ServiceMonitor {
             
             _usedMemory = multigraph.addSerie(Multigraph.TYPE_LINE, "UsedMemory", Multigraph.FILL_VLINEAR, 1, false);
             
+            _axis = new Axis();
+            
+            _axis.setLeft("0");
+            _axis.setTop("0");
+            _axis.setWidth("50");
+            _axis.setHeight("70");
+            _axis.setAnimate(false);
+            _axis.setShadow(false);
+            _axis.setLabelFont("6px Arial");
+            _axis.setLabelColor("grey");
+            _axis.setOrientation(Axis.ORIENTATION_VERTICAL);
+            _axis.setLineWidth(1);
+            _axis.setLabelsWidth(40);
+            _axis.setLabelsAngle(0);
+            _axis.setLabelsOnTick(true);
+            _axis.setTickPosition(Axis.TICK_POSITION_OVER);
+            
             _chartMemory.appendChild(multigraph);
+            _chartMemory.appendChild(_axis);
         }
         
         /**
@@ -139,6 +158,10 @@ public class ServiceMonitor {
             return _usedMemory;
         }
 
+        public Axis getAxis() {
+            return _axis;
+        }
+        
         public static class HOST_ASC implements Comparator<ServiceInfo>  {
             @Override
             public int compare(final ServiceInfo o1, final ServiceInfo o2) {
@@ -200,6 +223,8 @@ public class ServiceMonitor {
         private final H5Chart _chartMemory;
         
         private final Serie _usedMemory;
+        
+        private final Axis _axis;
         
         private String _jolokiaUrl;
     }
