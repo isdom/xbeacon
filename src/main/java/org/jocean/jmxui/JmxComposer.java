@@ -2,6 +2,8 @@ package org.jocean.jmxui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.POST;
@@ -35,7 +37,6 @@ import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
 
-import h5chart.Serie;
 import rx.functions.Action1;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
@@ -48,6 +49,13 @@ public class JmxComposer extends SelectorComposer<Window>{
 
     private static final Logger LOG = 
         	LoggerFactory.getLogger(JmxComposer.class);
+    
+    // date format used to capture date time
+    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
+    
+    private long getDateTime(String date) throws Exception {
+        return sdf.parse(date).getTime();
+    }
     
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
         public void render(final Treeitem item, final SimpleTreeModel.Node node, int index) 
@@ -73,7 +81,10 @@ public class JmxComposer extends SelectorComposer<Window>{
         this._serviceMonitor.monitorServices(new Action1<ServiceInfo[]>() {
             @Override
             public void call(final ServiceInfo[] serviceinfos) {
-                refreshServices(serviceinfos);
+                try {
+                    refreshServices(serviceinfos);
+                } catch (Exception e) {
+                }
             }}, 
             new Action1<ServiceInfo>() {
                 @Override
@@ -120,32 +131,21 @@ public class JmxComposer extends SelectorComposer<Window>{
         }
 	}
 	
-    private static double maxOf(final Serie serieUsedMemory) {
-        double max = 0;
-        for (int idx = 0; idx < serieUsedMemory.size(); idx++) {
-            if ( max < serieUsedMemory.getValue(idx) ) {
-                max = serieUsedMemory.getValue(idx);
-            }
-        }
-        return max;
-    }
-
-    private void updateCharts() {
+    private void updateCharts() throws Exception {
         for (ServiceInfo info : this._serviceInfos) {
             final long usedMemory = queryUsedMemory(info.getJolokiaUrl());
-            info.getUsedMemory().add( (double)usedMemory/ 1024 / 1024);
-            while (info.getUsedMemory().size() > 11) {
-                info.getUsedMemory().remove(0);
+            final int size = info.getUsedMemory().getDataCount("usedMemory");
+            if (size >= 10) {
+                info.getUsedMemory().addValue("usedMemory", getDateTime(sdf.format(new Date())), 
+                        (int)( (double)usedMemory / 1024 / 1024), true);
+            } else {
+                info.getUsedMemory().addValue("usedMemory", getDateTime(sdf.format(new Date())), 
+                       (int)( (double)usedMemory / 1024 / 1024));
             }
-            info.getAxis().clearValues();
-            final double max = maxOf(info.getUsedMemory());
-            info.getAxis().addValue(max, (int)max + "M");
-            info.getAxis().addValue(0d, "0M");
-            info.getChartMemory().invalidate();
         }
     }
 
-    private void refreshServices(final ServiceInfo[] infos) {
+    private void refreshServices(final ServiceInfo[] infos) throws Exception {
         this.services.getChildren().clear();
         this.services.appendChild(new Columns() {
             private static final long serialVersionUID = 1L;

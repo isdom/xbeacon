@@ -28,6 +28,7 @@ dependencies {
     compile('org.jocean:jocean-zkoss:0.0.1-SNAPSHOT') { transitive = false }
     compile 'org.jocean:jocean-jdmk:0.0.2'
     compile 'org.jocean:zkh5chart:1.21-SNAPSHOT'
+    compile 'org.jocean:zhighcharts:0.3.0-SNAPSHOT'
     
     // javax.inject
     compile 'javax.inject:javax.inject:1'

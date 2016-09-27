@@ -1,0 +1,23 @@
+<zk>
+    <window id="main" width="100%" height="100%"
+        apply="org.jocean.chart.ChartComposer">
+        <borderlayout>
+            <center id="center" flex="true" >
+                <tabbox >
+                    <tabs>
+                        <tab label="Chart1" />
+                        <tab label="服务面板" /> 
+                    </tabs>
+                    <tabpanels>
+                        <tabpanel>
+                            <H5Chart id="h5chart" width="1024" height="768"/>
+                            <timer id="timer" delay="5000" repeats="true"/>
+                        </tabpanel>
+                        <tabpanel>
+                        </tabpanel>
+                    </tabpanels>
+                </tabbox>
+            </center>
+        </borderlayout>
+	</window>
+</zk>

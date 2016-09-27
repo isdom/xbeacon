@@ -9,6 +9,8 @@ import java.util.Properties;
 import org.jocean.j2se.zk.ZKAgent;
 import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.util.EventQueueForwarder;
+import org.ngi.zhighcharts.SimpleExtXYModel;
+import org.ngi.zhighcharts.ZHighCharts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.Desktop;
@@ -25,10 +27,6 @@ import org.zkoss.zul.Button;
 
 import com.google.common.collect.Maps;
 
-import h5chart.Axis;
-import h5chart.H5Chart;
-import h5chart.Multigraph;
-import h5chart.Serie;
 import rx.functions.Action1;
 
 public class ServiceMonitor {
@@ -47,58 +45,65 @@ public class ServiceMonitor {
                     public void onEvent(MouseEvent event) throws Exception {
                         onShowJmx.call(ServiceInfo.this);
                     }});
-            this._chartMemory = new H5Chart();
-            this._chartMemory.setWidth("240");
-            this._chartMemory.setHeight("80");
+            this._chartMemory = new ZHighCharts();
+            this._chartMemory.setWidth("240px");
+            this._chartMemory.setHeight("80px");
             
-            final Multigraph multigraph = new Multigraph();
-            multigraph.setLeft("40");
-            multigraph.setTop("-10");
-            multigraph.setWidth("200");
-            multigraph.setHeight("90");
-            multigraph.setAnimate(true);
-            //t.setOrientation(Piramid.ORIENTATION_DOWN);
-            multigraph.setMarks(true);
-            multigraph.setShowTooltip(false);
-            multigraph.setShowValues(true);
-            multigraph.setGrid(true);
-            multigraph.setLabelFont("12px Arial");
-            multigraph.setLabelColor("grey");
-            
-            multigraph.addLabel("-10 minutes");
-            multigraph.addLabel("-9 minutes");
-            multigraph.addLabel("-8 minutes");
-            multigraph.addLabel("-7 minutes");
-            multigraph.addLabel("-6 minutes");
-            multigraph.addLabel("-5 minutes");
-            multigraph.addLabel("-4 minutes");
-            multigraph.addLabel("-3 minutes");
-            multigraph.addLabel("-2 minutes");
-            multigraph.addLabel("-1 minutes");
-            multigraph.addLabel("current");
-            
-            
-            _usedMemory = multigraph.addSerie(Multigraph.TYPE_LINE, "UsedMemory", Multigraph.FILL_VLINEAR, 1, false);
-            
-            _axis = new Axis();
-            
-            _axis.setLeft("0");
-            _axis.setTop("0");
-            _axis.setWidth("50");
-            _axis.setHeight("70");
-            _axis.setAnimate(false);
-            _axis.setShadow(false);
-            _axis.setLabelFont("6px Arial");
-            _axis.setLabelColor("grey");
-            _axis.setOrientation(Axis.ORIENTATION_VERTICAL);
-            _axis.setLineWidth(1);
-            _axis.setLabelsWidth(40);
-            _axis.setLabelsAngle(0);
-            _axis.setLabelsOnTick(true);
-            _axis.setTickPosition(Axis.TICK_POSITION_OVER);
-            
-            _chartMemory.appendChild(multigraph);
-            _chartMemory.appendChild(_axis);
+            this._chartMemory.setOptions("{" +
+                    "marginRight: 0," +
+                "}");
+            this._chartMemory.setTitleOptions("{" +
+                "text: null" +
+            "}");
+            this._chartMemory.setType("spline"); // spline/line
+            this._chartMemory.setxAxisOptions("{ " +
+                    "labels: {" + 
+                        "enabled: false" +
+                    "}," +
+                    "type: 'datetime'," +
+                    "tickPixelInterval: 40" +
+                "}");
+            this._chartMemory.setyAxisOptions("{" +
+                    "plotLines: [" +
+                        "{" +
+                            "value: 0," +
+                            "width: 1," +
+                            "color: '#808080'" +
+                        "}" +
+                    "]" +
+                "}");
+            this._chartMemory.setYAxisTitle(null);
+            this._chartMemory.setTooltipFormatter("function formatTooltip(obj){" +
+                    "return '<b>'+ obj.series.name +'</b><br/>" +
+                    "'+Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', obj.x) +'<br/>" +
+                    "'+Highcharts.numberFormat(obj.y, 2);" +
+                "}");
+            this._chartMemory.setPlotOptions("{" +
+                    "series: {" +
+                        "marker: {" +
+                            "radius: 2" +
+                        "}," +
+                        "allowPointSelect: true," +
+                        "cursor: 'pointer'," +
+                        "lineWidth: 1," +
+                        "dataLabels: {" +
+                            "formatter: function (){return this.y;}," + 
+                            "enabled: true," +
+                            "style: {" +
+                                "fontSize: '8px'" +
+                            "}" +
+                        "}," +
+                        "showInLegend: true" +
+                    "}" +
+                "}");
+            this._chartMemory.setExporting("{" +
+                    "enabled: false " +
+                "}");
+            this._chartMemory.setLegend("{" +
+                    "enabled: false " +
+                "}");
+        
+            this._chartMemory.setModel(this._usedMemoryModel);
         }
         
         /**
@@ -147,21 +152,17 @@ public class ServiceMonitor {
         /**
          * @return the _chartMemory
          */
-        public H5Chart getChartMemory() {
+        public ZHighCharts getChartMemory() {
             return _chartMemory;
         }
 
         /**
          * @return the usedMemory
          */
-        public Serie getUsedMemory() {
-            return _usedMemory;
+        public SimpleExtXYModel getUsedMemory() {
+            return this._usedMemoryModel;
         }
 
-        public Axis getAxis() {
-            return _axis;
-        }
-        
         public static class HOST_ASC implements Comparator<ServiceInfo>  {
             @Override
             public int compare(final ServiceInfo o1, final ServiceInfo o2) {
@@ -219,12 +220,10 @@ public class ServiceMonitor {
         @RowSource(name="JMX")
         private final Button _btnShowJmx;
         
-        @RowSource(name="内存信息")
-        private final H5Chart _chartMemory;
+        @RowSource(name="使用内存(MB)")
+        private final ZHighCharts _chartMemory;
         
-        private final Serie _usedMemory;
-        
-        private final Axis _axis;
+        private SimpleExtXYModel _usedMemoryModel = new SimpleExtXYModel();
         
         private String _jolokiaUrl;
     }
