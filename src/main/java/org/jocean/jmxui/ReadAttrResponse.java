@@ -21,6 +21,9 @@ public class ReadAttrResponse {
         
         public void setValue(final Object value) {
             this._value = value;
+            if (null != value) {
+                this._valueType = value.getClass();
+            }
         }
         
         @RowSource(name="属性名")
@@ -28,6 +31,9 @@ public class ReadAttrResponse {
         
         @RowSource(name="值")
         private Object _value;
+        
+        @RowSource(name="类型")
+        private Class<?> _valueType;
     }
     
     @JSONField(name="request")
