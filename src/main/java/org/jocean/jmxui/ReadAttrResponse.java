@@ -4,7 +4,11 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.jocean.zkoss.annotation.RowSource;
+import org.jocean.zkoss.builder.GridBuilder;
+import org.zkoss.zul.Columns;
+import org.zkoss.zul.Grid;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.annotation.JSONField;
 
 public class ReadAttrResponse {
@@ -20,7 +24,31 @@ public class ReadAttrResponse {
         }
         
         public void setValue(final Object value) {
-            this._value = value;
+            class ObjectRow {
+                @RowSource(name="内容")
+                Object value;
+            }
+            if (value instanceof JSONArray) {
+                final JSONArray jarray = (JSONArray)value;
+                final ObjectRow[] array = new ObjectRow[jarray.size()];
+                for (int idx = 0; idx < array.length; idx++) {
+                    array[idx].value = jarray.get(idx);
+                }
+                final Grid grid = new Grid();
+                grid.appendChild(new Columns() {
+                    private static final long serialVersionUID = 1L;
+                {
+                    this.setSizable(true);
+                    GridBuilder.buildColumns(this, ObjectRow.class);
+                }});
+                grid.setModel( GridBuilder.buildListModel(ObjectRow.class, 
+                        array.length, 
+                        GridBuilder.fetchPageOf(array),
+                        GridBuilder.fetchTotalSizeOf(array)));
+                this._value = grid;
+            } else {
+                this._value = value;
+            }
             if (null != value) {
                 this._valueType = value.getClass();
             }
