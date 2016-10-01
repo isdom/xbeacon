@@ -1,4 +1,4 @@
-package org.jocean.jmxui;
+package org.jocean.jmxui.bean;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -13,7 +13,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.collect.Maps;
 
-public class ListResponse {
+public class ListResponse extends JolokiaResponse {
     public static class ArgInfo {
         @JSONField(name="name")
         public String getName() {
@@ -316,16 +316,6 @@ public class ListResponse {
         private MBeanInfo[] _mbeans;
     }
     
-    @JSONField(name="request")
-    public JolokiaRequest getRequest() {
-        return _request;
-    }
-
-    @JSONField(name="request")
-    public void setRequest(final JolokiaRequest req) {
-        this._request = req;
-    }
-
     @JSONField(serialize=false)
     public DomainInfo[] getDomains() {
         return this._domains;
@@ -349,6 +339,5 @@ public class ListResponse {
         Arrays.sort(this._domains);
     }
 
-    private JolokiaRequest _request;
     private DomainInfo[] _domains;
 }

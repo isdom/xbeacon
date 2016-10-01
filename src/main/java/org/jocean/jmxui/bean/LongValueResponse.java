@@ -1,19 +1,9 @@
-package org.jocean.jmxui;
+package org.jocean.jmxui.bean;
 
 import com.alibaba.fastjson.annotation.JSONField;
 
-public class LongValueResponse {
+public class LongValueResponse extends JolokiaResponse {
     
-    @JSONField(name="request")
-    public JolokiaRequest getRequest() {
-        return _request;
-    }
-
-    @JSONField(name="request")
-    public void setRequest(final JolokiaRequest req) {
-        this._request = req;
-    }
-
     @JSONField(name="value")
     public long getValue() {
         return _value;
@@ -24,16 +14,16 @@ public class LongValueResponse {
         this._value = value;
     }
     
-    private JolokiaRequest _request;
     private long _value;
+
     /* (non-Javadoc)
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        builder.append("LongValueResponse [request=").append(_request)
-                .append(", value=").append(_value).append("]");
+        builder.append("LongValueResponse [_value=").append(_value)
+                .append(", super=").append(super.toString()).append("]");
         return builder.toString();
     }
 }

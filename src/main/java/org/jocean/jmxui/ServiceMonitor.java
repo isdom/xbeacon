@@ -2,108 +2,101 @@ package org.jocean.jmxui;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Comparator;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.UUID;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.inject.Inject;
+import javax.ws.rs.POST;
+
+import org.jocean.http.Feature;
+import org.jocean.http.rosa.SignalClient;
+import org.jocean.idiom.rx.RxObservables;
 import org.jocean.j2se.zk.ZKAgent;
-import org.jocean.zkoss.annotation.RowSource;
-import org.jocean.zkoss.util.EventQueueForwarder;
-import org.ngi.zhighcharts.SimpleExtXYModel;
-import org.ngi.zhighcharts.ZHighCharts;
+import org.jocean.jmxui.bean.JolokiaRequest;
+import org.jocean.jmxui.bean.LongValueResponse;
+import org.jocean.zkoss.util.Desktops;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zkoss.zk.ui.Desktop;
-import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.WebApp;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueue;
 import org.zkoss.zk.ui.event.EventQueues;
-import org.zkoss.zk.ui.event.Events;
-import org.zkoss.zk.ui.event.MouseEvent;
-import org.zkoss.zk.ui.util.DesktopCleanup;
-import org.zkoss.zul.Button;
 
 import com.google.common.collect.Maps;
 
+import rx.Scheduler;
+import rx.Subscription;
+import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.schedulers.Schedulers;
 
 public class ServiceMonitor {
-    private static final ServiceInfo[] EMPTY_INFO = new ServiceInfo[0];
-    public static class ServiceInfo {
+    private static final String UPDATE_EVENT = "update";
+    
+    public interface ServiceInfo {
         
-        public ServiceInfo(final String host, final String user, final String service,
-                final Action1<ServiceInfo> onShowJmx) {
+        public String getId();
+        
+        public String getHost();
+
+        public String getUser();
+
+        public String getService();
+
+        public String getBuildNo();
+        
+        public String getJolokiaUrl();
+    }
+    
+    public interface Indicator {
+        
+        public long getTimestamp();
+        
+        public <V> V getValue();
+    }
+    
+    public interface InitStatus extends Action1<Map<ServiceInfo, Map<String, Indicator[]>>> {
+    }
+    
+    public interface UpdateStatus {
+        
+        public void onServiceAdded(final ServiceInfo info);
+        
+        public void onServiceUpdated(final ServiceInfo info);
+        
+        public void onServiceRemoved(final String id);
+        
+        public void onIndicator(final ServiceInfo info, final String name, final Indicator indicator);
+    }
+    
+    private static final Indicator[] EMPTY_IND = new Indicator[0];
+    public static class ServiceInfoImpl implements ServiceInfo, Comparable<ServiceInfoImpl> {
+        
+        public ServiceInfoImpl(
+                final String id,
+                final String host, 
+                final String user, 
+                final String service) {
+            this._id = id;
             this._host = host;
             this._user = user;
             this._service = service;
-            this._btnShowJmx = new Button("控制台");
-            this._btnShowJmx.addEventListener(Events.ON_CLICK, 
-                new EventListener<MouseEvent>() {
-                    @Override
-                    public void onEvent(MouseEvent event) throws Exception {
-                        onShowJmx.call(ServiceInfo.this);
-                    }});
-            this._chartMemory = new ZHighCharts();
-            this._chartMemory.setWidth("240px");
-            this._chartMemory.setHeight("80px");
-            
-            this._chartMemory.setOptions("{" +
-                    "marginRight: 0," +
-                "}");
-            this._chartMemory.setTitleOptions("{" +
-                "text: null" +
-            "}");
-            this._chartMemory.setType("spline"); // spline/line
-            this._chartMemory.setxAxisOptions("{ " +
-                    "labels: {" + 
-                        "enabled: false" +
-                    "}," +
-                    "type: 'datetime'," +
-                    "tickPixelInterval: 40" +
-                "}");
-            this._chartMemory.setyAxisOptions("{" +
-                    "plotLines: [" +
-                        "{" +
-                            "value: 0," +
-                            "width: 1," +
-                            "color: '#808080'" +
-                        "}" +
-                    "]" +
-                "}");
-            this._chartMemory.setYAxisTitle(null);
-            this._chartMemory.setTooltipFormatter("function formatTooltip(obj){" +
-                    "return '<b>'+ obj.series.name +'</b><br/>" +
-                    "'+Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', obj.x) +'<br/>" +
-                    "'+Highcharts.numberFormat(obj.y, 2);" +
-                "}");
-            this._chartMemory.setPlotOptions("{" +
-                    "series: {" +
-                        "marker: {" +
-                            "radius: 2" +
-                        "}," +
-                        "allowPointSelect: true," +
-                        "cursor: 'pointer'," +
-                        "lineWidth: 1," +
-                        "dataLabels: {" +
-                            "formatter: function (){return this.y;}," + 
-                            "enabled: true," +
-                            "style: {" +
-                                "fontSize: '8px'" +
-                            "}" +
-                        "}," +
-                        "showInLegend: true" +
-                    "}" +
-                "}");
-            this._chartMemory.setExporting("{" +
-                    "enabled: false " +
-                "}");
-            this._chartMemory.setLegend("{" +
-                    "enabled: false " +
-                "}");
+        }
         
-            this._chartMemory.setModel(this._usedMemoryModel);
+        public String getId() {
+            return this._id;
         }
         
         /**
@@ -149,83 +142,57 @@ public class ServiceMonitor {
             this._buildNo = buildno;
         }
         
-        /**
-         * @return the _chartMemory
-         */
-        public ZHighCharts getChartMemory() {
-            return _chartMemory;
-        }
-
-        /**
-         * @return the usedMemory
-         */
-        public SimpleExtXYModel getUsedMemory() {
-            return this._usedMemoryModel;
-        }
-
-        public static class HOST_ASC implements Comparator<ServiceInfo>  {
-            @Override
-            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
-                return o1._host.compareTo(o2._host);
-            }
-        }
-        
-        public static class HOST_DSC implements Comparator<ServiceInfo> {
-            @Override
-            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
-                return o2._host.compareTo(o1._host);
-            }
-        }
-        
-        @RowSource(name="主机", asc = HOST_ASC.class, dsc = HOST_DSC.class)
+        private final String _id;
         private final String _host;
-        
-        public static class USER_ASC implements Comparator<ServiceInfo>  {
-            @Override
-            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
-                return o1._user.compareTo(o2._user);
-            }
-        }
-        
-        public static class USER_DSC implements Comparator<ServiceInfo> {
-            @Override
-            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
-                return o2._user.compareTo(o1._user);
-            }
-        }
-        
-        @RowSource(name="用户", asc = USER_ASC.class, dsc = USER_DSC.class)
         private final String _user;
-        
-        public static class SRV_ASC implements Comparator<ServiceInfo>  {
-            @Override
-            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
-                return o1._service.compareTo(o2._service);
-            }
-        }
-        
-        public static class SRV_DSC implements Comparator<ServiceInfo> {
-            @Override
-            public int compare(final ServiceInfo o1, final ServiceInfo o2) {
-                return o2._service.compareTo(o1._service);
-            }
-        }
-        
-        @RowSource(name="服务", asc = SRV_ASC.class, dsc = SRV_DSC.class)
         private final String _service;
         
-        @RowSource(name="构建号")
         private String _buildNo;
         
-        @RowSource(name="JMX")
-        private final Button _btnShowJmx;
-        
-        @RowSource(name="使用内存(MB)")
-        private final ZHighCharts _chartMemory;
-        
-        private SimpleExtXYModel _usedMemoryModel = new SimpleExtXYModel();
-        
         private String _jolokiaUrl;
+        
+        private List<Indicator> _usedMemories = new ArrayList<>();
+
+        @Override
+        public int compareTo(final ServiceInfoImpl o) {
+            return this._id.compareTo(o._id);
+        }
+
+        public ServiceInfo snapshot() {
+            final String buildNo = this._buildNo;
+            final String jolokiaUrl = this._jolokiaUrl;
+            return new ServiceInfo() {
+
+                @Override
+                public String getId() {
+                    return _id;
+                }
+
+                @Override
+                public String getHost() {
+                    return _host;
+                }
+
+                @Override
+                public String getUser() {
+                    return _user;
+                }
+
+                @Override
+                public String getService() {
+                    return _service;
+                }
+
+                @Override
+                public String getBuildNo() {
+                    return buildNo;
+                }
+
+                @Override
+                public String getJolokiaUrl() {
+                    return jolokiaUrl;
+                }};
+        }
     }
     
     private static final Logger LOG = 
@@ -234,77 +201,62 @@ public class ServiceMonitor {
     public ServiceMonitor(final ZKAgent zkagent) {
         this._zkagent = zkagent;
         this._rootPath = zkagent.root();
+        final ThreadGroup group = Thread.currentThread().getThreadGroup();
+        this._executor = Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(final Runnable r) {
+                final Thread t = new Thread(group, r, "service-monitor-thread", 0);
+                if (t.isDaemon())
+                    t.setDaemon(false);
+                if (t.getPriority() != Thread.NORM_PRIORITY)
+                    t.setPriority(Thread.NORM_PRIORITY);
+                return t;
+            }});
+        this._scheduler = Schedulers.from(this._executor);
     }
     
     public void setRoot(final String rootPath) {
         this._rootPath = rootPath;
     }
     
-    public void monitorServices(final Action1<ServiceInfo[]> onServiceChanged,
-            final Action1<ServiceInfo> onShowJmx) throws Exception {
-        final Map<String, ServiceInfo> services = Maps.newHashMap();
-        final EventQueueForwarder<ZKAgent.Listener> eqf = 
-                new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
+    public void subscribeServiceStatus(
+            final InitStatus initStatus, 
+            final UpdateStatus updateStatus) {
+        final String initEvent = "init-" + UUID.randomUUID().toString();
+        final EventListener<Event> listener = 
+                buildEventListener(initStatus, updateStatus, initEvent, new AtomicBoolean(false));
+        this._eventqueue.subscribe(listener);
+        Desktops.addActionForCurrentDesktopCleanup(new Action0() {
+            @Override
+            public void call() {
+                _eventqueue.unsubscribe(listener);
+            }});
         
-        eqf.subscribe(new ZKAgent.Listener() {
-
+        this._executor.execute(new Runnable() {
             @Override
-            public void onAdded(final String absolutepath, final byte[] data) throws Exception {
-                if (!isServiceStatusPath(absolutepath)) {
-                    return;
-                }
-                final String path = absolute2relative(absolutepath);
-                final ServiceInfo service = buildServiceInfo(path, onShowJmx);
-                if ( null != service ) {
-                    updateServiceInfo(service, data);
-                    services.put(path, service);
-                    onServiceChanged.call(services.values().toArray(EMPTY_INFO));
-                }
-            }
-
-            @Override
-            public void onUpdated(String absolutepath, byte[] data) throws Exception {
-                if (!isServiceStatusPath(absolutepath)) {
-                    return;
-                }
-                final String path = absolute2relative(absolutepath);
-                final ServiceInfo service = services.get(path);
-                if (null != service) {
-                    updateServiceInfo(service, data);
-                    onServiceChanged.call(services.values().toArray(EMPTY_INFO));
-                }
-            }
-
-            @Override
-            public void onRemoved(String absolutepath) throws Exception {
-                if (!isServiceStatusPath(absolutepath)) {
-                    return;
-                }
-                final String path = absolute2relative(absolutepath);
-                final ServiceInfo service = services.remove(path);
-                if (null != service) {
-                    onServiceChanged.call(services.values().toArray(EMPTY_INFO));
-                }
+            public void run() {
+                publishServicesStatus(initEvent);
             }});
-        final Runnable stop = this._zkagent.addListener(eqf.subject());
-        final Desktop desktop = Executions.getCurrent().getDesktop();
-        desktop.addListener(new DesktopCleanup() {
+    }
+
+    private EventListener<Event> buildEventListener(
+            final InitStatus initStatus,
+            final UpdateStatus updateStatus, 
+            final String initEvent,
+            final AtomicBoolean isInit) {
+        return new EventListener<Event> () {
+            @SuppressWarnings("unchecked")
             @Override
-            public void cleanup(final Desktop desktop) throws Exception {
-                LOG.info("cleanup for desktop {}", desktop);
-                stop.run();
-            }});
+            public void onEvent(final Event event) throws Exception {
+                if ( initEvent.equals(event.getName())) {
+                    ((Action1<InitStatus>)event.getData()).call(initStatus);
+                    isInit.set(true);
+                } else if ( isInit.get() && UPDATE_EVENT.equals(event.getName())) {
+                    ((Action1<UpdateStatus>)event.getData()).call(updateStatus);
+                }
+            }};
     }
     
-    protected ServiceInfo buildServiceInfo(final String path,final Action1<ServiceInfo> onShowJmx) {
-        final String[] pieces = path.split("\\.");
-        if (pieces.length >= 4) {
-            return new ServiceInfo(pieces[1], pieces[2], pieces[3], onShowJmx);
-        } else {
-            return null;
-        }
-    }
-
     /**
      * @param _webapp the _webapp to set
      */
@@ -314,12 +266,153 @@ public class ServiceMonitor {
 
     public void start() throws Exception {
         this._eventqueue = EventQueues.lookup("service", this._webapp, true);
+        startMonitorServices();
     }
     
     public void stop() {
+        stopMonitorService();
         EventQueues.remove("service", this._webapp);
     }
 
+    private void startMonitorServices() {
+        this._monitorServicesSubscription = 
+            RxObservables.fromAddListener(this._zkagent, "addListener", ZKAgent.Listener.class)
+            .observeOn(this._scheduler, 1000)
+            .subscribe(RxObservables.<ZKAgent.Listener>asOnNext(new ZKAgent.Listener() {
+            @Override
+            public void onAdded(final String absolutepath, final byte[] data) throws Exception {
+                if (!isServiceStatusPath(absolutepath)) {
+                    return;
+                }
+                final String path = absolute2relative(absolutepath);
+                final ServiceInfoImpl impl = buildServiceInfo(path);
+                if ( null != impl ) {
+                    updateServiceInfo(impl, data);
+                    _services.put(path, impl);
+                    final ServiceInfo snapshot = impl.snapshot();
+                    _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
+                        @Override
+                        public void call(final UpdateStatus updateStatus) {
+                            updateStatus.onServiceAdded(snapshot);
+                        }}));
+                }
+            }
+
+            @Override
+            public void onUpdated(String absolutepath, byte[] data) throws Exception {
+                if (!isServiceStatusPath(absolutepath)) {
+                    return;
+                }
+                final String path = absolute2relative(absolutepath);
+                final ServiceInfoImpl impl = _services.get(path);
+                if (null != impl) {
+                    updateServiceInfo(impl, data);
+                    final ServiceInfo snapshot = impl.snapshot();
+                    _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
+                        @Override
+                        public void call(final UpdateStatus updateStatus) {
+                            updateStatus.onServiceUpdated(snapshot);
+                        }}));
+                }
+            }
+
+            @Override
+            public void onRemoved(String absolutepath) throws Exception {
+                if (!isServiceStatusPath(absolutepath)) {
+                    return;
+                }
+                final String path = absolute2relative(absolutepath);
+                final ServiceInfo service = _services.remove(path);
+                if (null != service) {
+                    _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
+                        @Override
+                        public void call(final UpdateStatus updateStatus) {
+                            updateStatus.onServiceRemoved(path);
+                        }}));
+                }
+            }}));
+        
+        this._future = this._executor.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                updateIndicators();
+            }}, 5, 5, TimeUnit.SECONDS);
+    }
+    
+    private void stopMonitorService() {
+        this._future.cancel(false);
+        this._monitorServicesSubscription.unsubscribe();
+        this._executor.shutdown();
+    }
+
+    private ServiceInfoImpl buildServiceInfo(final String path) {
+        final String[] pieces = path.split("\\.");
+        if (pieces.length >= 4) {
+            return new ServiceInfoImpl(path, pieces[1], pieces[2], pieces[3]);
+        } else {
+            return null;
+        }
+    }
+
+    private void updateIndicators() {
+        for (ServiceInfoImpl impl : this._services.values()) {
+            queryUsedMemory(impl);
+        }
+    }
+    
+    private void queryUsedMemory(final ServiceInfoImpl impl) {
+        final JolokiaRequest req = new JolokiaRequest();
+        req.setType("read");
+        req.setMBean("java.lang:type=Memory");
+        req.setAttribute("HeapMemoryUsage");
+        req.setPath("used");
+        
+        try {
+            this._signalClient.<LongValueResponse>defineInteraction(req, 
+                    Feature.ENABLE_LOGGING,
+                    Feature.ENABLE_COMPRESSOR,
+                    new SignalClient.UsingUri(new URI(impl.getJolokiaUrl())),
+                    new SignalClient.UsingMethod(POST.class),
+                    new SignalClient.DecodeResponseAs(LongValueResponse.class)
+                    )
+            .timeout(1, TimeUnit.SECONDS)
+            .observeOn(this._scheduler)
+            .subscribe(new Action1<LongValueResponse>() {
+                @Override
+                public void call(final LongValueResponse resp) {
+                    if (200 == resp.getStatus()) {
+                        final long timestamp = resp.getTimestamp();
+                        final Long value = resp.getValue();
+                        final Indicator indicator = new Indicator() {
+                            @Override
+                            public long getTimestamp() {
+                                return timestamp;
+                            }
+                            @SuppressWarnings("unchecked")
+                            @Override
+                            public <V> V getValue() {
+                                return (V)value;
+                            }};
+                        impl._usedMemories.add(indicator);
+                        if (impl._usedMemories.size() > 10) {
+                            impl._usedMemories.remove(0);
+                        }
+                        _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
+                            @Override
+                            public void call(final UpdateStatus updateStatus) {
+                                updateStatus.onIndicator(impl, "usedMemory", indicator);
+                            }}));
+                    }
+                }}, 
+                new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable e) {
+                        LOG.warn("queryUsedMemory: got exception {}", e);
+                    }});
+        } catch (URISyntaxException e) {
+        }
+    }
+    
     private String absolute2relative(final String rawpath) {
         return rawpath.substring(rootPathSize() + 1);
     }
@@ -332,7 +425,7 @@ public class ServiceMonitor {
         return absolutepath.startsWith(this._rootPath + "/");
     }
 
-    private void updateServiceInfo(final ServiceInfo service, final byte[] data)
+    private void updateServiceInfo(final ServiceInfoImpl service, final byte[] data)
             throws IOException {
         final Properties prop = new Properties();
         prop.load(new ByteArrayInputStream(data));
@@ -340,8 +433,33 @@ public class ServiceMonitor {
         service.setJolokiaUrl(prop.getProperty("jolokia.url"));
     }
 
-    private ZKAgent _zkagent;
+    private void publishServicesStatus(final String initEvent) {
+        // run in services info update executor
+        final Map<ServiceInfo, Map<String,Indicator[]>> status = Maps.newHashMap();
+        for (ServiceInfoImpl impl : this._services.values()) {
+            final Map<String, Indicator[]> indicators = Maps.newHashMap();
+            indicators.put("usedMemory", impl._usedMemories.toArray(EMPTY_IND));
+            status.put(impl.snapshot(), indicators);
+        }
+        this._eventqueue.publish(new Event(initEvent, null, new Action1<InitStatus>() {
+            @Override
+            public void call(final InitStatus initStatus) {
+                initStatus.call(status);
+            }}));
+    }
+
     private WebApp _webapp;
     private String _rootPath;
     private EventQueue<Event> _eventqueue;
+    
+    private final ZKAgent _zkagent;
+    private final ScheduledExecutorService _executor;
+    private final Scheduler _scheduler;
+    private final Map<String, ServiceInfoImpl> _services = Maps.newHashMap();
+    
+    private Subscription _monitorServicesSubscription;
+    private ScheduledFuture<?> _future;
+    
+    @Inject
+    private SignalClient _signalClient;
 }

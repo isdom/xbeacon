@@ -11,16 +11,14 @@ import org.jocean.idiom.Pair;
 import org.jocean.j2se.unit.model.UnitDescription;
 import org.jocean.j2se.zk.ZKAgent;
 import org.jocean.zkoss.model.SimpleTreeModel;
+import org.jocean.zkoss.util.Desktops;
 import org.jocean.zkoss.util.EventQueueForwarder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zkoss.zk.ui.Desktop;
-import org.zkoss.zk.ui.Executions;
 import org.zkoss.zk.ui.WebApp;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventQueue;
 import org.zkoss.zk.ui.event.EventQueues;
-import org.zkoss.zk.ui.util.DesktopCleanup;
 import org.zkoss.zul.event.TreeDataEvent;
 
 import com.google.common.base.Charsets;
@@ -49,14 +47,8 @@ public class ZKTreeManager {
                 new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
         
         eqf.subscribe(model);
-        final Runnable stop = this._zkagent.addListener(eqf.subject());
-        final Desktop desktop = Executions.getCurrent().getDesktop();
-        desktop.addListener(new DesktopCleanup() {
-            @Override
-            public void cleanup(final Desktop desktop) throws Exception {
-                LOG.info("cleanup for desktop {}", desktop);
-                stop.run();
-            }});
+        Desktops.addActionForCurrentDesktopCleanup(
+            this._zkagent.addListener(eqf.subject()));
         return model;
     }
     

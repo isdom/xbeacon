@@ -2,33 +2,47 @@ package org.jocean.jmxui;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.ws.rs.POST;
 
 import org.jocean.http.Feature;
 import org.jocean.http.rosa.SignalClient;
-import org.jocean.jmxui.ListResponse.DomainInfo;
-import org.jocean.jmxui.ListResponse.MBeanInfo;
-import org.jocean.jmxui.ReadAttrResponse.AttrValue;
+import org.jocean.jmxui.ServiceMonitor.Indicator;
+import org.jocean.jmxui.ServiceMonitor.InitStatus;
 import org.jocean.jmxui.ServiceMonitor.ServiceInfo;
+import org.jocean.jmxui.ServiceMonitor.UpdateStatus;
+import org.jocean.jmxui.bean.JolokiaRequest;
+import org.jocean.jmxui.bean.ListResponse;
+import org.jocean.jmxui.bean.ListResponse.DomainInfo;
+import org.jocean.jmxui.bean.ListResponse.MBeanInfo;
+import org.jocean.jmxui.bean.ReadAttrResponse;
+import org.jocean.jmxui.bean.ReadAttrResponse.AttrValue;
+import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.builder.GridBuilder;
 import org.jocean.zkoss.model.SimpleTreeModel;
+import org.ngi.zhighcharts.SimpleExtXYModel;
+import org.ngi.zhighcharts.ZHighCharts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
+import org.zkoss.zk.ui.event.MouseEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
 import org.zkoss.zk.ui.select.annotation.VariableResolver;
 import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
+import org.zkoss.zul.Button;
 import org.zkoss.zul.Caption;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
-import org.zkoss.zul.Timer;
 import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
@@ -42,6 +56,8 @@ import rx.functions.Action1;
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class JmxComposer extends SelectorComposer<Window>{
 	
+    private static final ServiceData[] EMPTY_SRV = new ServiceData[0];
+
     /**
      * 
      */
@@ -49,13 +65,6 @@ public class JmxComposer extends SelectorComposer<Window>{
 
     private static final Logger LOG = 
         	LoggerFactory.getLogger(JmxComposer.class);
-    
-    // date format used to capture date time
-    private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z");
-    
-    private long getDateTime(String date) throws Exception {
-        return sdf.parse(date).getTime();
-    }
     
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
         public void render(final Treeitem item, final SimpleTreeModel.Node node, int index) 
@@ -72,101 +81,85 @@ public class JmxComposer extends SelectorComposer<Window>{
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
 		
-        this.services.setRowRenderer(GridBuilder.buildRowRenderer(ServiceInfo.class));
+        this.services.setRowRenderer(GridBuilder.buildRowRenderer(ServiceData.class));
         this.services.setSizedByContent(true);
         this.attrs.setRowRenderer(GridBuilder.buildRowRenderer(AttrValue.class));
         this.attrs.setSizedByContent(true);
         this.mbeans.setItemRenderer(new NodeTreeRenderer());
         
-        this._serviceMonitor.monitorServices(new Action1<ServiceInfo[]>() {
-            @Override
-            public void call(final ServiceInfo[] serviceinfos) {
-                try {
-                    refreshServices(serviceinfos);
-                } catch (Exception e) {
-                }
-            }}, 
-            new Action1<ServiceInfo>() {
-                @Override
-                public void call(final ServiceInfo serviceinfo) {
-                    try {
-                        refreshJMX(serviceinfo);
-                    } catch (URISyntaxException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
-                }});
         this.mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
         this.refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
         
-        this.timer.addEventListener(Events.ON_TIMER, new EventListener<Event>() {
+        this._serviceMonitor.subscribeServiceStatus(new InitStatus() {
             @Override
-            public void onEvent(Event event) throws Exception {
-                updateCharts();
-            }});
-        
-        timer.start();
+            public void call(final Map<ServiceInfo, Map<String, Indicator[]>> status) {
+                for (Map.Entry<ServiceInfo, Map<String, Indicator[]>> entry : status.entrySet()) {
+                    final ServiceInfo info = entry.getKey();
+                    final ServiceData data = addServiceInfo(info);
+                    final Indicator[] inds = entry.getValue().get("usedMemory");
+                    if (null != inds) {
+                        for (Indicator ind : inds) {
+                            try {
+                                data.addUsedMemoryInd(ind);
+                            } catch (Exception e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                    _serviceDatas.add(data);
+                }
+                
+                updateServicesModel(_serviceDatas.toArray(EMPTY_SRV));
+            }}, new UpdateStatus() {
+
+                @Override
+                public void onServiceAdded(final ServiceInfo info) {
+                    final ServiceData data = addServiceInfo(info);
+                    _serviceDatas.add(data);
+                    updateServicesModel(_serviceDatas.toArray(EMPTY_SRV));
+                }
+
+                @Override
+                public void onServiceUpdated(final ServiceInfo info) {
+                    //  TODO
+                }
+
+                @Override
+                public void onServiceRemoved(final String id) {
+                    final Iterator<ServiceData> iter = _serviceDatas.iterator();
+                    while (iter.hasNext()) {
+                        final ServiceData data = iter.next();
+                        if (id.equals(data._id)) {
+                            iter.remove();
+                            break;
+                        }
+                    }
+                    updateServicesModel(_serviceDatas.toArray(EMPTY_SRV));
+                }
+
+                @Override
+                public void onIndicator(final ServiceInfo info, String name, Indicator indicator) {
+                    final Iterator<ServiceData> iter = _serviceDatas.iterator();
+                    while (iter.hasNext()) {
+                        final ServiceData data = iter.next();
+                        if (info.getId().equals(data._id)) {
+                            try {
+                                data.addUsedMemoryInd(indicator);
+                            } catch (Exception e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                }});
 	}
 
-	private long queryUsedMemory(final String jolokiaUrl) {
-        final JolokiaRequest req = new JolokiaRequest();
-        req.setType("read");
-        req.setMBean("java.lang:type=Memory");
-        req.setAttribute("HeapMemoryUsage");
-        req.setPath("used");
-        
-        try {
-            final LongValueResponse resp = this._signalClient.<LongValueResponse>defineInteraction(req, 
-                    Feature.ENABLE_LOGGING,
-                    Feature.ENABLE_COMPRESSOR,
-                    new SignalClient.UsingUri(new URI(jolokiaUrl)),
-                    new SignalClient.UsingMethod(POST.class),
-                    new SignalClient.DecodeResponseAs(LongValueResponse.class)
-                    )
-            .timeout(1, TimeUnit.SECONDS)
-            .toBlocking().single();
-            return resp.getValue();
-        } catch (URISyntaxException e) {
-            return 0;
-        }
-	}
-	
-    private void updateCharts() throws Exception {
-        for (ServiceInfo info : this._serviceInfos) {
-            final long usedMemory = queryUsedMemory(info.getJolokiaUrl());
-            final int size = info.getUsedMemory().getDataCount("usedMemory");
-            if (size >= 10) {
-                info.getUsedMemory().addValue("usedMemory", getDateTime(sdf.format(new Date())), 
-                        (int)( (double)usedMemory / 1024 / 1024), true);
-            } else {
-                info.getUsedMemory().addValue("usedMemory", getDateTime(sdf.format(new Date())), 
-                       (int)( (double)usedMemory / 1024 / 1024));
-            }
-        }
-    }
-
-    private void refreshServices(final ServiceInfo[] infos) throws Exception {
-        this.services.getChildren().clear();
-        this.services.appendChild(new Columns() {
-            private static final long serialVersionUID = 1L;
-        {
-            this.setSizable(true);
-            GridBuilder.buildColumns(this, ServiceInfo.class);
-        }});
-        this.services.setModel( GridBuilder.buildListModel(ServiceInfo.class, 
-                infos.length, 
-                GridBuilder.fetchPageOf(infos),
-                GridBuilder.fetchTotalSizeOf(infos),
-                GridBuilder.sortModelOf(infos)));
-        this._serviceInfos = infos;
-        updateCharts();
-    }
-    
-    private void refreshJMX(final ServiceInfo serviceinfo) throws URISyntaxException {
-        this._jolokiauri = new URI(serviceinfo.getJolokiaUrl());
-        this.servicetitle.setLabel("主机:" + serviceinfo.getHost() 
-        + "  用户:" + serviceinfo.getUser() 
-        + "  服务:" + serviceinfo.getService());
+    private void refreshJMX(final ServiceData data) throws URISyntaxException {
+        this._jolokiauri = new URI(data._jolokiaUrl);
+        this.servicetitle.setLabel("主机:" + data._host
+        + "  用户:" + data._user
+        + "  服务:" + data._service);
         final ListResponse resp = listMBeans();
         final DomainInfo[] domaininfos = resp.getDomains();
         this._model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
@@ -265,11 +258,214 @@ public class JmxComposer extends SelectorComposer<Window>{
         .toBlocking().single();
         return resp;
     }
+    
+    private ServiceData addServiceInfo(final ServiceInfo info) {
+        return new ServiceData(
+                info.getId(), 
+                info.getHost(), 
+                info.getUser(), 
+                info.getService(),
+                info.getBuildNo(),
+                info.getJolokiaUrl(),
+                new Action1<ServiceData>() {
+                    @Override
+                    public void call(final ServiceData data) {
+                        try {
+                            refreshJMX(data);
+                        } catch (URISyntaxException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                    }});
+    }
+
+    private void updateServicesModel(final ServiceData[] datas) {
+        this.services.getChildren().clear();
+        this.services.appendChild(new Columns() {
+            private static final long serialVersionUID = 1L;
+        {
+            this.setSizable(true);
+            GridBuilder.buildColumns(this, ServiceData.class);
+        }});
+        
+        Arrays.sort(datas);
+        this.services.setModel( GridBuilder.buildListModel(ServiceData.class, 
+                datas.length, 
+                GridBuilder.fetchPageOf(datas),
+                GridBuilder.fetchTotalSizeOf(datas),
+                GridBuilder.sortModelOf(datas)));
+    }
+
+    public static class HOST_ASC implements Comparator<ServiceData> {
+        @Override
+        public int compare(final ServiceData o1, final ServiceData o2) {
+            return o1._host.compareTo(o2._host);
+        }
+    }
+
+    public static class HOST_DSC implements Comparator<ServiceData> {
+        @Override
+        public int compare(final ServiceData o1, final ServiceData o2) {
+            return o2._host.compareTo(o1._host);
+        }
+    }
+
+    public static class USER_ASC implements Comparator<ServiceData> {
+        @Override
+        public int compare(final ServiceData o1, final ServiceData o2) {
+            return o1._user.compareTo(o2._user);
+        }
+    }
+
+    public static class USER_DSC implements Comparator<ServiceData> {
+        @Override
+        public int compare(final ServiceData o1, final ServiceData o2) {
+            return o2._user.compareTo(o1._user);
+        }
+    }
+    
+    public static class SRV_ASC implements Comparator<ServiceData> {
+        @Override
+        public int compare(final ServiceData o1, final ServiceData o2) {
+            return o1._service.compareTo(o2._service);
+        }
+    }
+
+    public static class SRV_DSC implements Comparator<ServiceData> {
+        @Override
+        public int compare(final ServiceData o1, final ServiceData o2) {
+            return o2._service.compareTo(o1._service);
+        }
+    }
+
+    class ServiceData implements Comparable<ServiceData> {
+        public ServiceData(final String id,
+                final String host, 
+                final String user, 
+                final String service,
+                final String buildNo,
+                final String jolokiaUrl,
+                final Action1<ServiceData> onShowJmx) {
+            this._id = id;
+            this._host = host;
+            this._user = user;
+            this._service = service;
+            this._buildNo = buildNo;
+            this._jolokiaUrl = jolokiaUrl;
+            this._btnShowJmx = new Button("控制台");
+            this._btnShowJmx.addEventListener(Events.ON_CLICK, 
+                new EventListener<MouseEvent>() {
+                    @Override
+                    public void onEvent(MouseEvent event) throws Exception {
+                        onShowJmx.call(ServiceData.this);
+                    }});
+            this._chartMemory = new ZHighCharts();
+            this._chartMemory.setWidth("240px");
+            this._chartMemory.setHeight("80px");
+            
+            this._chartMemory.setOptions("{" +
+                    "marginRight: 0," +
+                "}");
+            this._chartMemory.setTitleOptions("{" +
+                "text: null" +
+            "}");
+            this._chartMemory.setType("spline"); // spline/line
+            this._chartMemory.setxAxisOptions("{ " +
+                    "labels: {" + 
+                        "enabled: false" +
+                    "}," +
+                    "type: 'datetime'," +
+                    "tickPixelInterval: 40" +
+                "}");
+            this._chartMemory.setyAxisOptions("{" +
+                    "plotLines: [" +
+                        "{" +
+                            "value: 0," +
+                            "width: 1," +
+                            "color: '#808080'" +
+                        "}" +
+                    "]" +
+                "}");
+            this._chartMemory.setYAxisTitle(null);
+            this._chartMemory.setTooltipFormatter("function formatTooltip(obj){" +
+                    "return '<b>'+ obj.series.name +'</b><br/>" +
+                    "'+Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', obj.x) +'<br/>" +
+                    "'+Highcharts.numberFormat(obj.y, 2);" +
+                "}");
+            this._chartMemory.setPlotOptions("{" +
+                    "series: {" +
+                        "marker: {" +
+                            "radius: 2" +
+                        "}," +
+                        "allowPointSelect: true," +
+                        "cursor: 'pointer'," +
+                        "lineWidth: 1," +
+                        "dataLabels: {" +
+                            "formatter: function (){return this.y;}," + 
+                            "enabled: true," +
+                            "style: {" +
+                                "fontSize: '8px'" +
+                            "}" +
+                        "}," +
+                        "showInLegend: true" +
+                    "}" +
+                "}");
+            this._chartMemory.setExporting("{" +
+                    "enabled: false " +
+                "}");
+            this._chartMemory.setLegend("{" +
+                    "enabled: false " +
+                "}");
+        
+            this._chartMemory.setModel(this._usedMemoryModel);
+        }
+        
+        public void addUsedMemoryInd(final Indicator ind) throws Exception {
+            final long value = ind.getValue();
+            final int size = this._usedMemoryModel.getDataCount("usedMemory");
+            if (size >= 10) {
+                this._usedMemoryModel.addValue("usedMemory", ind.getTimestamp(), 
+                        (int)( (double)value / 1024 / 1024), true);
+            } else {
+                this._usedMemoryModel.addValue("usedMemory", ind.getTimestamp(), 
+                       (int)( (double)value / 1024 / 1024));
+            }
+        }
+
+        private final String _id;
+
+        @RowSource(name = "主机", asc = HOST_ASC.class, dsc = HOST_DSC.class)
+        private final String _host;
+
+        @RowSource(name = "用户", asc = USER_ASC.class, dsc = USER_DSC.class)
+        private final String _user;
+
+        @RowSource(name = "服务", asc = SRV_ASC.class, dsc = SRV_DSC.class)
+        private final String _service;
+
+        @RowSource(name = "构建号")
+        private String _buildNo;
+
+        @RowSource(name = "JMX")
+        private final Button _btnShowJmx;
+
+        @RowSource(name = "使用内存(MB)")
+        private final ZHighCharts _chartMemory;
+
+        private final SimpleExtXYModel _usedMemoryModel = new SimpleExtXYModel();
+
+        private String _jolokiaUrl;
+
+        @Override
+        public int compareTo(final ServiceData o) {
+            return this._id.compareTo(o._id);
+        }
+    }
 
     @Wire
     private Grid    services;
     
-    private ServiceInfo[] _serviceInfos;
+    private final List<ServiceData> _serviceDatas = new ArrayList<>();
     
     @Wire
     private Caption servicetitle;
@@ -295,7 +491,4 @@ public class JmxComposer extends SelectorComposer<Window>{
     
     @WireVariable("signalClient") 
     private SignalClient _signalClient;
-    
-    @Wire
-    private Timer timer;
 }

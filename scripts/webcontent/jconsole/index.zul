@@ -1,7 +1,6 @@
 <zk>
     <window id="main" width="100%" height="100%" 
         apply="org.jocean.jmxui.JmxComposer">
-        <timer id="timer" delay="5000" repeats="true"/>
         <borderlayout>
             <west size="90%" splittable="true" flex="true" collapsible="true" title="Services">
                 <borderlayout>

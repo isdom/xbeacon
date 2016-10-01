@@ -1,4 +1,4 @@
-package org.jocean.jmxui;
+package org.jocean.jmxui.bean;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -14,7 +14,7 @@ import org.zkoss.zul.Grid;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.annotation.JSONField;
 
-public class ReadAttrResponse {
+public class ReadAttrResponse extends JolokiaResponse {
     public static class ObjectRow {
         @RowSource(name="内容")
         Object value;
@@ -93,26 +93,6 @@ public class ReadAttrResponse {
         private Class<?> _valueType;
     }
     
-    @JSONField(name="request")
-    public JolokiaRequest getRequest() {
-        return _request;
-    }
-
-    @JSONField(name="request")
-    public void setRequest(final JolokiaRequest req) {
-        this._request = req;
-    }
-
-    @JSONField(name="status")
-    public int getStatus() {
-        return _status;
-    }
-
-    @JSONField(name="status")
-    public void setStatus(final int status) {
-        this._status = status;
-    }
-    
     @JSONField(serialize=false)
     public AttrValue[] getValue() {
         return _value;
@@ -131,7 +111,5 @@ public class ReadAttrResponse {
         Arrays.sort(this._value);
     }
 
-    private JolokiaRequest _request;
     private AttrValue[] _value;
-    private int   _status;
 }
