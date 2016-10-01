@@ -21,6 +21,7 @@ import javax.ws.rs.POST;
 
 import org.jocean.http.Feature;
 import org.jocean.http.rosa.SignalClient;
+import org.jocean.idiom.Triple;
 import org.jocean.idiom.rx.RxObservables;
 import org.jocean.j2se.zk.ZKAgent;
 import org.jocean.jmxui.bean.JolokiaRequest;
@@ -34,12 +35,15 @@ import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.EventQueue;
 import org.zkoss.zk.ui.event.EventQueues;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import rx.Observable;
 import rx.Scheduler;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 public class ServiceMonitor {
@@ -78,7 +82,7 @@ public class ServiceMonitor {
         
         public void onServiceRemoved(final String id);
         
-        public void onIndicator(final ServiceInfo info, final String name, final Indicator indicator);
+        public void onIndicator(final List<Triple<String, String, Indicator>> inds);
     }
     
     private static final Indicator[] EMPTY_IND = new Indicator[0];
@@ -195,6 +199,7 @@ public class ServiceMonitor {
         }
     }
     
+    @SuppressWarnings("unused")
     private static final Logger LOG = 
             LoggerFactory.getLogger(ServiceMonitor.class);
 
@@ -355,12 +360,26 @@ public class ServiceMonitor {
     }
 
     private void updateIndicators() {
+        final List<Observable<Triple<String, String, Indicator>>> querys = Lists.newArrayList();
         for (ServiceInfoImpl impl : this._services.values()) {
-            queryUsedMemory(impl);
+            querys.add(queryUsedMemory(impl));
         }
+        Observable.merge(querys)
+        .buffer(5, TimeUnit.SECONDS)
+        .observeOn(this._scheduler)
+        .subscribe(new Action1<List<Triple<String, String, Indicator>>>() {
+            @Override
+            public void call(final List<Triple<String, String, Indicator>> inds) {
+                _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
+                    @Override
+                    public void call(final UpdateStatus updateStatus) {
+                        updateStatus.onIndicator(inds);
+                    }}));
+            }});
     }
     
-    private void queryUsedMemory(final ServiceInfoImpl impl) {
+    @SuppressWarnings("unchecked")
+    private Observable<Triple<String, String, Indicator>> queryUsedMemory(final ServiceInfoImpl impl) {
         final JolokiaRequest req = new JolokiaRequest();
         req.setType("read");
         req.setMBean("java.lang:type=Memory");
@@ -368,16 +387,47 @@ public class ServiceMonitor {
         req.setPath("used");
         
         try {
-            this._signalClient.<LongValueResponse>defineInteraction(req, 
+            final LongValueResponse defaultresp = new LongValueResponse();
+            defaultresp.setStatus(404);
+            final Observable<LongValueResponse> onerror = 
+                    Observable.just(defaultresp);
+            
+            return ((Observable<LongValueResponse>)this._signalClient.<LongValueResponse>defineInteraction(req, 
                     Feature.ENABLE_LOGGING,
                     Feature.ENABLE_COMPRESSOR,
                     new SignalClient.UsingUri(new URI(impl.getJolokiaUrl())),
                     new SignalClient.UsingMethod(POST.class),
                     new SignalClient.DecodeResponseAs(LongValueResponse.class)
-                    )
+                    ))
             .timeout(1, TimeUnit.SECONDS)
-            .observeOn(this._scheduler)
-            .subscribe(new Action1<LongValueResponse>() {
+            .onErrorResumeNext(onerror)
+            .map(new Func1<LongValueResponse, Triple<String, String, Indicator>> () {
+                @Override
+                public Triple<String, String, Indicator> call(
+                        final LongValueResponse resp) {
+                    if (200 == resp.getStatus()) {
+                        final long timestamp = resp.getTimestamp();
+                        final Long value = resp.getValue();
+                        final Indicator indicator = new Indicator() {
+                            @Override
+                            public long getTimestamp() {
+                                return timestamp;
+                            }
+                            @Override
+                            public <V> V getValue() {
+                                return (V)value;
+                            }};
+                        impl._usedMemories.add(indicator);
+                        if (impl._usedMemories.size() > 10) {
+                            impl._usedMemories.remove(0);
+                        }
+                        return Triple.of(impl._id, "usedMemory", indicator);
+                    } else {
+                        return Triple.of(impl._id, "usedMemory", null);
+                    }
+                }});
+            /*
+            new Action1<LongValueResponse>() {
                 @Override
                 public void call(final LongValueResponse resp) {
                     if (200 == resp.getStatus()) {
@@ -400,7 +450,7 @@ public class ServiceMonitor {
                         _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
                             @Override
                             public void call(final UpdateStatus updateStatus) {
-                                updateStatus.onIndicator(impl, "usedMemory", indicator);
+                                updateStatus.onIndicator(impl._id, "usedMemory", indicator);
                             }}));
                     }
                 }}, 
@@ -409,7 +459,9 @@ public class ServiceMonitor {
                     public void call(Throwable e) {
                         LOG.warn("queryUsedMemory: got exception {}", e);
                     }});
+                    */
         } catch (URISyntaxException e) {
+            return null;
         }
     }
     

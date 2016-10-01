@@ -14,6 +14,7 @@ import javax.ws.rs.POST;
 
 import org.jocean.http.Feature;
 import org.jocean.http.rosa.SignalClient;
+import org.jocean.idiom.Triple;
 import org.jocean.jmxui.ServiceMonitor.Indicator;
 import org.jocean.jmxui.ServiceMonitor.InitStatus;
 import org.jocean.jmxui.ServiceMonitor.ServiceInfo;
@@ -139,16 +140,18 @@ public class JmxComposer extends SelectorComposer<Window>{
                 }
 
                 @Override
-                public void onIndicator(final ServiceInfo info, String name, Indicator indicator) {
-                    final Iterator<ServiceData> iter = _serviceDatas.iterator();
-                    while (iter.hasNext()) {
-                        final ServiceData data = iter.next();
-                        if (info.getId().equals(data._id)) {
-                            try {
-                                data.addUsedMemoryInd(indicator);
-                            } catch (Exception e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
+                public void onIndicator(final List<Triple<String, String, Indicator>> inds) {
+                    for (Triple<String, String, Indicator> ind : inds) {
+                        final Iterator<ServiceData> iter = _serviceDatas.iterator();
+                        while (iter.hasNext()) {
+                            final ServiceData data = iter.next();
+                            if (ind.first.equals(data._id)) {
+                                try {
+                                    data.addUsedMemoryInd(ind.third);
+                                } catch (Exception e) {
+                                    // TODO Auto-generated catch block
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     }
