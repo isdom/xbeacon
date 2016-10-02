@@ -140,12 +140,12 @@ public class JmxComposer extends SelectorComposer<Window>{
                 }
 
                 @Override
-                public void onIndicator(final List<Triple<String, String, Indicator>> inds) {
-                    for (Triple<String, String, Indicator> ind : inds) {
+                public void onIndicator(final List<Triple<ServiceInfo, String, Indicator>> inds) {
+                    for (Triple<ServiceInfo, String, Indicator> ind : inds) {
                         final Iterator<ServiceData> iter = _serviceDatas.iterator();
                         while (iter.hasNext()) {
                             final ServiceData data = iter.next();
-                            if (ind.first.equals(data._id)) {
+                            if (ind.first.getId().equals(data._id)) {
                                 try {
                                     data.addUsedMemoryInd(ind.third);
                                 } catch (Exception e) {

@@ -82,7 +82,7 @@ public class ServiceMonitor {
         
         public void onServiceRemoved(final String id);
         
-        public void onIndicator(final List<Triple<String, String, Indicator>> inds);
+        public void onIndicator(final List<Triple<ServiceInfo, String, Indicator>> inds);
     }
     
     private static final Indicator[] EMPTY_IND = new Indicator[0];
@@ -360,16 +360,23 @@ public class ServiceMonitor {
     }
 
     private void updateIndicators() {
-        final List<Observable<Triple<String, String, Indicator>>> querys = Lists.newArrayList();
+        final List<Observable<Triple<ServiceInfo, String, Indicator>>> querys = Lists.newArrayList();
         for (ServiceInfoImpl impl : this._services.values()) {
             querys.add(queryUsedMemory(impl));
         }
         Observable.merge(querys)
         .buffer(5, TimeUnit.SECONDS)
         .observeOn(this._scheduler)
-        .subscribe(new Action1<List<Triple<String, String, Indicator>>>() {
+        .subscribe(new Action1<List<Triple<ServiceInfo, String, Indicator>>>() {
             @Override
-            public void call(final List<Triple<String, String, Indicator>> inds) {
+            public void call(final List<Triple<ServiceInfo, String, Indicator>> inds) {
+                for (Triple<ServiceInfo, String, Indicator> ind : inds) {
+                    final ServiceInfoImpl impl = (ServiceInfoImpl)ind.first;
+                    impl._usedMemories.add(ind.third);
+                    if (impl._usedMemories.size() > 10) {
+                        impl._usedMemories.remove(0);
+                    }
+                }
                 _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
                     @Override
                     public void call(final UpdateStatus updateStatus) {
@@ -379,7 +386,7 @@ public class ServiceMonitor {
     }
     
     @SuppressWarnings("unchecked")
-    private Observable<Triple<String, String, Indicator>> queryUsedMemory(final ServiceInfoImpl impl) {
+    private Observable<Triple<ServiceInfo, String, Indicator>> queryUsedMemory(final ServiceInfoImpl impl) {
         final JolokiaRequest req = new JolokiaRequest();
         req.setType("read");
         req.setMBean("java.lang:type=Memory");
@@ -401,9 +408,9 @@ public class ServiceMonitor {
                     ))
             .timeout(1, TimeUnit.SECONDS)
             .onErrorResumeNext(onerror)
-            .map(new Func1<LongValueResponse, Triple<String, String, Indicator>> () {
+            .map(new Func1<LongValueResponse, Triple<ServiceInfo, String, Indicator>> () {
                 @Override
-                public Triple<String, String, Indicator> call(
+                public Triple<ServiceInfo, String, Indicator> call(
                         final LongValueResponse resp) {
                     if (200 == resp.getStatus()) {
                         final long timestamp = resp.getTimestamp();
@@ -417,13 +424,9 @@ public class ServiceMonitor {
                             public <V> V getValue() {
                                 return (V)value;
                             }};
-                        impl._usedMemories.add(indicator);
-                        if (impl._usedMemories.size() > 10) {
-                            impl._usedMemories.remove(0);
-                        }
-                        return Triple.of(impl._id, "usedMemory", indicator);
+                        return Triple.of((ServiceInfo)impl, "usedMemory", indicator);
                     } else {
-                        return Triple.of(impl._id, "usedMemory", null);
+                        return Triple.of((ServiceInfo)impl, "usedMemory", null);
                     }
                 }});
             /*
