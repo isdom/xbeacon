@@ -29,8 +29,7 @@
                             <tabpanels>
                                 <tabpanel>
                                     <borderlayout>
-                                        <center flex="true" >
-                                            <grid id="attrs"/>
+                                        <center id="attrs" flex="true" >
                                         </center>
                                     </borderlayout>
                                 </tabpanel>
