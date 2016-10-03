@@ -100,12 +100,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                     final Indicator[] inds = entry.getValue().get("usedMemory");
                     if (null != inds) {
                         for (Indicator ind : inds) {
-                            try {
-                                data.addUsedMemoryInd(ind);
-                            } catch (Exception e) {
-                                // TODO Auto-generated catch block
-                                e.printStackTrace();
-                            }
+                            data.addUsedMemoryInd(ind);
                         }
                     }
                     _serviceDatas.add(data);
@@ -142,16 +137,10 @@ public class JmxComposer extends SelectorComposer<Window>{
                 @Override
                 public void onIndicator(final List<Triple<ServiceInfo, String, Indicator>> inds) {
                     for (Triple<ServiceInfo, String, Indicator> ind : inds) {
-                        final Iterator<ServiceData> iter = _serviceDatas.iterator();
-                        while (iter.hasNext()) {
-                            final ServiceData data = iter.next();
-                            if (ind.first.getId().equals(data._id)) {
-                                try {
-                                    data.addUsedMemoryInd(ind.third);
-                                } catch (Exception e) {
-                                    // TODO Auto-generated catch block
-                                    e.printStackTrace();
-                                }
+                        if (null != ind.third) {
+                            final ServiceData data = findServiceData(ind.first.getId());
+                            if (null != data) {
+                                data.addUsedMemoryInd(ind.third);
                             }
                         }
                     }
@@ -299,6 +288,17 @@ public class JmxComposer extends SelectorComposer<Window>{
                 GridBuilder.sortModelOf(datas)));
     }
 
+    private ServiceData findServiceData(final String id) {
+        final Iterator<ServiceData> iter = this._serviceDatas.iterator();
+        while (iter.hasNext()) {
+            final ServiceData data = iter.next();
+            if (id.equals(data._id)) {
+                return data;
+            }
+        }
+        return null;
+    }
+
     public static class HOST_ASC implements Comparator<ServiceData> {
         @Override
         public int compare(final ServiceData o1, final ServiceData o2) {
@@ -423,7 +423,7 @@ public class JmxComposer extends SelectorComposer<Window>{
             this._chartMemory.setModel(this._usedMemoryModel);
         }
         
-        public void addUsedMemoryInd(final Indicator ind) throws Exception {
+        public void addUsedMemoryInd(final Indicator ind) {
             final long value = ind.getValue();
             final int size = this._usedMemoryModel.getDataCount("usedMemory");
             if (size >= 10) {

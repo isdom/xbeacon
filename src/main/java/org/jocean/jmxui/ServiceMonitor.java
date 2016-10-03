@@ -371,10 +371,12 @@ public class ServiceMonitor {
             @Override
             public void call(final List<Triple<ServiceInfo, String, Indicator>> inds) {
                 for (Triple<ServiceInfo, String, Indicator> ind : inds) {
-                    final ServiceInfoImpl impl = (ServiceInfoImpl)ind.first;
-                    impl._usedMemories.add(ind.third);
-                    if (impl._usedMemories.size() > 10) {
-                        impl._usedMemories.remove(0);
+                    if (null != ind.third) {
+                        final ServiceInfoImpl impl = (ServiceInfoImpl)ind.first;
+                        impl._usedMemories.add(ind.third);
+                        if (impl._usedMemories.size() > 10) {
+                            impl._usedMemories.remove(0);
+                        }
                     }
                 }
                 _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
