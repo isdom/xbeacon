@@ -38,11 +38,11 @@
                         </tabbox>
                         <!-- textbox id="parameters" multiline="true"/ -->
                     </center>
-                    <south height="10px">
-                        <caption id="status" label="..."/>
-                    </south>
                 </borderlayout>
             </center>
+            <south height="40px">
+                <caption id="status" label="..."/>
+            </south>
         </borderlayout>
 	</window>
 </zk>

@@ -28,6 +28,7 @@ import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.builder.GridBuilder;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.ui.JsonUI;
+import org.jocean.zkoss.util.EventQueueForwarder;
 import org.ngi.zhighcharts.SimpleExtXYModel;
 import org.ngi.zhighcharts.ZHighCharts;
 import org.slf4j.Logger;
@@ -35,6 +36,8 @@ import org.slf4j.LoggerFactory;
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
+import org.zkoss.zk.ui.event.EventQueue;
+import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.MouseEvent;
 import org.zkoss.zk.ui.select.SelectorComposer;
@@ -46,6 +49,7 @@ import org.zkoss.zul.Caption;
 import org.zkoss.zul.Center;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
+import org.zkoss.zul.Progressmeter;
 import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
@@ -54,6 +58,7 @@ import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
 
+import rx.Observer;
 import rx.functions.Action1;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
@@ -145,6 +150,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                         }
                     }
                 }});
+        this._eventqueue = EventQueues.lookup("callback", EventQueues.SESSION, true);
 	}
 
     private void refreshJMX(final ServiceData data) throws URISyntaxException {
@@ -152,21 +158,25 @@ public class JmxComposer extends SelectorComposer<Window>{
         this.servicetitle.setLabel("主机:" + data._host
         + "  用户:" + data._user
         + "  服务:" + data._service);
-        final ListResponse resp = listMBeans();
-        final DomainInfo[] domaininfos = resp.getDomains();
-        this._model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
-        for (DomainInfo domain : domaininfos) {
-            final SimpleTreeModel.Node child = 
-                    this._model.getRoot().addChildIfAbsent(domain.getName());
-            for (MBeanInfo mbeaninfo : domain.getMBeans()) {
-                final SimpleTreeModel.Node mbeannode = 
-                        child.addChildrenIfAbsent(buildPath(
-                                mbeaninfo.getObjectName().getKeyPropertyListString()));
-                mbeannode.setData(mbeaninfo);
-            }
-        }
-        
-        mbeans.setModel(this._model);
+        listMBeans(new Action1<ListResponse>() {
+            @Override
+            public void call(final ListResponse resp) {
+                final DomainInfo[] domaininfos = resp.getDomains();
+                _model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
+                for (DomainInfo domain : domaininfos) {
+                    final SimpleTreeModel.Node child = 
+                            _model.getRoot().addChildIfAbsent(domain.getName());
+                    for (MBeanInfo mbeaninfo : domain.getMBeans()) {
+                        final SimpleTreeModel.Node mbeannode = 
+                                child.addChildrenIfAbsent(buildPath(
+                                        mbeaninfo.getObjectName().getKeyPropertyListString()));
+                        mbeannode.setData(mbeaninfo);
+                    }
+                }
+                
+                mbeans.setModel(_model);
+                status.getChildren().clear();
+            }});
     }
 
     private EventListener<Event> refreshSelectedMBean() {
@@ -184,17 +194,43 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
 	
 	private void displayMBeanInfo(final MBeanInfo mbeaninfo) {
-	    final ReadAttrResponse resp = queryAttrValue(mbeaninfo);
-	    this.attrs.getChildren().clear();
-	    this.attrs.appendChild((Component)JsonUI.buildUI(resp.getValue()));
+	    queryAttrValue(mbeaninfo, new Action1<ReadAttrResponse>() {
+            @Override
+            public void call(final ReadAttrResponse resp) {
+                attrs.getChildren().clear();
+                attrs.appendChild((Component)JsonUI.buildUI(resp.getValue()));
+                status.getChildren().clear();
+            }});
     }
 
-    private ReadAttrResponse queryAttrValue(final MBeanInfo mbeaninfo) {
+    private void queryAttrValue(final MBeanInfo mbeaninfo, final Action1<ReadAttrResponse> action) {
+        final Progressmeter progress = new Progressmeter();
+        progress.setWidth("400px");
+        status.appendChild(progress);
+        progress.setValue(100);
+        
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        final EventQueueForwarder<Observer<ReadAttrResponse>> eqf = 
+                new EventQueueForwarder(Observer.class, this._eventqueue);
+        
+        eqf.subscribe(new Observer<ReadAttrResponse>() {
+            @Override
+            public void onCompleted() {
+            }
+
+            @Override
+            public void onError(Throwable e) {
+            }
+
+            @Override
+            public void onNext(final ReadAttrResponse resp) {
+                action.call(resp);
+            }});
+        
         final JolokiaRequest req = new JolokiaRequest();
         req.setType("read");
         req.setMBean(mbeaninfo.getObjectName().toString());
         
-        final ReadAttrResponse resp = 
         this._signalClient.<ReadAttrResponse>defineInteraction(req, 
                 Feature.ENABLE_LOGGING,
                 Feature.ENABLE_COMPRESSOR,
@@ -202,9 +238,8 @@ public class JmxComposer extends SelectorComposer<Window>{
                 new SignalClient.UsingMethod(POST.class),
                 new SignalClient.DecodeResponseAs(ReadAttrResponse.class)
                 )
-        .timeout(10, TimeUnit.SECONDS)
-        .toBlocking().single();
-        return resp;
+        .timeout(1, TimeUnit.SECONDS)
+        .subscribe(eqf.subject());
     }
     
 	private SimpleTreeModel.Node currentSelectedNode() {
@@ -224,11 +259,33 @@ public class JmxComposer extends SelectorComposer<Window>{
         return rawpath.split(",");
     }
     
-    private ListResponse listMBeans() {
+    private void listMBeans(final Action1<ListResponse> action) {
+        final Progressmeter progress = new Progressmeter();
+        progress.setWidth("400px");
+        status.appendChild(progress);
+        progress.setValue(100);
+        
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        final EventQueueForwarder<Observer<ListResponse>> eqf = 
+                new EventQueueForwarder(Observer.class, this._eventqueue);
+        
+        eqf.subscribe(new Observer<ListResponse>() {
+            @Override
+            public void onCompleted() {
+            }
+
+            @Override
+            public void onError(Throwable e) {
+            }
+
+            @Override
+            public void onNext(final ListResponse resp) {
+                action.call(resp);
+            }});
+        
         final JolokiaRequest req = new JolokiaRequest();
         req.setType("list");
         
-        final ListResponse resp = 
         this._signalClient.<ListResponse>defineInteraction(req, 
                 Feature.ENABLE_LOGGING,
                 Feature.ENABLE_COMPRESSOR,
@@ -236,9 +293,8 @@ public class JmxComposer extends SelectorComposer<Window>{
                 new SignalClient.UsingMethod(POST.class),
                 new SignalClient.DecodeResponseAs(ListResponse.class)
                 )
-        .timeout(10, TimeUnit.SECONDS)
-        .toBlocking().single();
-        return resp;
+        .timeout(1, TimeUnit.SECONDS)
+        .subscribe(eqf.subject());
     }
     
     private ServiceData addServiceInfo(final ServiceInfo info) {
@@ -484,4 +540,6 @@ public class JmxComposer extends SelectorComposer<Window>{
     
     @WireVariable("signalClient") 
     private SignalClient _signalClient;
+    
+    private EventQueue<Event> _eventqueue;
 }
