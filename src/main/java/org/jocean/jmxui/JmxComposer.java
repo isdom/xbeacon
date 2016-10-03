@@ -24,14 +24,15 @@ import org.jocean.jmxui.bean.ListResponse;
 import org.jocean.jmxui.bean.ListResponse.DomainInfo;
 import org.jocean.jmxui.bean.ListResponse.MBeanInfo;
 import org.jocean.jmxui.bean.ReadAttrResponse;
-import org.jocean.jmxui.bean.ReadAttrResponse.AttrValue;
 import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.builder.GridBuilder;
 import org.jocean.zkoss.model.SimpleTreeModel;
+import org.jocean.zkoss.ui.JsonUI;
 import org.ngi.zhighcharts.SimpleExtXYModel;
 import org.ngi.zhighcharts.ZHighCharts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.event.Event;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
@@ -42,6 +43,7 @@ import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
 import org.zkoss.zul.Button;
 import org.zkoss.zul.Caption;
+import org.zkoss.zul.Center;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
 import org.zkoss.zul.Toolbarbutton;
@@ -84,8 +86,6 @@ public class JmxComposer extends SelectorComposer<Window>{
 		
         this.services.setRowRenderer(GridBuilder.buildRowRenderer(ServiceData.class));
         this.services.setSizedByContent(true);
-        this.attrs.setRowRenderer(GridBuilder.buildRowRenderer(AttrValue.class));
-        this.attrs.setSizedByContent(true);
         this.mbeans.setItemRenderer(new NodeTreeRenderer());
         
         this.mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
@@ -186,17 +186,7 @@ public class JmxComposer extends SelectorComposer<Window>{
 	private void displayMBeanInfo(final MBeanInfo mbeaninfo) {
 	    final ReadAttrResponse resp = queryAttrValue(mbeaninfo);
 	    this.attrs.getChildren().clear();
-	    final AttrValue[] attrvalues = resp.getValue();
-	    this.attrs.appendChild(new Columns() {
-            private static final long serialVersionUID = 1L;
-        {
-            this.setSizable(true);
-            GridBuilder.buildColumns(this, AttrValue.class);
-        }});
-	    this.attrs.setModel( GridBuilder.buildListModel(AttrValue.class, 
-	            attrvalues.length, 
-                GridBuilder.fetchPageOf(attrvalues),
-                GridBuilder.fetchTotalSizeOf(attrvalues)));
+	    this.attrs.appendChild((Component)JsonUI.buildUI(resp.getValue()));
     }
 
     private ReadAttrResponse queryAttrValue(final MBeanInfo mbeaninfo) {
@@ -479,7 +469,7 @@ public class JmxComposer extends SelectorComposer<Window>{
     private SimpleTreeModel _model;
 
     @Wire
-    private Grid            attrs;
+    private Center          attrs;
     
     @Wire
     private Toolbarbutton   refresh;
