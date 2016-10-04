@@ -49,6 +49,7 @@ import org.zkoss.zul.Caption;
 import org.zkoss.zul.Center;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
+import org.zkoss.zul.Intbox;
 import org.zkoss.zul.Progressmeter;
 import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
@@ -59,6 +60,7 @@ import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
 
 import rx.Observer;
+import rx.functions.Action0;
 import rx.functions.Action1;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
@@ -96,23 +98,43 @@ public class JmxComposer extends SelectorComposer<Window>{
         this.mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
         this.refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
         
-        this._serviceMonitor.subscribeServiceStatus(new InitStatus() {
+        this._eventqueue = EventQueues.lookup("callback", EventQueues.SESSION, true);
+        
+        apply.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
-            public void call(final Map<ServiceInfo, Map<String, Indicator[]>> status) {
-                for (Map.Entry<ServiceInfo, Map<String, Indicator[]>> entry : status.entrySet()) {
-                    final ServiceInfo info = entry.getKey();
-                    final ServiceData data = addServiceInfo(info);
-                    final Indicator[] inds = entry.getValue().get("usedMemory");
-                    if (null != inds) {
-                        for (Indicator ind : inds) {
-                            data.addUsedMemoryInd(ind);
+            public void onEvent(Event event) throws Exception {
+                indHistorySize = indlen.getValue();
+                subscribeServiceData();
+            }});
+        subscribeServiceData();
+	}
+
+    private void subscribeServiceData() {
+        if (null != _unsubscribeServiceStatus) {
+            _unsubscribeServiceStatus.call();
+        }
+        _serviceDatas.clear();
+        this.services.getChildren().clear();
+        this._unsubscribeServiceStatus = this._serviceMonitor.subscribeServiceStatus(
+            indHistorySize,
+            new InitStatus() {
+                @Override
+                public void call(final Map<ServiceInfo, Map<String, Indicator[]>> status) {
+                    for (Map.Entry<ServiceInfo, Map<String, Indicator[]>> entry : status.entrySet()) {
+                        final ServiceInfo info = entry.getKey();
+                        final ServiceData data = addServiceInfo(info);
+                        final Indicator[] inds = entry.getValue().get("usedMemory");
+                        if (null != inds) {
+                            for (Indicator ind : inds) {
+                                data.addUsedMemoryInd(ind);
+                            }
                         }
+                        _serviceDatas.add(data);
                     }
-                    _serviceDatas.add(data);
-                }
-                
-                updateServicesModel(_serviceDatas.toArray(EMPTY_SRV));
-            }}, new UpdateStatus() {
+                    
+                    updateServicesModel(_serviceDatas.toArray(EMPTY_SRV));
+                }},
+            new UpdateStatus() {
 
                 @Override
                 public void onServiceAdded(final ServiceInfo info) {
@@ -150,8 +172,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                         }
                     }
                 }});
-        this._eventqueue = EventQueues.lookup("callback", EventQueues.SESSION, true);
-	}
+    }
 
     private void refreshJMX(final ServiceData data) throws URISyntaxException {
         this._jolokiauri = new URI(data._jolokiaUrl);
@@ -472,7 +493,7 @@ public class JmxComposer extends SelectorComposer<Window>{
         public void addUsedMemoryInd(final Indicator ind) {
             final long value = ind.getValue();
             final int size = this._usedMemoryModel.getDataCount("usedMemory");
-            if (size >= 10) {
+            if (size >= indHistorySize) {
                 this._usedMemoryModel.addValue("usedMemory", ind.getTimestamp(), 
                         (int)( (double)value / 1024 / 1024), true);
             } else {
@@ -533,8 +554,18 @@ public class JmxComposer extends SelectorComposer<Window>{
     @Wire
     private Caption         status;
     
+    @Wire
+    private Intbox          indlen;
+    
+    private int             indHistorySize = 10;
+    
+    @Wire
+    private Button          apply;
+    
     @WireVariable("servicemonitor") 
     private ServiceMonitor _serviceMonitor;
+    
+    private Action0     _unsubscribeServiceStatus;
     
     private URI _jolokiauri;
     

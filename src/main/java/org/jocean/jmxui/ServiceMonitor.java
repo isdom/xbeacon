@@ -224,24 +224,28 @@ public class ServiceMonitor {
         this._rootPath = rootPath;
     }
     
-    public void subscribeServiceStatus(
+    public Action0 subscribeServiceStatus(
+            final int initIndSize,
             final InitStatus initStatus, 
             final UpdateStatus updateStatus) {
         final String initEvent = "init-" + UUID.randomUUID().toString();
         final EventListener<Event> listener = 
                 buildEventListener(initStatus, updateStatus, initEvent, new AtomicBoolean(false));
         this._eventqueue.subscribe(listener);
-        Desktops.addActionForCurrentDesktopCleanup(new Action0() {
+        final Action0 unsubcribe = new Action0() {
             @Override
             public void call() {
                 _eventqueue.unsubscribe(listener);
-            }});
+            }};
+        
+        Desktops.addActionForCurrentDesktopCleanup(unsubcribe);
         
         this._executor.execute(new Runnable() {
             @Override
             public void run() {
-                publishServicesStatus(initEvent);
+                publishServicesStatus(initIndSize, initEvent);
             }});
+        return unsubcribe;
     }
 
     private EventListener<Event> buildEventListener(
@@ -374,7 +378,7 @@ public class ServiceMonitor {
                     if (null != ind.third) {
                         final ServiceInfoImpl impl = (ServiceInfoImpl)ind.first;
                         impl._usedMemories.add(ind.third);
-                        if (impl._usedMemories.size() > 10) {
+                        if (impl._usedMemories.size() > _maxIndSize) {
                             impl._usedMemories.remove(0);
                         }
                     }
@@ -490,12 +494,16 @@ public class ServiceMonitor {
         service.setJolokiaUrl(prop.getProperty("jolokia.url"));
     }
 
-    private void publishServicesStatus(final String initEvent) {
+    private void publishServicesStatus(final int initIndSize, final String initEvent) {
         // run in services info update executor
         final Map<ServiceInfo, Map<String,Indicator[]>> status = Maps.newHashMap();
         for (ServiceInfoImpl impl : this._services.values()) {
             final Map<String, Indicator[]> indicators = Maps.newHashMap();
-            indicators.put("usedMemory", impl._usedMemories.toArray(EMPTY_IND));
+            final int size = impl._usedMemories.size();
+            
+            indicators.put("usedMemory", 
+                impl._usedMemories.subList(Math.max(0, size - initIndSize), size)
+                    .toArray(EMPTY_IND));
             status.put(impl.snapshot(), indicators);
         }
         this._eventqueue.publish(new Event(initEvent, null, new Action1<InitStatus>() {
@@ -519,4 +527,6 @@ public class ServiceMonitor {
     
     @Inject
     private SignalClient _signalClient;
+    
+    private int _maxIndSize = 1000;
 }

@@ -18,7 +18,7 @@ import org.zkoss.zk.ui.select.annotation.Wire;
 import org.zkoss.zk.ui.select.annotation.WireVariable;
 import org.zkoss.zul.Window;
 
-@VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
+@VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class) 
 public class ChartsComposer extends SelectorComposer<Window>{
 	
 
@@ -83,19 +83,21 @@ public class ChartsComposer extends SelectorComposer<Window>{
     
 		this.chartMemory.setModel(this.modelMemory);
 		
-        this._serviceMonitor.subscribeServiceStatus(new InitStatus() {
-            @Override
-            public void call(final Map<ServiceInfo, Map<String, Indicator[]>> status) {
-                for (Map.Entry<ServiceInfo, Map<String, Indicator[]>> entry : status.entrySet()) {
-                    final ServiceInfo info = entry.getKey();
-                    final Indicator[] inds = entry.getValue().get("usedMemory");
-                    if (null != inds) {
-                        for (Indicator ind : inds) {
-                            addUsedMemoryInd(info.getId(), ind.getTimestamp(), (Long)ind.getValue());
+        this._serviceMonitor.subscribeServiceStatus(10,
+            new InitStatus() {
+                @Override
+                public void call(final Map<ServiceInfo, Map<String, Indicator[]>> status) {
+                    for (Map.Entry<ServiceInfo, Map<String, Indicator[]>> entry : status.entrySet()) {
+                        final ServiceInfo info = entry.getKey();
+                        final Indicator[] inds = entry.getValue().get("usedMemory");
+                        if (null != inds) {
+                            for (Indicator ind : inds) {
+                                addUsedMemoryInd(info.getId(), ind.getTimestamp(), (Long)ind.getValue());
+                            }
                         }
                     }
-                }
-            }}, new UpdateStatus() {
+                }},
+            new UpdateStatus() {
 
                 @Override
                 public void onServiceAdded(final ServiceInfo info) {

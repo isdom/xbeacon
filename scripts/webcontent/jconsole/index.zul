@@ -2,6 +2,12 @@
     <window id="main" width="100%" height="100%" 
         apply="org.jocean.jmxui.JmxComposer">
         <borderlayout>
+            <north>
+                <caption label="参数设定">
+                    <intbox id="indlen" text="10"/>
+                    <button id="apply" label="应用"/>
+                </caption>
+            </north>
             <west size="90%" splittable="true" flex="true" collapsible="true" title="Services">
                 <borderlayout>
                     <center flex="true">
