@@ -39,7 +39,12 @@
                                         </center>
                                     </borderlayout>
                                 </tabpanel>
-                                <tabpanel>This is panel ops</tabpanel>
+                                <tabpanel>
+                                    <borderlayout>
+                                        <center id="ops" flex="true" >
+                                        </center>
+                                    </borderlayout>
+                                </tabpanel>
                             </tabpanels>
                         </tabbox>
                         <!-- textbox id="parameters" multiline="true"/ -->

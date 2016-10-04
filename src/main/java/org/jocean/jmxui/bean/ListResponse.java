@@ -1,6 +1,7 @@
 package org.jocean.jmxui.bean;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import javax.management.ObjectName;
@@ -11,7 +12,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.annotation.JSONField;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 
 public class ListResponse extends JolokiaResponse {
     public static class ArgInfo {
@@ -61,7 +62,21 @@ public class ListResponse extends JolokiaResponse {
         }
     }
     
-    public static class OperationInfo {
+    public static class OperationInfo implements Comparable<OperationInfo> {
+        @Override
+        public int compareTo(final OperationInfo o) {
+            return this._name.compareTo(o._name);
+        }
+        
+        @JSONField(serialize=false)
+        public String getName() {
+            return this._name;
+        }
+        
+        @JSONField(deserialize=false)
+        public void setName(final String name) {
+            this._name = name;
+        }
         
         @JSONField(name="args")
         public ArgInfo[] getArgs() {
@@ -93,9 +108,17 @@ public class ListResponse extends JolokiaResponse {
             this._description = desc;
         }
         
-        private ArgInfo[] _args;
-        private String _returnType;
+        @RowSource(name="描述")
         private String _description;
+        
+        @RowSource(name="方法名")
+        private String _name;
+        
+        private ArgInfo[] _args;
+        
+        @RowSource(name="返回类型")
+        private String _returnType;
+        
         /* (non-Javadoc)
          * @see java.lang.Object#toString()
          */
@@ -185,6 +208,7 @@ public class ListResponse extends JolokiaResponse {
     
     public static class MBeanInfo implements Comparable<MBeanInfo> {
         
+        private static final OperationInfo[] EMPTY_OP = new OperationInfo[0];
         @Override
         public int compareTo(final MBeanInfo o) {
             return this._objname.compareTo(o._objname);
@@ -204,23 +228,31 @@ public class ListResponse extends JolokiaResponse {
         }
         
         @JSONField(name="op")
-        public Map<String, OperationInfo[]> getOperations() {
+        public OperationInfo[] getOperations() {
             return _operations;
         }
         
         @JSONField(name="op")
         public void setOperations(final Map<String, Object> operations) {
             if (null != operations) {
-                this._operations = Maps.newHashMap();
+                final List<OperationInfo> ops = Lists.newArrayList();
                 for (Map.Entry<String, Object> entry : operations.entrySet()) {
                     if (entry.getValue() instanceof JSONArray) {
-                        this._operations.put(entry.getKey(), 
-                            JSON.toJavaObject((JSONArray)entry.getValue(), OperationInfo[].class));
+                        final OperationInfo[] infos = 
+                                JSON.toJavaObject((JSONArray)entry.getValue(), OperationInfo[].class);
+                        for (OperationInfo info : infos) {
+                            info.setName(entry.getKey());
+                        }
+                        ops.addAll(Arrays.asList(infos));
                     } else {
-                        this._operations.put(entry.getKey(), 
-                            new OperationInfo[]{JSON.toJavaObject((JSONObject)entry.getValue(), OperationInfo.class)});
+                        final OperationInfo info = 
+                                JSON.toJavaObject((JSONObject)entry.getValue(), OperationInfo.class);
+                        info.setName(entry.getKey());
+                        ops.add(info);
                     }
                 }
+                this._operations = ops.toArray(EMPTY_OP);
+                Arrays.sort(this._operations);
             }
         }
         
@@ -250,7 +282,7 @@ public class ListResponse extends JolokiaResponse {
         }
         
         private ObjectName _objname;
-        private Map<String, OperationInfo[]> _operations;
+        private OperationInfo[] _operations;
         private AttributeInfo[] _attributes;
         private String _description;
         /* (non-Javadoc)
@@ -261,9 +293,8 @@ public class ListResponse extends JolokiaResponse {
             final StringBuilder builder = new StringBuilder();
             builder.append("\nMBean [op=");
             if (null != _operations) {
-                for (Map.Entry<String, OperationInfo[]> entry : _operations.entrySet()) {
-                    builder.append("\n\t\t").append(entry.getKey()).append("=")
-                        .append(Arrays.toString(entry.getValue()));
+                for (OperationInfo info : this._operations) {
+                    builder.append("\n\t\t").append(info.toString());
                 }
             } else {
                 builder.append("null");

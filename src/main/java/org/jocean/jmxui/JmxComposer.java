@@ -23,6 +23,7 @@ import org.jocean.jmxui.bean.JolokiaRequest;
 import org.jocean.jmxui.bean.ListResponse;
 import org.jocean.jmxui.bean.ListResponse.DomainInfo;
 import org.jocean.jmxui.bean.ListResponse.MBeanInfo;
+import org.jocean.jmxui.bean.ListResponse.OperationInfo;
 import org.jocean.jmxui.bean.ReadAttrResponse;
 import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.builder.GridBuilder;
@@ -95,8 +96,8 @@ public class JmxComposer extends SelectorComposer<Window>{
         this.services.setSizedByContent(true);
         this.mbeans.setItemRenderer(new NodeTreeRenderer());
         
-        this.mbeans.addEventListener(Events.ON_SELECT, refreshSelectedMBean());
-        this.refresh.addEventListener(Events.ON_CLICK, refreshSelectedMBean());
+        this.mbeans.addEventListener(Events.ON_SELECT, showSelectedMBean());
+        this.refresh.addEventListener(Events.ON_CLICK, showSelectedMBean());
         
         this._eventqueue = EventQueues.lookup("callback", EventQueues.SESSION, true);
         
@@ -174,7 +175,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                 }});
     }
 
-    private void refreshJMX(final ServiceData data) throws URISyntaxException {
+    private void queryServiceMBeans(final ServiceData data) throws URISyntaxException {
         this._jolokiauri = new URI(data._jolokiaUrl);
         this.servicetitle.setLabel("主机:" + data._host
         + "  用户:" + data._user
@@ -182,25 +183,31 @@ public class JmxComposer extends SelectorComposer<Window>{
         listMBeans(new Action1<ListResponse>() {
             @Override
             public void call(final ListResponse resp) {
-                final DomainInfo[] domaininfos = resp.getDomains();
-                _model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
-                for (DomainInfo domain : domaininfos) {
-                    final SimpleTreeModel.Node child = 
-                            _model.getRoot().addChildIfAbsent(domain.getName());
-                    for (MBeanInfo mbeaninfo : domain.getMBeans()) {
-                        final SimpleTreeModel.Node mbeannode = 
-                                child.addChildrenIfAbsent(buildPath(
-                                        mbeaninfo.getObjectName().getKeyPropertyListString()));
-                        mbeannode.setData(mbeaninfo);
-                    }
+                if ( 200 == resp.getStatus()) {
+                    showServiceMBeans(resp);
                 }
-                
-                mbeans.setModel(_model);
-                status.getChildren().clear();
             }});
     }
 
-    private EventListener<Event> refreshSelectedMBean() {
+    private void showServiceMBeans(final ListResponse resp) {
+        final DomainInfo[] domains = resp.getDomains();
+        this._model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
+        for (DomainInfo domain : domains) {
+            final SimpleTreeModel.Node child = 
+                this._model.getRoot().addChildIfAbsent(domain.getName());
+            for (MBeanInfo mbeaninfo : domain.getMBeans()) {
+                final SimpleTreeModel.Node mbeannode = 
+                        child.addChildrenIfAbsent(buildPath(
+                                mbeaninfo.getObjectName().getKeyPropertyListString()));
+                mbeannode.setData(mbeaninfo);
+            }
+        }
+        
+        this.mbeans.setModel(this._model);
+        this.status.getChildren().clear();
+    }
+
+    private EventListener<Event> showSelectedMBean() {
         return new EventListener<Event>() {
              
             @Override
@@ -215,13 +222,41 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
 	
 	private void displayMBeanInfo(final MBeanInfo mbeaninfo) {
+	    showMBeanOperations(mbeaninfo);
 	    queryAttrValue(mbeaninfo, new Action1<ReadAttrResponse>() {
             @Override
             public void call(final ReadAttrResponse resp) {
-                attrs.getChildren().clear();
-                attrs.appendChild((Component)JsonUI.buildUI(resp.getValue()));
-                status.getChildren().clear();
+                if (200 == resp.getStatus()) {
+                    showMBeanAttributes(resp);
+                }
             }});
+    }
+
+    private void showMBeanOperations(final MBeanInfo mbeaninfo) {
+        final OperationInfo[] infos = mbeaninfo.getOperations();
+        this.ops.getChildren().clear();
+        if (null != infos) {
+            final Grid grid = new Grid();
+            this.ops.appendChild(grid);
+            grid.setRowRenderer(GridBuilder.buildRowRenderer(OperationInfo.class));
+            grid.setSizedByContent(true);
+            grid.appendChild(new Columns() {
+                private static final long serialVersionUID = 1L;
+            {
+                this.setSizable(true);
+                GridBuilder.buildColumns(this, OperationInfo.class);
+            }});
+            grid.setModel( GridBuilder.buildListModel(OperationInfo.class, 
+                    infos.length, 
+                    GridBuilder.fetchPageOf(infos),
+                    GridBuilder.fetchTotalSizeOf(infos)));
+        }
+    }
+
+    private void showMBeanAttributes(final ReadAttrResponse resp) {
+        this.attrs.getChildren().clear();
+        this.attrs.appendChild((Component)JsonUI.buildUI(resp.getValue()));
+        this.status.getChildren().clear();
     }
 
     private void queryAttrValue(final MBeanInfo mbeaninfo, final Action1<ReadAttrResponse> action) {
@@ -330,7 +365,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                     @Override
                     public void call(final ServiceData data) {
                         try {
-                            refreshJMX(data);
+                            queryServiceMBeans(data);
                         } catch (URISyntaxException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
@@ -547,6 +582,9 @@ public class JmxComposer extends SelectorComposer<Window>{
 
     @Wire
     private Center          attrs;
+    
+    @Wire
+    private Center          ops;
     
     @Wire
     private Toolbarbutton   refresh;
