@@ -7,15 +7,105 @@ import java.util.Map;
 import javax.management.ObjectName;
 
 import org.jocean.zkoss.annotation.RowSource;
+import org.jocean.zkoss.builder.GridBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.zkoss.zk.ui.Component;
+import org.zkoss.zk.ui.IdSpace;
+import org.zkoss.zk.ui.event.EventListener;
+import org.zkoss.zk.ui.event.Events;
+import org.zkoss.zk.ui.event.MouseEvent;
+import org.zkoss.zk.ui.ext.Scope;
+import org.zkoss.zk.ui.ext.ScopeListener;
+import org.zkoss.zul.Button;
+import org.zkoss.zul.Columns;
+import org.zkoss.zul.Doublebox;
+import org.zkoss.zul.Grid;
+import org.zkoss.zul.Intbox;
+import org.zkoss.zul.Longbox;
+import org.zkoss.zul.Textbox;
+import org.zkoss.zul.impl.InputElement;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
+import rx.functions.Action1;
 
 public class ListResponse extends JolokiaResponse {
+    @SuppressWarnings("unused")
+    private static final Logger LOG = 
+            LoggerFactory.getLogger(ListResponse.class);
+    
     public static class ArgInfo {
+        static interface Input {
+            public Object getInputObject(final InputElement input);
+            public InputElement newInputComponent();
+        }
+        
+        private static Map<String, Input> _TYPE2INPUT;
+        private static Input INPUT_TEXT;
+        private static Input type2input(final String type) {
+            final Input input = _TYPE2INPUT.get(type);
+            return null != input ? input : INPUT_TEXT;
+        }
+        
+        static {
+            final Input INPUT_INT = new Input() {
+                @Override
+                public Object getInputObject(final InputElement input) {
+                    return ((Intbox)input).getValue();
+                }
+                @Override
+                public InputElement newInputComponent() {
+                    return new Intbox();
+                }};
+            final Input INPUT_LONG = new Input() {
+                @Override
+                public Object getInputObject(final InputElement input) {
+                    return ((Longbox)input).getValue();
+                }
+                @Override
+                public InputElement newInputComponent() {
+                    return new Longbox();
+                }};
+            
+            final Input INPUT_DOUBLE = new Input() {
+                @Override
+                public Object getInputObject(final InputElement input) {
+                    return ((Doublebox)input).getValue();
+                }
+                @Override
+                public InputElement newInputComponent() {
+                    return new Doublebox();
+                }};
+            INPUT_TEXT = new Input() {
+                @Override
+                public Object getInputObject(final InputElement input) {
+                    return ((Textbox)input).getValue();
+                }
+                @Override
+                public InputElement newInputComponent() {
+                    return new Textbox();
+                }};
+            _TYPE2INPUT = Maps.newHashMap();
+            _TYPE2INPUT.put("byte", INPUT_INT);
+            _TYPE2INPUT.put("java.lang.Byte", INPUT_INT);
+            _TYPE2INPUT.put("short", INPUT_INT);
+            _TYPE2INPUT.put("java.lang.Short", INPUT_INT);
+            _TYPE2INPUT.put("int", INPUT_INT);
+            _TYPE2INPUT.put("java.lang.Integer", INPUT_INT);
+            _TYPE2INPUT.put("long", INPUT_LONG);
+            _TYPE2INPUT.put("java.lang.Long", INPUT_LONG);
+            _TYPE2INPUT.put("float", INPUT_DOUBLE);
+            _TYPE2INPUT.put("java.lang.Float", INPUT_DOUBLE);
+            _TYPE2INPUT.put("double", INPUT_DOUBLE);
+            _TYPE2INPUT.put("java.lang.Double", INPUT_DOUBLE);
+        }
+        
         @JSONField(name="name")
         public String getName() {
             return this._name;
@@ -34,6 +124,7 @@ public class ListResponse extends JolokiaResponse {
         @JSONField(name="type")
         public void setType(final String type) {
             this._type = type;
+            buildInput();
         }
         
         @JSONField(name="desc")
@@ -46,9 +137,28 @@ public class ListResponse extends JolokiaResponse {
             this._description = desc;
         }
         
-        private String _name;
-        private String _type;
+        public void buildInput() {
+            this._input = type2input(this._type);
+            this._inputComponent = this._input.newInputComponent();
+        }
+        
+        public Object getInputObject() {
+            return this._input.getInputObject(_inputComponent);
+        }
+        
+        @RowSource(name="描述")
         private String _description;
+        
+        @RowSource(name="参数")
+        private String _name;
+        
+        @RowSource(name="类型")
+        private String _type;
+        
+        @RowSource(name="输入值")
+        private InputElement _inputComponent;
+        private Input _input;
+        
         /* (non-Javadoc)
          * @see java.lang.Object#toString()
          */
@@ -63,6 +173,44 @@ public class ListResponse extends JolokiaResponse {
     }
     
     public static class OperationInfo implements Comparable<OperationInfo> {
+        
+        public void setInvoker(final Action1<OperationInfo> invoker) {
+            this._btnInvoke = new Button("执行");
+            this._btnInvoke.addEventListener(Events.ON_CLICK, 
+                new EventListener<MouseEvent>() {
+                    @Override
+                    public void onEvent(MouseEvent event) throws Exception {
+                        invoker.call(OperationInfo.this);
+                    }});
+        }
+        
+        public String genNameWithSignature() {
+            final StringBuilder sb = new StringBuilder();
+            String comma = "";
+            sb.append(this._name);
+            sb.append('(');
+            for (ArgInfo arg : this._args) {
+                sb.append(comma);
+                sb.append(arg.getType());
+                comma = ",";
+            }
+            sb.append(')');
+            return sb.toString();
+        }
+        
+        public JSONArray genArgArray() {
+            if (null == this._args ||
+                    this._args.length == 0) {
+                return null;
+            } else {
+                final JSONArray array = new JSONArray();
+                for (ArgInfo arg : this._args) {
+                    array.add(arg.getInputObject());
+                }
+                return array;
+            }
+        }
+        
         @Override
         public int compareTo(final OperationInfo o) {
             return this._name.compareTo(o._name);
@@ -86,6 +234,52 @@ public class ListResponse extends JolokiaResponse {
         @JSONField(name="args")
         public void setArgs(final ArgInfo[] args) {
             this._args = args;
+            
+            if (null != this._args && this._args.length > 0) {
+                this._gridArgs = buildArgsGrid();
+            } else {
+                this._gridArgs = null;
+            }
+        }
+
+        private Grid buildArgsGrid() {
+            final Grid grid = new Grid();
+            grid.setRowRenderer(GridBuilder.buildRowRenderer(ArgInfo.class));
+            grid.setSizedByContent(true);
+            grid.appendChild(new Columns() {
+                private static final long serialVersionUID = 1L;
+            {
+                this.setSizable(true);
+                GridBuilder.buildColumns(this, ArgInfo.class);
+            }});
+            grid.addScopeListener(new ScopeListener() {
+                @Override
+                public void attributeAdded(Scope scope, String name,
+                        Object value) {
+                }
+   
+                @Override
+                public void attributeReplaced(Scope scope, String name,
+                        Object value) {
+                }
+   
+                @Override
+                public void attributeRemoved(Scope scope, String name) {
+                }
+   
+                @Override
+                public void parentChanged(final Scope scope, final Scope newparent) {
+                    grid.setModel( GridBuilder.buildListModel(ArgInfo.class, 
+                            _args.length, 
+                            GridBuilder.fetchPageOf(_args),
+                            GridBuilder.fetchTotalSizeOf(_args)));
+                }
+   
+                @Override
+                public void idSpaceChanged(Scope scope,
+                        IdSpace newIdSpace) {
+                }});
+            return grid;
         }
         
         @JSONField(name="ret")
@@ -108,6 +302,9 @@ public class ListResponse extends JolokiaResponse {
             this._description = desc;
         }
         
+        @RowSource(name = "执行")
+        private Button _btnInvoke;
+        
         @RowSource(name="描述")
         private String _description;
         
@@ -115,6 +312,9 @@ public class ListResponse extends JolokiaResponse {
         private String _name;
         
         private ArgInfo[] _args;
+        
+        @RowSource(name="参数")
+        private Component _gridArgs;
         
         @RowSource(name="返回类型")
         private String _returnType;
@@ -209,6 +409,7 @@ public class ListResponse extends JolokiaResponse {
     public static class MBeanInfo implements Comparable<MBeanInfo> {
         
         private static final OperationInfo[] EMPTY_OP = new OperationInfo[0];
+        
         @Override
         public int compareTo(final MBeanInfo o) {
             return this._objname.compareTo(o._objname);

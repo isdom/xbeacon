@@ -19,6 +19,7 @@ import org.jocean.jmxui.ServiceMonitor.Indicator;
 import org.jocean.jmxui.ServiceMonitor.InitStatus;
 import org.jocean.jmxui.ServiceMonitor.ServiceInfo;
 import org.jocean.jmxui.ServiceMonitor.UpdateStatus;
+import org.jocean.jmxui.bean.ExecResponse;
 import org.jocean.jmxui.bean.JolokiaRequest;
 import org.jocean.jmxui.bean.ListResponse;
 import org.jocean.jmxui.bean.ListResponse.DomainInfo;
@@ -51,6 +52,7 @@ import org.zkoss.zul.Center;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
 import org.zkoss.zul.Intbox;
+import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Progressmeter;
 import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
@@ -59,6 +61,8 @@ import org.zkoss.zul.Treeitem;
 import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
 import org.zkoss.zul.Window;
+
+import com.alibaba.fastjson.JSONArray;
 
 import rx.Observer;
 import rx.functions.Action0;
@@ -101,7 +105,7 @@ public class JmxComposer extends SelectorComposer<Window>{
         
         this._eventqueue = EventQueues.lookup("callback", EventQueues.SESSION, true);
         
-        apply.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+        this.apply.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(Event event) throws Exception {
                 indHistorySize = indlen.getValue();
@@ -111,10 +115,10 @@ public class JmxComposer extends SelectorComposer<Window>{
 	}
 
     private void subscribeServiceData() {
-        if (null != _unsubscribeServiceStatus) {
-            _unsubscribeServiceStatus.call();
+        if (null != this._unsubscribeServiceStatus) {
+            this._unsubscribeServiceStatus.call();
         }
-        _serviceDatas.clear();
+        this._serviceDatas.clear();
         this.services.getChildren().clear();
         this._unsubscribeServiceStatus = this._serviceMonitor.subscribeServiceStatus(
             indHistorySize,
@@ -222,7 +226,21 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
 	
 	private void displayMBeanInfo(final MBeanInfo mbeaninfo) {
-	    showMBeanOperations(mbeaninfo);
+	    showMBeanOperations(mbeaninfo, new Action1<OperationInfo>() {
+            @Override
+            public void call(final OperationInfo op) {
+                final JSONArray args = op.genArgArray();
+                Messagebox.show("invoke " + op.getName() + " with args(" + args + ")?", 
+                        "exec operation", Messagebox.OK | Messagebox.CANCEL, Messagebox.QUESTION,
+                        new EventListener<Event>() {
+                            @Override
+                            public void onEvent(Event event)
+                                    throws Exception {
+                                if (Messagebox.ON_OK.equals(event.getName())){
+                                    invokeOperation(mbeaninfo, op, args);
+                                }
+                            }});
+            }});
 	    queryAttrValue(mbeaninfo, new Action1<ReadAttrResponse>() {
             @Override
             public void call(final ReadAttrResponse resp) {
@@ -232,8 +250,38 @@ public class JmxComposer extends SelectorComposer<Window>{
             }});
     }
 
-    private void showMBeanOperations(final MBeanInfo mbeaninfo) {
+    private void invokeOperation(final MBeanInfo mbean, final OperationInfo op, final JSONArray args) {
+        final JolokiaRequest req = new JolokiaRequest();
+        req.setType("exec");
+        req.setMBean(mbean.getObjectName().toString());
+        req.setOperation(op.genNameWithSignature());
+        req.setArguments(args);
+        
+        final ExecResponse resp =
+            this._signalClient.<ExecResponse>defineInteraction(req, 
+                    Feature.ENABLE_LOGGING,
+                    Feature.ENABLE_COMPRESSOR,
+                    new SignalClient.UsingUri(_jolokiauri),
+                    new SignalClient.UsingMethod(POST.class),
+                    new SignalClient.DecodeResponseAs(ExecResponse.class)
+                    )
+            .timeout(1, TimeUnit.SECONDS)
+            .toBlocking().single();
+        if (200 == resp.getStatus()) {
+            Messagebox.show("invoke " + op.getName() + " success, return: " + resp.getValue(), 
+                    "exec operation result", Messagebox.OK, Messagebox.INFORMATION);
+        } else {
+            Messagebox.show("invoke " + op.getName() + " failed, status code is " + resp.getStatus(), 
+                    "exec operation result", Messagebox.OK, Messagebox.ERROR);
+        }
+    }
+    
+    private void showMBeanOperations(final MBeanInfo mbeaninfo, final Action1<OperationInfo> invokeOperation) {
         final OperationInfo[] infos = mbeaninfo.getOperations();
+        for (OperationInfo info : infos) {
+            info.setInvoker(invokeOperation);
+        }
+        
         this.ops.getChildren().clear();
         if (null != infos) {
             final Grid grid = new Grid();

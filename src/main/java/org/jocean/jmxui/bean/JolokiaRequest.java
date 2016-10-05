@@ -1,5 +1,6 @@
 package org.jocean.jmxui.bean;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.annotation.JSONField;
 
 public class JolokiaRequest {
@@ -57,8 +58,30 @@ public class JolokiaRequest {
         return new Config();
     }
     
+    @JSONField(name="operation")
+    public String getOperation() {
+        return this._operation;
+    }
+
+    @JSONField(name="operation")
+    public void setOperation(final String operation) {
+        this._operation = operation;
+    }
+    
+    @JSONField(name="arguments")
+    public void setArguments(final JSONArray arguments) {
+        this._arguments = arguments;
+    }
+    
+    @JSONField(name="arguments")
+    public JSONArray getArguments() {
+        return this._arguments;
+    }
+
     private String _type;
     private String _mbean;
     private String _path;
     private String _attribute;
+    private String _operation;
+    private JSONArray _arguments;
 }
