@@ -22,6 +22,7 @@ import org.jocean.jmxui.ServiceMonitor.UpdateStatus;
 import org.jocean.jmxui.bean.ExecResponse;
 import org.jocean.jmxui.bean.JolokiaRequest;
 import org.jocean.jmxui.bean.ListResponse;
+import org.jocean.jmxui.bean.ListResponse.ArgInfo;
 import org.jocean.jmxui.bean.ListResponse.DomainInfo;
 import org.jocean.jmxui.bean.ListResponse.MBeanInfo;
 import org.jocean.jmxui.bean.ListResponse.OperationInfo;
@@ -52,6 +53,7 @@ import org.zkoss.zul.Center;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
 import org.zkoss.zul.Intbox;
+import org.zkoss.zul.Label;
 import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Progressmeter;
 import org.zkoss.zul.Toolbarbutton;
@@ -229,17 +231,7 @@ public class JmxComposer extends SelectorComposer<Window>{
 	    showMBeanOperations(mbeaninfo, new Action1<OperationInfo>() {
             @Override
             public void call(final OperationInfo op) {
-                final JSONArray args = op.genArgArray();
-                Messagebox.show("invoke " + op.getName() + " with args(" + args + ")?", 
-                        "exec operation", Messagebox.OK | Messagebox.CANCEL, Messagebox.QUESTION,
-                        new EventListener<Event>() {
-                            @Override
-                            public void onEvent(Event event)
-                                    throws Exception {
-                                if (Messagebox.ON_OK.equals(event.getName())){
-                                    invokeOperation(mbeaninfo, op, args);
-                                }
-                            }});
+                lauchOperation(mbeaninfo, op);
             }});
 	    queryAttrValue(mbeaninfo, new Action1<ReadAttrResponse>() {
             @Override
@@ -250,6 +242,58 @@ public class JmxComposer extends SelectorComposer<Window>{
             }});
     }
 
+    private void buildArgsGrid(final OperationInfo op, final Grid grid) {
+        grid.setRowRenderer(GridBuilder.buildRowRenderer(ArgInfo.class));
+        grid.setSizedByContent(true);
+        grid.appendChild(new Columns() {
+            private static final long serialVersionUID = 1L;
+        {
+            this.setSizable(true);
+            GridBuilder.buildColumns(this, ArgInfo.class);
+        }});
+        grid.setModel( GridBuilder.buildListModel(ArgInfo.class, 
+                op.getArgs().length, 
+                GridBuilder.fetchPageOf(op.getArgs()),
+                GridBuilder.fetchTotalSizeOf(op.getArgs())));
+    }
+    
+    private void lauchOperation(final MBeanInfo mbeaninfo, final OperationInfo op) {
+        final Window dialog = new Window("invoke " + op.genNameWithSignature(), "normal", true);
+        dialog.setWidth("400px");
+        dialog.setHeight("550px");
+        dialog.setSizable(true);
+        dialog.setPage(this.getPage());
+        
+        dialog.appendChild(new Label("输入执行 " + op.getName() + " 所需的参数"));
+        final Grid gridArgs = new Grid();
+        dialog.appendChild(gridArgs);
+        buildArgsGrid(op, gridArgs);
+        
+        final Button btnExec = new Button("执行") {
+            private static final long serialVersionUID = 1L;
+            {
+                this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
+                    @Override
+                    public void onEvent(Event event) throws Exception {
+                        final JSONArray args = op.genArgArray();
+                        Messagebox.show("invoke " + op.getName() + " with args(" + args + ")?", 
+                                "exec operation", Messagebox.OK | Messagebox.CANCEL, Messagebox.QUESTION,
+                                new EventListener<Event>() {
+                                    @Override
+                                    public void onEvent(Event event)
+                                            throws Exception {
+                                        if (Messagebox.ON_OK.equals(event.getName())){
+                                            invokeOperation(mbeaninfo, op, args);
+                                        }
+                                    }});
+                        
+                    }});
+            }
+            };
+        dialog.appendChild(btnExec);
+        dialog.doModal();
+    }
+    
     private void invokeOperation(final MBeanInfo mbean, final OperationInfo op, final JSONArray args) {
         final JolokiaRequest req = new JolokiaRequest();
         req.setType("exec");
@@ -277,13 +321,15 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
     
     private void showMBeanOperations(final MBeanInfo mbeaninfo, final Action1<OperationInfo> invokeOperation) {
-        final OperationInfo[] infos = mbeaninfo.getOperations();
-        for (OperationInfo info : infos) {
-            info.setInvoker(invokeOperation);
-        }
-        
         this.ops.getChildren().clear();
+        
+        final OperationInfo[] infos = mbeaninfo.getOperations();
+        
         if (null != infos) {
+            for (OperationInfo info : infos) {
+                info.setInvoker(invokeOperation);
+            }
+            
             final Grid grid = new Grid();
             this.ops.appendChild(grid);
             grid.setRowRenderer(GridBuilder.buildRowRenderer(OperationInfo.class));

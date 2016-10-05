@@ -7,20 +7,13 @@ import java.util.Map;
 import javax.management.ObjectName;
 
 import org.jocean.zkoss.annotation.RowSource;
-import org.jocean.zkoss.builder.GridBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.zkoss.zk.ui.Component;
-import org.zkoss.zk.ui.IdSpace;
 import org.zkoss.zk.ui.event.EventListener;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zk.ui.event.MouseEvent;
-import org.zkoss.zk.ui.ext.Scope;
-import org.zkoss.zk.ui.ext.ScopeListener;
 import org.zkoss.zul.Button;
-import org.zkoss.zul.Columns;
 import org.zkoss.zul.Doublebox;
-import org.zkoss.zul.Grid;
 import org.zkoss.zul.Intbox;
 import org.zkoss.zul.Longbox;
 import org.zkoss.zul.Textbox;
@@ -157,6 +150,7 @@ public class ListResponse extends JolokiaResponse {
         
         @RowSource(name="输入值")
         private InputElement _inputComponent;
+        
         private Input _input;
         
         /* (non-Javadoc)
@@ -186,8 +180,14 @@ public class ListResponse extends JolokiaResponse {
         
         public String genNameWithSignature() {
             final StringBuilder sb = new StringBuilder();
-            String comma = "";
             sb.append(this._name);
+            sb.append(genSignature());
+            return sb.toString();
+        }
+        
+        private String genSignature() {
+            final StringBuilder sb = new StringBuilder();
+            String comma = "";
             sb.append('(');
             for (ArgInfo arg : this._args) {
                 sb.append(comma);
@@ -234,52 +234,7 @@ public class ListResponse extends JolokiaResponse {
         @JSONField(name="args")
         public void setArgs(final ArgInfo[] args) {
             this._args = args;
-            
-            if (null != this._args && this._args.length > 0) {
-                this._gridArgs = buildArgsGrid();
-            } else {
-                this._gridArgs = null;
-            }
-        }
-
-        private Grid buildArgsGrid() {
-            final Grid grid = new Grid();
-            grid.setRowRenderer(GridBuilder.buildRowRenderer(ArgInfo.class));
-            grid.setSizedByContent(true);
-            grid.appendChild(new Columns() {
-                private static final long serialVersionUID = 1L;
-            {
-                this.setSizable(true);
-                GridBuilder.buildColumns(this, ArgInfo.class);
-            }});
-            grid.addScopeListener(new ScopeListener() {
-                @Override
-                public void attributeAdded(Scope scope, String name,
-                        Object value) {
-                }
-   
-                @Override
-                public void attributeReplaced(Scope scope, String name,
-                        Object value) {
-                }
-   
-                @Override
-                public void attributeRemoved(Scope scope, String name) {
-                }
-   
-                @Override
-                public void parentChanged(final Scope scope, final Scope newparent) {
-                    grid.setModel( GridBuilder.buildListModel(ArgInfo.class, 
-                            _args.length, 
-                            GridBuilder.fetchPageOf(_args),
-                            GridBuilder.fetchTotalSizeOf(_args)));
-                }
-   
-                @Override
-                public void idSpaceChanged(Scope scope,
-                        IdSpace newIdSpace) {
-                }});
-            return grid;
+            this._argsAsText = genSignature();
         }
         
         @JSONField(name="ret")
@@ -314,7 +269,7 @@ public class ListResponse extends JolokiaResponse {
         private ArgInfo[] _args;
         
         @RowSource(name="参数")
-        private Component _gridArgs;
+        private String _argsAsText;
         
         @RowSource(name="返回类型")
         private String _returnType;
