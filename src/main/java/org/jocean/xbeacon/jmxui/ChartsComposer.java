@@ -1,13 +1,13 @@
-package org.jocean.jmxui;
+package org.jocean.xbeacon.jmxui;
 
 import java.util.List;
 import java.util.Map;
 
 import org.jocean.idiom.Triple;
-import org.jocean.jmxui.ServiceMonitor.Indicator;
-import org.jocean.jmxui.ServiceMonitor.InitStatus;
-import org.jocean.jmxui.ServiceMonitor.ServiceInfo;
-import org.jocean.jmxui.ServiceMonitor.UpdateStatus;
+import org.jocean.xbeacon.jmxui.ServiceMonitor.Indicator;
+import org.jocean.xbeacon.jmxui.ServiceMonitor.InitStatus;
+import org.jocean.xbeacon.jmxui.ServiceMonitor.ServiceInfo;
+import org.jocean.xbeacon.jmxui.ServiceMonitor.UpdateStatus;
 import org.ngi.zhighcharts.SimpleExtXYModel;
 import org.ngi.zhighcharts.ZHighCharts;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package org.jocean.jmxui;
+package org.jocean.xbeacon.jmxui;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -24,8 +24,8 @@ import org.jocean.http.rosa.SignalClient;
 import org.jocean.idiom.Triple;
 import org.jocean.idiom.rx.RxObservables;
 import org.jocean.j2se.zk.ZKAgent;
-import org.jocean.jmxui.bean.JolokiaRequest;
-import org.jocean.jmxui.bean.LongValueResponse;
+import org.jocean.xbeacon.jmxui.bean.JolokiaRequest;
+import org.jocean.xbeacon.jmxui.bean.LongValueResponse;
 import org.jocean.zkoss.util.Desktops;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

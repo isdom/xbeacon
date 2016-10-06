@@ -5,4 +5,4 @@
  * @author isdom
  *
  */
-package org.jocean.jmxui.bean;
+package org.jocean.xbeacon.jmxui;

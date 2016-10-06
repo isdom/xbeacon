@@ -1,4 +1,4 @@
-package org.jocean.zookeeper.webui.admin;
+package org.jocean.xbeacon.zk;
 
 import java.util.ArrayList;
 import java.util.Arrays;

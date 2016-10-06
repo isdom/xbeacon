@@ -1,4 +1,4 @@
-package org.jocean.jmxui.bean;
+package org.jocean.xbeacon.jmxui.bean;
 
 import java.util.Arrays;
 import java.util.List;

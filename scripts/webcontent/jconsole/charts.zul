@@ -1,6 +1,6 @@
 <zk>
     <window id="main" width="100%" height="100%" 
-        apply="org.jocean.jmxui.ChartsComposer">
+        apply="org.jocean.xbeacon.jmxui.ChartsComposer">
         <borderlayout>
             <center flex="true" >
                 <tabbox>

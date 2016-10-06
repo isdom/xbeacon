@@ -5,4 +5,4 @@
  * @author isdom
  *
  */
-package org.jocean.zookeeper.webui;
+package org.jocean.xbeacon.jmxui.bean;

@@ -1,4 +1,4 @@
-package org.jocean.zookeeper.webui.admin;
+package org.jocean.xbeacon.zk;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,12 +45,12 @@ import rx.functions.Action0;
 import rx.functions.Action1;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
-public class AdminComposer extends SelectorComposer<Window>{
+public class ZooKeeperComposer extends SelectorComposer<Window>{
 	
     private static final long serialVersionUID = -9063622647244777848L;
 
     private static final Logger LOG = 
-        	LoggerFactory.getLogger(AdminComposer.class);
+        	LoggerFactory.getLogger(ZooKeeperComposer.class);
     
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);

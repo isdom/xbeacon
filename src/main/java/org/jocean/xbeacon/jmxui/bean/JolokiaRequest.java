@@ -1,4 +1,4 @@
-package org.jocean.jmxui.bean;
+package org.jocean.xbeacon.jmxui.bean;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.annotation.JSONField;

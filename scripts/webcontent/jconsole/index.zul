@@ -1,6 +1,6 @@
 <zk>
     <window id="main" width="100%" height="100%" 
-        apply="org.jocean.jmxui.JmxComposer">
+        apply="org.jocean.xbeacon.jmxui.JmxComposer">
         <borderlayout>
             <north>
                 <caption label="参数设定">
