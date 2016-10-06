@@ -30,7 +30,7 @@ public class JsonUI {
         void setValue(final Object value) {
             this._value = buildUI(value);
             if (null != value) {
-                this._valueType = value.getClass();
+                this._valueType = value.getClass().getSimpleName();
             }
         }
 
@@ -38,7 +38,7 @@ public class JsonUI {
         Object _value;
         
         @RowSource(name="类型")
-        Class<?> _valueType;
+        String _valueType;
     }
     
     private static class AttrValue implements Comparable<AttrValue> {
@@ -55,7 +55,7 @@ public class JsonUI {
         void setValue(final Object value) {
             this._value = buildUI(value);
             if (null != value) {
-                this._valueType = value.getClass();
+                this._valueType = value.getClass().getSimpleName();
             }
         }
         
@@ -66,7 +66,7 @@ public class JsonUI {
         Object _value;
         
         @RowSource(name="类型")
-        Class<?> _valueType;
+        String _valueType;
     }
     
     private static Component buildGridOfJSON(final JSONObject jobj) {
