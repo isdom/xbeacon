@@ -35,7 +35,8 @@
                             <tabpanels>
                                 <tabpanel>
                                     <borderlayout>
-                                        <center id="attrs" flex="true" >
+                                        <center flex="true" autoscroll="true">
+                                            <hlayout id="attrs"/>
                                         </center>
                                     </borderlayout>
                                 </tabpanel>

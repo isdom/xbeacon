@@ -53,13 +53,13 @@ import org.zkoss.zul.Caption;
 import org.zkoss.zul.Center;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
+import org.zkoss.zul.Hlayout;
 import org.zkoss.zul.Intbox;
 import org.zkoss.zul.Label;
 import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Listhead;
 import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Progressmeter;
-import org.zkoss.zul.SimpleGroupsModel;
 import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
@@ -106,7 +106,6 @@ public class JmxComposer extends SelectorComposer<Window>{
 //                UIBuilders.buildRowRenderer(ServiceData.class));
         this.services.setItemRenderer(
                 UIBuilders.buildItemRenderer(ServiceData.class));
-        this.services.setSizedByContent(true);
         this.mbeans.setItemRenderer(new NodeTreeRenderer());
         
         this.mbeans.addEventListener(Events.ON_SELECT, showSelectedMBean());
@@ -355,8 +354,12 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
 
     private void showMBeanAttributes(final ReadAttrResponse resp) {
-        this.attrs.getChildren().clear();
-        this.attrs.appendChild((Component)JsonUI.buildUI(resp.getValue()));
+        final List<Component> children = this.attrs.getChildren();
+        while (!children.isEmpty()) {
+            children.remove(0);
+        }
+        
+        this.attrs.appendChild(JsonUI.buildUI(resp.getValue()));
         this.status.getChildren().clear();
     }
 
@@ -475,7 +478,11 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
 
     private void updateServicesModel(final ServiceData[] datas) {
-        this.services.getChildren().clear();
+        final List<Component> children = this.services.getChildren();
+        while (!children.isEmpty()) {
+            children.remove(0);
+        }
+        
 //        this.services.appendChild(new Columns() {
 //            private static final long serialVersionUID = 1L;
 //        {
@@ -496,6 +503,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                 ZModels.fetchPageOf(datas),
                 ZModels.fetchTotalSizeOf(datas),
                 ZModels.sortModelOf(datas)));
+//        this.services.setSizedByContent(true);
     }
 
     private ServiceData findServiceData(final String id) {
@@ -691,7 +699,8 @@ public class JmxComposer extends SelectorComposer<Window>{
     private SimpleTreeModel _model;
 
     @Wire
-    private Center          attrs;
+//    private Center          attrs;
+    private Hlayout attrs;
     
     @Wire
     private Center          ops;
