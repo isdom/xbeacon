@@ -4,15 +4,12 @@ import java.util.Arrays;
 import java.util.Map;
 
 import org.jocean.zkoss.annotation.RowSource;
-import org.jocean.zkoss.builder.GridBuilder;
-import org.jocean.zkoss.builder.ListBuilder;
+import org.jocean.zkoss.builder.UIBuilders;
 import org.jocean.zkoss.builder.ZModels;
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.IdSpace;
 import org.zkoss.zk.ui.ext.Scope;
 import org.zkoss.zk.ui.ext.ScopeListener;
-import org.zkoss.zul.Columns;
-import org.zkoss.zul.Grid;
 import org.zkoss.zul.Listbox;
 import org.zkoss.zul.Listhead;
 
@@ -88,13 +85,13 @@ public class JsonUI {
 //        grid.setStyle(style);
 //        grid.setRowRenderer(
 //                GridBuilder.buildRowRenderer(AttrValue.class));
-        grid.setItemRenderer(ListBuilder.buildItemRenderer(AttrValue.class));
+        grid.setItemRenderer(UIBuilders.buildItemRenderer(AttrValue.class));
         grid.setSizedByContent(true);
         grid.appendChild(new Listhead() {
             private static final long serialVersionUID = 1L;
             {
                 this.setSizable(true);
-                ListBuilder.buildHead(this, AttrValue.class);
+                UIBuilders.buildHead(this, AttrValue.class);
             }
         });
 //        grid.appendChild(new Columns() {
@@ -143,13 +140,13 @@ public class JsonUI {
 //        final Grid grid = new Grid();
         final Listbox grid = new Listbox();
 //        grid.setRowRenderer(GridBuilder.buildRowRenderer(ObjectRow.class));
-        grid.setItemRenderer(ListBuilder.buildItemRenderer(ObjectRow.class));
+        grid.setItemRenderer(UIBuilders.buildItemRenderer(ObjectRow.class));
         grid.setSizedByContent(true);
         grid.appendChild(new Listhead() {
             private static final long serialVersionUID = 1L;
             {
                 this.setSizable(true);
-                ListBuilder.buildHead(this, ObjectRow.class);
+                UIBuilders.buildHead(this, ObjectRow.class);
             }
         });
 //        grid.appendChild(new Columns() {

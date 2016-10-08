@@ -28,7 +28,7 @@ import org.jocean.xbeacon.jmxui.bean.ListResponse.MBeanInfo;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.OperationInfo;
 import org.jocean.xbeacon.jmxui.bean.ReadAttrResponse;
 import org.jocean.zkoss.annotation.RowSource;
-import org.jocean.zkoss.builder.GridBuilder;
+import org.jocean.zkoss.builder.UIBuilders;
 import org.jocean.zkoss.builder.ZModels;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.ui.JsonUI;
@@ -99,7 +99,7 @@ public class JmxComposer extends SelectorComposer<Window>{
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
 		
-        this.services.setRowRenderer(GridBuilder.buildRowRenderer(ServiceData.class));
+        this.services.setRowRenderer(UIBuilders.buildRowRenderer(ServiceData.class));
         this.services.setSizedByContent(true);
         this.mbeans.setItemRenderer(new NodeTreeRenderer());
         
@@ -244,13 +244,13 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
 
     private void buildArgsGrid(final OperationInfo op, final Grid grid) {
-        grid.setRowRenderer(GridBuilder.buildRowRenderer(ArgInfo.class));
+        grid.setRowRenderer(UIBuilders.buildRowRenderer(ArgInfo.class));
         grid.setSizedByContent(true);
         grid.appendChild(new Columns() {
             private static final long serialVersionUID = 1L;
         {
             this.setSizable(true);
-            GridBuilder.buildColumns(this, ArgInfo.class);
+            UIBuilders.buildColumns(this, ArgInfo.class);
         }});
         grid.setModel( ZModels.buildListModel(
                 op.getArgs().length, 
@@ -333,13 +333,13 @@ public class JmxComposer extends SelectorComposer<Window>{
             
             final Grid grid = new Grid();
             this.ops.appendChild(grid);
-            grid.setRowRenderer(GridBuilder.buildRowRenderer(OperationInfo.class));
+            grid.setRowRenderer(UIBuilders.buildRowRenderer(OperationInfo.class));
             grid.setSizedByContent(true);
             grid.appendChild(new Columns() {
                 private static final long serialVersionUID = 1L;
             {
                 this.setSizable(true);
-                GridBuilder.buildColumns(this, OperationInfo.class);
+                UIBuilders.buildColumns(this, OperationInfo.class);
             }});
             grid.setModel( ZModels.buildListModel(
                     infos.length, 
@@ -474,7 +474,7 @@ public class JmxComposer extends SelectorComposer<Window>{
             private static final long serialVersionUID = 1L;
         {
             this.setSizable(true);
-            GridBuilder.buildColumns(this, ServiceData.class);
+            UIBuilders.buildColumns(this, ServiceData.class);
         }});
         
         Arrays.sort(datas);
