@@ -11,7 +11,7 @@
             <west size="90%" splittable="true" flex="true" collapsible="true" title="Services">
                 <borderlayout>
                     <center flex="true">
-                        <grid id="services" style="border:none"/>
+                        <listbox id="services" style="border:none"/>
                     </center>
                 </borderlayout>
             </west>

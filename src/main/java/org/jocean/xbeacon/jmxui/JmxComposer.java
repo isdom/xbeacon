@@ -55,8 +55,11 @@ import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
 import org.zkoss.zul.Intbox;
 import org.zkoss.zul.Label;
+import org.zkoss.zul.Listbox;
+import org.zkoss.zul.Listhead;
 import org.zkoss.zul.Messagebox;
 import org.zkoss.zul.Progressmeter;
+import org.zkoss.zul.SimpleGroupsModel;
 import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
@@ -99,7 +102,10 @@ public class JmxComposer extends SelectorComposer<Window>{
 	public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
 		
-        this.services.setRowRenderer(UIBuilders.buildRowRenderer(ServiceData.class));
+//        this.services.setRowRenderer(
+//                UIBuilders.buildRowRenderer(ServiceData.class));
+        this.services.setItemRenderer(
+                UIBuilders.buildItemRenderer(ServiceData.class));
         this.services.setSizedByContent(true);
         this.mbeans.setItemRenderer(new NodeTreeRenderer());
         
@@ -470,12 +476,19 @@ public class JmxComposer extends SelectorComposer<Window>{
 
     private void updateServicesModel(final ServiceData[] datas) {
         this.services.getChildren().clear();
-        this.services.appendChild(new Columns() {
+//        this.services.appendChild(new Columns() {
+//            private static final long serialVersionUID = 1L;
+//        {
+//            this.setSizable(true);
+//            UIBuilders.buildColumns(this, ServiceData.class);
+//        }});
+        this.services.appendChild(new Listhead() {
             private static final long serialVersionUID = 1L;
-        {
-            this.setSizable(true);
-            UIBuilders.buildColumns(this, ServiceData.class);
-        }});
+            {
+                this.setSizable(true);
+                UIBuilders.buildHead(this, ServiceData.class);
+            }
+        });
         
         Arrays.sort(datas);
         this.services.setModel( ZModels.buildListModel(
@@ -663,7 +676,9 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
 
     @Wire
-    private Grid    services;
+    private Listbox services;
+    
+//    private Grid    services;
     
     private final List<ServiceData> _serviceDatas = new ArrayList<>();
     
