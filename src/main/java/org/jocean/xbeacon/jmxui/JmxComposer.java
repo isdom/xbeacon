@@ -22,13 +22,14 @@ import org.jocean.xbeacon.jmxui.ServiceMonitor.UpdateStatus;
 import org.jocean.xbeacon.jmxui.bean.ExecResponse;
 import org.jocean.xbeacon.jmxui.bean.JolokiaRequest;
 import org.jocean.xbeacon.jmxui.bean.ListResponse;
-import org.jocean.xbeacon.jmxui.bean.ReadAttrResponse;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.ArgInfo;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.DomainInfo;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.MBeanInfo;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.OperationInfo;
+import org.jocean.xbeacon.jmxui.bean.ReadAttrResponse;
 import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.builder.GridBuilder;
+import org.jocean.zkoss.builder.ZModels;
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.ui.JsonUI;
 import org.jocean.zkoss.util.EventQueueForwarder;
@@ -251,10 +252,10 @@ public class JmxComposer extends SelectorComposer<Window>{
             this.setSizable(true);
             GridBuilder.buildColumns(this, ArgInfo.class);
         }});
-        grid.setModel( GridBuilder.buildListModel(ArgInfo.class, 
+        grid.setModel( ZModels.buildListModel(
                 op.getArgs().length, 
-                GridBuilder.fetchPageOf(op.getArgs()),
-                GridBuilder.fetchTotalSizeOf(op.getArgs())));
+                ZModels.fetchPageOf(op.getArgs()),
+                ZModels.fetchTotalSizeOf(op.getArgs())));
     }
     
     private void lauchOperation(final MBeanInfo mbeaninfo, final OperationInfo op) {
@@ -340,10 +341,10 @@ public class JmxComposer extends SelectorComposer<Window>{
                 this.setSizable(true);
                 GridBuilder.buildColumns(this, OperationInfo.class);
             }});
-            grid.setModel( GridBuilder.buildListModel(OperationInfo.class, 
+            grid.setModel( ZModels.buildListModel(
                     infos.length, 
-                    GridBuilder.fetchPageOf(infos),
-                    GridBuilder.fetchTotalSizeOf(infos)));
+                    ZModels.fetchPageOf(infos),
+                    ZModels.fetchTotalSizeOf(infos)));
         }
     }
 
@@ -477,11 +478,11 @@ public class JmxComposer extends SelectorComposer<Window>{
         }});
         
         Arrays.sort(datas);
-        this.services.setModel( GridBuilder.buildListModel(ServiceData.class, 
+        this.services.setModel( ZModels.buildListModel(
                 datas.length, 
-                GridBuilder.fetchPageOf(datas),
-                GridBuilder.fetchTotalSizeOf(datas),
-                GridBuilder.sortModelOf(datas)));
+                ZModels.fetchPageOf(datas),
+                ZModels.fetchTotalSizeOf(datas),
+                ZModels.sortModelOf(datas)));
     }
 
     private ServiceData findServiceData(final String id) {

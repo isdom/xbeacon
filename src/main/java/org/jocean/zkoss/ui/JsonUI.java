@@ -5,12 +5,16 @@ import java.util.Map;
 
 import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.builder.GridBuilder;
+import org.jocean.zkoss.builder.ListBuilder;
+import org.jocean.zkoss.builder.ZModels;
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.IdSpace;
 import org.zkoss.zk.ui.ext.Scope;
 import org.zkoss.zk.ui.ext.ScopeListener;
 import org.zkoss.zul.Columns;
 import org.zkoss.zul.Grid;
+import org.zkoss.zul.Listbox;
+import org.zkoss.zul.Listhead;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -79,15 +83,26 @@ public class JsonUI {
             attrs[idx++] = attrv;
         }
         Arrays.sort(attrs);
-        final Grid grid = new Grid();
-        grid.setRowRenderer(GridBuilder.buildRowRenderer(AttrValue.class));
+//        final Grid grid = new Grid();
+        final Listbox grid = new Listbox();
+//        grid.setStyle(style);
+//        grid.setRowRenderer(
+//                GridBuilder.buildRowRenderer(AttrValue.class));
+        grid.setItemRenderer(ListBuilder.buildItemRenderer(AttrValue.class));
         grid.setSizedByContent(true);
-        grid.appendChild(new Columns() {
+        grid.appendChild(new Listhead() {
             private static final long serialVersionUID = 1L;
-        {
-            this.setSizable(true);
-            GridBuilder.buildColumns(this, AttrValue.class);
-        }});
+            {
+                this.setSizable(true);
+                ListBuilder.buildHead(this, AttrValue.class);
+            }
+        });
+//        grid.appendChild(new Columns() {
+//            private static final long serialVersionUID = 1L;
+//        {
+//            this.setSizable(true);
+//            GridBuilder.buildColumns(this, AttrValue.class);
+//        }});
         grid.addScopeListener(new ScopeListener() {
             @Override
             public void attributeAdded(Scope scope, String name,
@@ -105,10 +120,10 @@ public class JsonUI {
 
             @Override
             public void parentChanged(final Scope scope, final Scope newparent) {
-                grid.setModel( GridBuilder.buildListModel(AttrValue.class, 
+                grid.setModel( ZModels.buildListModel(
                         attrs.length, 
-                        GridBuilder.fetchPageOf(attrs),
-                        GridBuilder.fetchTotalSizeOf(attrs)));
+                        ZModels.fetchPageOf(attrs),
+                        ZModels.fetchTotalSizeOf(attrs)));
             }
 
             @Override
@@ -118,22 +133,31 @@ public class JsonUI {
         return grid;
     }
 
-    private static Grid buildGridOfArray(final JSONArray jarray) {
+    private static Component buildGridOfArray(final JSONArray jarray) {
         final ObjectRow[] array = new ObjectRow[jarray.size()];
         for (int idx = 0; idx < array.length; idx++) {
             final ObjectRow row = new ObjectRow();
             row.setValue(jarray.get(idx));
             array[idx] = row;
         }
-        final Grid grid = new Grid();
-        grid.setRowRenderer(GridBuilder.buildRowRenderer(ObjectRow.class));
+//        final Grid grid = new Grid();
+        final Listbox grid = new Listbox();
+//        grid.setRowRenderer(GridBuilder.buildRowRenderer(ObjectRow.class));
+        grid.setItemRenderer(ListBuilder.buildItemRenderer(ObjectRow.class));
         grid.setSizedByContent(true);
-        grid.appendChild(new Columns() {
+        grid.appendChild(new Listhead() {
             private static final long serialVersionUID = 1L;
-        {
-            this.setSizable(true);
-            GridBuilder.buildColumns(this, ObjectRow.class);
-        }});
+            {
+                this.setSizable(true);
+                ListBuilder.buildHead(this, ObjectRow.class);
+            }
+        });
+//        grid.appendChild(new Columns() {
+//            private static final long serialVersionUID = 1L;
+//        {
+//            this.setSizable(true);
+//            GridBuilder.buildColumns(this, ObjectRow.class);
+//        }});
         grid.addScopeListener(new ScopeListener() {
             @Override
             public void attributeAdded(Scope scope, String name,
@@ -151,10 +175,10 @@ public class JsonUI {
 
             @Override
             public void parentChanged(final Scope scope, final Scope newparent) {
-                grid.setModel( GridBuilder.buildListModel(ObjectRow.class, 
+                grid.setModel( ZModels.buildListModel(
                         array.length, 
-                        GridBuilder.fetchPageOf(array),
-                        GridBuilder.fetchTotalSizeOf(array)));
+                        ZModels.fetchPageOf(array),
+                        ZModels.fetchTotalSizeOf(array)));
             }
 
             @Override
