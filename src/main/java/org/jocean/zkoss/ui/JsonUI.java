@@ -27,10 +27,10 @@ public class JsonUI {
     public static Component buildUI(final Object value) {
         if (value instanceof JSONObject) {
 //            return buildGridOfJSON((JSONObject)value);
-            return buildUI4JSON((JSONObject)value /*, parent*/);
+            return buildUI4JSON((JSONObject)value);
         } else if (value instanceof JSONArray) {
 //            return buildGridOfArray((JSONArray)value);
-            return buildUI4Array((JSONArray)value /*, parent*/);
+            return buildUI4Array((JSONArray)value);
         }
         
         return null;

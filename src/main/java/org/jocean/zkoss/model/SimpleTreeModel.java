@@ -85,6 +85,10 @@ public class SimpleTreeModel extends AbstractTreeModel<SimpleTreeModel.Node> {
 			return	this._name;
 		}
 		
+        public void setName(final String name) {
+            this._name = name;
+        }
+        
         public Node getChild(final String name) {
             for ( Node child : this._children ) {
                 if ( child._name.equals(name) ) {
@@ -140,7 +144,7 @@ public class SimpleTreeModel extends AbstractTreeModel<SimpleTreeModel.Node> {
 		}
 
 
-		private final String _name;
+		private String _name;
         private Object _data;
         private Node _parent = null;
 		private final List<Node> _children = new CopyOnWriteArrayList<>();

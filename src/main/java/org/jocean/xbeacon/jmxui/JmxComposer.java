@@ -31,6 +31,7 @@ import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.builder.UIBuilders;
 import org.jocean.zkoss.builder.ZModels;
 import org.jocean.zkoss.model.SimpleTreeModel;
+import org.jocean.zkoss.ui.JSON2TreeModel;
 import org.jocean.zkoss.ui.JsonUI;
 import org.jocean.zkoss.util.EventQueueForwarder;
 import org.ngi.zhighcharts.SimpleExtXYModel;
@@ -63,6 +64,8 @@ import org.zkoss.zul.Progressmeter;
 import org.zkoss.zul.Toolbarbutton;
 import org.zkoss.zul.Tree;
 import org.zkoss.zul.Treecell;
+import org.zkoss.zul.Treecol;
+import org.zkoss.zul.Treecols;
 import org.zkoss.zul.Treeitem;
 import org.zkoss.zul.TreeitemRenderer;
 import org.zkoss.zul.Treerow;
@@ -88,6 +91,16 @@ public class JmxComposer extends SelectorComposer<Window>{
         	LoggerFactory.getLogger(JmxComposer.class);
     
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
+        public NodeTreeRenderer() {
+            this._initOpened = false;
+        }
+        
+        public NodeTreeRenderer(boolean open) {
+            this._initOpened = open;
+        }
+        
+        private final boolean _initOpened;
+        
         public void render(final Treeitem item, final SimpleTreeModel.Node node, int index) 
                 throws Exception {
             item.setValue(node);
@@ -96,6 +109,9 @@ public class JmxComposer extends SelectorComposer<Window>{
             {
                 this.appendChild(new Treecell(node.getName()));
             }});
+            if (this._initOpened) {
+                item.setOpen(true);
+            }
         }
     }
     
@@ -353,13 +369,69 @@ public class JmxComposer extends SelectorComposer<Window>{
         }
     }
 
+    class AttributeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
+        public AttributeRenderer() {
+            this._initOpened = false;
+        }
+        
+        public AttributeRenderer(boolean open) {
+            this._initOpened = open;
+        }
+        
+        private final boolean _initOpened;
+        
+        public void render(final Treeitem item, final SimpleTreeModel.Node node, int index) 
+                throws Exception {
+            item.setValue(node);
+            item.appendChild(new Treerow() {
+                private static final long serialVersionUID = 1L;
+            {
+                this.appendChild(new Treecell(node.getName()));
+                if (null != node.getData()) {
+                    final Object value = node.getData();
+                    this.appendChild(new Treecell(value.toString()));
+                    this.appendChild(new Treecell(value.getClass().getSimpleName()));
+                }
+            }});
+            if (this._initOpened) {
+                item.setOpen(true);
+            }
+        }
+    }
+    
     private void showMBeanAttributes(final ReadAttrResponse resp) {
         final List<Component> children = this.attrs.getChildren();
         while (!children.isEmpty()) {
             children.remove(0);
         }
         
-        this.attrs.appendChild(JsonUI.buildUI(resp.getValue()));
+        this.attrs.appendChild(
+                new Tree() {
+                    private static final long serialVersionUID = 1L;
+
+                {
+//                    this.setSizedByContent(true);
+                    this.appendChild(new Treecols() {{
+                        this.setSizable(true);
+                        this.appendChild(new Treecol("名称") {{
+//                            this.setWidth("10%");
+                        }});
+                        this.appendChild(new Treecol("内容") {{
+//                            this.setWidth("80%");
+                        }});
+                        this.appendChild(new Treecol("类型") {{
+//                            this.setWidth("10%");
+                        }});
+                    }});
+                    this.setItemRenderer(new AttributeRenderer(true));
+                    this.setModel(JSON2TreeModel.buildTree(resp.getValue()));
+                }}
+//                new Hlayout() {
+//                    private static final long serialVersionUID = 1L;
+//                {
+//                    this.appendChild(JsonUI.buildUI(resp.getValue()));
+//                }}
+                );
         this.status.getChildren().clear();
     }
 
@@ -699,8 +771,8 @@ public class JmxComposer extends SelectorComposer<Window>{
     private SimpleTreeModel _model;
 
     @Wire
-//    private Center          attrs;
-    private Hlayout attrs;
+    private Center          attrs;
+//    private Hlayout attrs;
     
     @Wire
     private Center          ops;
