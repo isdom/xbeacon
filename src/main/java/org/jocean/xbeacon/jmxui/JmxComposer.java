@@ -410,17 +410,23 @@ public class JmxComposer extends SelectorComposer<Window>{
                     private static final long serialVersionUID = 1L;
 
                 {
-//                    this.setSizedByContent(true);
-                    this.appendChild(new Treecols() {{
+                    this.appendChild(new Treecols() {
+                        private static final long serialVersionUID = 1L;
+                    {
                         this.setSizable(true);
-                        this.appendChild(new Treecol("名称") {{
-//                            this.setWidth("10%");
+                        this.appendChild(new Treecol("名称") {
+                            private static final long serialVersionUID = 1L;
+                        {
+                            this.setWidth("200px");
                         }});
-                        this.appendChild(new Treecol("内容") {{
-//                            this.setWidth("80%");
+                        this.appendChild(new Treecol("内容") {
+                            private static final long serialVersionUID = 1L;
+                        {
                         }});
-                        this.appendChild(new Treecol("类型") {{
-//                            this.setWidth("10%");
+                        this.appendChild(new Treecol("类型") {
+                            private static final long serialVersionUID = 1L;
+                        {
+                            this.setWidth("50px");
                         }});
                     }});
                     this.setItemRenderer(new AttributeRenderer(true));

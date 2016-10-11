@@ -10,7 +10,7 @@
             </north>
             <west size="90%" splittable="true" flex="true" collapsible="true" title="Services">
                 <borderlayout>
-                    <center flex="true">
+                    <center flex="true" autoscroll="true">
                         <listbox id="services" style="border:none"/>
                     </center>
                 </borderlayout>
