@@ -52,9 +52,6 @@ public class ZKTreeManager {
         return model;
     }
     
-    /**
-     * @param _webapp the _webapp to set
-     */
     public void setWebapp(final WebApp webapp) {
         this._webapp = webapp;
     }
