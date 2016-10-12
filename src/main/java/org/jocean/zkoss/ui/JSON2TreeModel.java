@@ -1,14 +1,27 @@
 package org.jocean.zkoss.ui;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.model.SimpleTreeModel.Node;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.collect.Lists;
 
 public class JSON2TreeModel {
+    final private static Comparator<Map.Entry<String, Object>> COMPARATOR_NODE = 
+    new Comparator<Map.Entry<String, Object>>() {
+        @Override
+        public int compare(final Entry<String, Object> o1,
+                final Entry<String, Object> o2) {
+            return o1.getKey().compareTo(o2.getKey());
+        }};
+        
     public static SimpleTreeModel buildTree(final Object value) {
         return new SimpleTreeModel(buildNode(new Node(""), value));
     }
@@ -26,8 +39,12 @@ public class JSON2TreeModel {
     }
     
     private static Node buildNode4JSON(final Node parent, final JSONObject jobj) {
-        for (Map.Entry<String, Object> entry : jobj.entrySet()) {
-            parent.addChild(buildNode(new Node(entry.getKey()), entry.getValue()));
+        final List<Map.Entry<String, Object>> nodes = 
+                Lists.newArrayList(jobj.entrySet());
+        Collections.sort(nodes, COMPARATOR_NODE);
+        
+        for (Map.Entry<String, Object> node : nodes) {
+            parent.addChild(buildNode(new Node(node.getKey()), node.getValue()));
         }
         return parent;
     }
