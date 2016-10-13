@@ -258,10 +258,14 @@ public class JmxComposer extends SelectorComposer<Window>{
 	    queryAttrValue(mbeaninfo, new Action1<ReadAttrResponse>() {
             @Override
             public void call(final ReadAttrResponse resp) {
-                if (200 == resp.getStatus()) {
-                    showMBeanAttributes(resp);
-                }
-            }});
+                showMBeanAttributes(resp);
+            }}, new Action1<Throwable>() {
+                @Override
+                public void call(Throwable e) {
+                    status.getChildren().clear();
+                    Messagebox.show("query " + mbeaninfo.getObjectName() + " attribute failed, detail: " + e.getMessage(), 
+                            "query attribute result", Messagebox.OK, Messagebox.ERROR);
+                }});
     }
 
     private void buildArgsGrid(final OperationInfo op, final Grid grid) {
@@ -441,7 +445,9 @@ public class JmxComposer extends SelectorComposer<Window>{
         this.status.getChildren().clear();
     }
 
-    private void queryAttrValue(final MBeanInfo mbeaninfo, final Action1<ReadAttrResponse> action) {
+    private void queryAttrValue(final MBeanInfo mbeaninfo, 
+            final Action1<ReadAttrResponse> action, 
+            final Action1<Throwable> onError) {
         final Progressmeter progress = new Progressmeter();
         progress.setWidth("400px");
         status.appendChild(progress);
@@ -458,11 +464,19 @@ public class JmxComposer extends SelectorComposer<Window>{
 
             @Override
             public void onError(Throwable e) {
+                onError.call(e);
             }
 
             @Override
             public void onNext(final ReadAttrResponse resp) {
-                action.call(resp);
+                if (200 == resp.getStatus()) {
+                    action.call(resp);
+                } else {
+                    onError.call(new RuntimeException("status:" + resp.getStatus() + "\n"
+                        + "error:" + resp.getError() + "\n"
+                        + "error_type:" + resp.getErrorType() + "\n"
+                        + "stacktrace:"+ resp.getStacktrace()));
+                }
             }});
         
         final JolokiaRequest req = new JolokiaRequest();

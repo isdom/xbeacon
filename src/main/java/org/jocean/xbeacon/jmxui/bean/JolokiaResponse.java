@@ -34,9 +34,42 @@ public class JolokiaResponse {
         this._status = status;
     }
 
+    @JSONField(name = "stacktrace")
+    public String getStacktrace() {
+        return _stacktrace;
+    }
+
+    @JSONField(name = "stacktrace")
+    public void setStacktrace(final String stacktrace) {
+        this._stacktrace = stacktrace;
+    }
+
+    @JSONField(name = "error_type")
+    public String getErrorType() {
+        return _error_type;
+    }
+
+    @JSONField(name = "error_type")
+    public void setErrorType(final String error_type) {
+        this._error_type = error_type;
+    }
+
+    @JSONField(name = "error")
+    public String getError() {
+        return _error;
+    }
+
+    @JSONField(name = "error")
+    public void setError(final String error) {
+        this._error = error;
+    }
+
     protected JolokiaRequest _request;
-    protected long _timestamp;
-    protected int _status;
+    protected long  _timestamp;
+    protected int   _status;
+    protected String _stacktrace;
+    protected String _error_type;
+    protected String _error;
 
     public JolokiaResponse() {
         super();
