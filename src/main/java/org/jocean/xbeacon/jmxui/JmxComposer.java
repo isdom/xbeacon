@@ -217,7 +217,6 @@ public class JmxComposer extends SelectorComposer<Window>{
 
                 @Override
                 public void onIndicator(final List<Triple<ServiceInfo, String, Indicator>> inds) {
-                    boolean refreshModel = false;
                     for (Triple<ServiceInfo, String, Indicator> ind : inds) {
                         if (null != ind.third) {
                             final ServiceData data = findServiceData(ind.first.getId());
@@ -234,7 +233,6 @@ public class JmxComposer extends SelectorComposer<Window>{
                                         final String periodAsString = PERIODFMT.print(period.normalizedStandard());
                                         
                                         data.setServiceTime(periodAsString);
-                                        refreshModel = true;
                                         if (LOG.isDebugEnabled()) {
                                             LOG.debug("update service time for {}: total {} seconds / {}",
                                                     data._service, durationInSecond, periodAsString);
@@ -243,9 +241,6 @@ public class JmxComposer extends SelectorComposer<Window>{
                                 }
                             }
                         }
-                    }
-                    if (refreshModel) {
-                        updateServicesModel(_serviceDatas.toArray(EMPTY_SRV));
                     }
                 }});
     }
@@ -792,12 +787,8 @@ public class JmxComposer extends SelectorComposer<Window>{
             }
         }
         
-        public String getServiceTime() {
-            return this._serviceTime;
-        }
-
         public void setServiceTime(final String serviceTime) {
-            this._serviceTime = serviceTime;
+            this._serviceTime.setValue(serviceTime);
         }
 
         private final String _id;
@@ -812,7 +803,7 @@ public class JmxComposer extends SelectorComposer<Window>{
         private final String _service;
 
         @RowSource(name = "运行时长")
-        private String _serviceTime;
+        private Label _serviceTime = new Label("<未知>");
         
         @RowSource(name = "构建号")
         private String _buildNo;
