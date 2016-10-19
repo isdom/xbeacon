@@ -357,10 +357,16 @@ public class ServiceMonitor {
               }
             }};
             
+        final JolokiaRequest req4startTime = new JolokiaRequest();
+        req4startTime.setType("read");
+        req4startTime.setMBean("java.lang:type=Runtime");
+        req4startTime.setAttribute("StartTime");
+        
         this._future = this._executor.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
                 updateIndicators("usedMemory", req4usedMemory, onUsedMemoryInd);
+                updateIndicators("startTime", req4startTime, null);
             }}, 5, 5, TimeUnit.SECONDS);
     }
     
@@ -405,55 +411,6 @@ public class ServiceMonitor {
                     }}));
             }});
     }
-    
-//    @SuppressWarnings("unchecked")
-//    private Observable<Triple<ServiceInfo, String, Indicator>> queryUsedMemory(final ServiceInfoImpl impl) {
-//        final JolokiaRequest req = new JolokiaRequest();
-//        req.setType("read");
-//        req.setMBean("java.lang:type=Memory");
-//        req.setAttribute("HeapMemoryUsage");
-//        req.setPath("used");
-//        
-//        try {
-//            final LongValueResponse defaultresp = new LongValueResponse();
-//            defaultresp.setStatus(404);
-//            final Observable<LongValueResponse> onerror = 
-//                    Observable.just(defaultresp);
-//            
-//            return ((Observable<LongValueResponse>)this._signalClient.<LongValueResponse>defineInteraction(req, 
-//                    Feature.ENABLE_LOGGING,
-//                    Feature.ENABLE_COMPRESSOR,
-//                    new SignalClient.UsingUri(new URI(impl.getJolokiaUrl())),
-//                    new SignalClient.UsingMethod(POST.class),
-//                    new SignalClient.DecodeResponseAs(LongValueResponse.class)
-//                    ))
-//            .timeout(1, TimeUnit.SECONDS)
-//            .onErrorResumeNext(onerror)
-//            .map(new Func1<LongValueResponse, Triple<ServiceInfo, String, Indicator>> () {
-//                @Override
-//                public Triple<ServiceInfo, String, Indicator> call(
-//                        final LongValueResponse resp) {
-//                    if (200 == resp.getStatus()) {
-//                        final long timestamp = resp.getTimestamp();
-//                        final Long value = resp.getValue();
-//                        final Indicator indicator = new Indicator() {
-//                            @Override
-//                            public long getTimestamp() {
-//                                return timestamp;
-//                            }
-//                            @Override
-//                            public <V> V getValue() {
-//                                return (V)value;
-//                            }};
-//                        return Triple.of((ServiceInfo)impl, "usedMemory", indicator);
-//                    } else {
-//                        return Triple.of((ServiceInfo)impl, "usedMemory", null);
-//                    }
-//                }});
-//        } catch (URISyntaxException e) {
-//            return null;
-//        }
-//    }
     
     @SuppressWarnings("unchecked")
     private Observable<Triple<ServiceInfo, String, Indicator>> queryLongIndicator(

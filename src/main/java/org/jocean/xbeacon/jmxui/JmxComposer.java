@@ -34,6 +34,11 @@ import org.jocean.zkoss.model.SimpleTreeModel;
 import org.jocean.zkoss.ui.JSON2TreeModel;
 import org.jocean.zkoss.ui.JsonUI;
 import org.jocean.zkoss.util.EventQueueForwarder;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.format.PeriodFormat;
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormatterBuilder;
 import org.ngi.zhighcharts.SimpleExtXYModel;
 import org.ngi.zhighcharts.ZHighCharts;
 import org.slf4j.Logger;
@@ -89,6 +94,26 @@ public class JmxComposer extends SelectorComposer<Window>{
 
     private static final Logger LOG = 
         	LoggerFactory.getLogger(JmxComposer.class);
+    
+    private static final PeriodFormatter PERIODFMT = new PeriodFormatterBuilder()
+                .appendYears()
+                .appendSuffix(" 年 ")
+//                .printZeroRarelyLast()
+                .appendMonths()
+                .appendSuffix(" 月 ")
+//                .printZeroRarelyLast()
+                .appendDays()
+                .appendSuffix(" 天 ")
+//                .printZeroRarelyLast()
+                .appendHours()
+                .appendSuffix(" 小时 ")
+//                .printZeroRarelyLast()
+                .appendMinutes()
+                .appendSuffix(" 分钟 ")
+//                .printZeroRarelyLast()
+                .appendSeconds()
+                .appendSuffix(" 秒")
+                .toFormatter();
     
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
         public NodeTreeRenderer() {
@@ -192,13 +217,35 @@ public class JmxComposer extends SelectorComposer<Window>{
 
                 @Override
                 public void onIndicator(final List<Triple<ServiceInfo, String, Indicator>> inds) {
+                    boolean refreshModel = false;
                     for (Triple<ServiceInfo, String, Indicator> ind : inds) {
                         if (null != ind.third) {
                             final ServiceData data = findServiceData(ind.first.getId());
                             if (null != data) {
-                                data.addUsedMemoryInd(ind.third);
+                                if ("usedMemory".equals(ind.second)) {
+                                    if (null != ind.third) {
+                                        data.addUsedMemoryInd(ind.third);
+                                    }
+                                } else if ("startTime".equals(ind.second)) {
+                                    if (null != ind.third) {
+                                        final long startTime = (Long)ind.third.getValue();
+                                        final long durationInSecond = ind.third.getTimestamp() - startTime/1000;
+                                        final Period period = new Period(durationInSecond * 1000L, PeriodType.yearMonthDayTime());
+                                        final String periodAsString = PERIODFMT.print(period.normalizedStandard());
+                                        
+                                        data.setServiceTime(periodAsString);
+                                        refreshModel = true;
+                                        if (LOG.isDebugEnabled()) {
+                                            LOG.debug("update service time for {}: total {} seconds / {}",
+                                                    data._service, durationInSecond, periodAsString);
+                                        }
+                                    }
+                                }
                             }
                         }
+                    }
+                    if (refreshModel) {
+                        updateServicesModel(_serviceDatas.toArray(EMPTY_SRV));
                     }
                 }});
     }
