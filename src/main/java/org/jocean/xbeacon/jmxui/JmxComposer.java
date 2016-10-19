@@ -219,10 +219,10 @@ public class JmxComposer extends SelectorComposer<Window>{
 
     private void showServiceMBeans(final ListResponse resp) {
         final DomainInfo[] domains = resp.getDomains();
-        this._model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
+        final SimpleTreeModel model = new SimpleTreeModel(new SimpleTreeModel.Node(""));
         for (DomainInfo domain : domains) {
             final SimpleTreeModel.Node child = 
-                this._model.getRoot().addChildIfAbsent(domain.getName());
+                model.getRoot().addChildIfAbsent(domain.getName());
             for (MBeanInfo mbeaninfo : domain.getMBeans()) {
                 final SimpleTreeModel.Node mbeannode = 
                         child.addChildrenIfAbsent(buildPath(
@@ -231,7 +231,7 @@ public class JmxComposer extends SelectorComposer<Window>{
             }
         }
         
-        this.mbeans.setModel(this._model);
+        this.mbeans.setModel(model);
         this.status.getChildren().clear();
     }
 
@@ -744,6 +744,14 @@ public class JmxComposer extends SelectorComposer<Window>{
                        (int)( (double)value / 1024 / 1024));
             }
         }
+        
+        public String getServiceTime() {
+            return this._serviceTime;
+        }
+
+        public void setServiceTime(final String serviceTime) {
+            this._serviceTime = serviceTime;
+        }
 
         private final String _id;
 
@@ -756,6 +764,9 @@ public class JmxComposer extends SelectorComposer<Window>{
         @RowSource(name = "服务", asc = SRV_ASC.class, dsc = SRV_DSC.class)
         private final String _service;
 
+        @RowSource(name = "运行时长")
+        private String _serviceTime;
+        
         @RowSource(name = "构建号")
         private String _buildNo;
 
@@ -788,8 +799,6 @@ public class JmxComposer extends SelectorComposer<Window>{
     @Wire
     private Tree    mbeans;
     
-    private SimpleTreeModel _model;
-
     @Wire
     private Center          attrs;
 //    private Hlayout attrs;

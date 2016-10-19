@@ -338,10 +338,29 @@ public class ServiceMonitor {
                 }
             }}));
         
+        final JolokiaRequest req4usedMemory = new JolokiaRequest();
+        req4usedMemory.setType("read");
+        req4usedMemory.setMBean("java.lang:type=Memory");
+        req4usedMemory.setAttribute("HeapMemoryUsage");
+        req4usedMemory.setPath("used");
+        
+        final Action1<Triple<ServiceInfo, String, Indicator>> onUsedMemoryInd = 
+                new Action1<Triple<ServiceInfo, String, Indicator>>() {
+            @Override
+            public void call(final Triple<ServiceInfo, String, Indicator> ind) {
+              if (null != ind.third) {
+                  final ServiceInfoImpl impl = (ServiceInfoImpl)ind.first;
+                  impl._usedMemories.add(ind.third);
+                  if (impl._usedMemories.size() > _maxIndSize) {
+                      impl._usedMemories.remove(0);
+                  }
+              }
+            }};
+            
         this._future = this._executor.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                updateIndicators();
+                updateIndicators("usedMemory", req4usedMemory, onUsedMemoryInd);
             }}, 5, 5, TimeUnit.SECONDS);
     }
     
@@ -360,10 +379,13 @@ public class ServiceMonitor {
         }
     }
 
-    private void updateIndicators() {
+    private void updateIndicators(
+            final String indicatorName, 
+            final JolokiaRequest req, 
+            final Action1<Triple<ServiceInfo, String, Indicator>> onIndicator) {
         final List<Observable<Triple<ServiceInfo, String, Indicator>>> querys = Lists.newArrayList();
         for (ServiceInfoImpl impl : this._services.values()) {
-            querys.add(queryUsedMemory(impl));
+            querys.add(queryLongIndicator(impl, indicatorName, req));
         }
         Observable.merge(querys)
         .buffer(5, TimeUnit.SECONDS)
@@ -372,12 +394,8 @@ public class ServiceMonitor {
             @Override
             public void call(final List<Triple<ServiceInfo, String, Indicator>> inds) {
                 for (Triple<ServiceInfo, String, Indicator> ind : inds) {
-                    if (null != ind.third) {
-                        final ServiceInfoImpl impl = (ServiceInfoImpl)ind.first;
-                        impl._usedMemories.add(ind.third);
-                        if (impl._usedMemories.size() > _maxIndSize) {
-                            impl._usedMemories.remove(0);
-                        }
+                    if (null != onIndicator) {
+                        onIndicator.call(ind);
                     }
                 }
                 _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
@@ -388,14 +406,58 @@ public class ServiceMonitor {
             }});
     }
     
+//    @SuppressWarnings("unchecked")
+//    private Observable<Triple<ServiceInfo, String, Indicator>> queryUsedMemory(final ServiceInfoImpl impl) {
+//        final JolokiaRequest req = new JolokiaRequest();
+//        req.setType("read");
+//        req.setMBean("java.lang:type=Memory");
+//        req.setAttribute("HeapMemoryUsage");
+//        req.setPath("used");
+//        
+//        try {
+//            final LongValueResponse defaultresp = new LongValueResponse();
+//            defaultresp.setStatus(404);
+//            final Observable<LongValueResponse> onerror = 
+//                    Observable.just(defaultresp);
+//            
+//            return ((Observable<LongValueResponse>)this._signalClient.<LongValueResponse>defineInteraction(req, 
+//                    Feature.ENABLE_LOGGING,
+//                    Feature.ENABLE_COMPRESSOR,
+//                    new SignalClient.UsingUri(new URI(impl.getJolokiaUrl())),
+//                    new SignalClient.UsingMethod(POST.class),
+//                    new SignalClient.DecodeResponseAs(LongValueResponse.class)
+//                    ))
+//            .timeout(1, TimeUnit.SECONDS)
+//            .onErrorResumeNext(onerror)
+//            .map(new Func1<LongValueResponse, Triple<ServiceInfo, String, Indicator>> () {
+//                @Override
+//                public Triple<ServiceInfo, String, Indicator> call(
+//                        final LongValueResponse resp) {
+//                    if (200 == resp.getStatus()) {
+//                        final long timestamp = resp.getTimestamp();
+//                        final Long value = resp.getValue();
+//                        final Indicator indicator = new Indicator() {
+//                            @Override
+//                            public long getTimestamp() {
+//                                return timestamp;
+//                            }
+//                            @Override
+//                            public <V> V getValue() {
+//                                return (V)value;
+//                            }};
+//                        return Triple.of((ServiceInfo)impl, "usedMemory", indicator);
+//                    } else {
+//                        return Triple.of((ServiceInfo)impl, "usedMemory", null);
+//                    }
+//                }});
+//        } catch (URISyntaxException e) {
+//            return null;
+//        }
+//    }
+    
     @SuppressWarnings("unchecked")
-    private Observable<Triple<ServiceInfo, String, Indicator>> queryUsedMemory(final ServiceInfoImpl impl) {
-        final JolokiaRequest req = new JolokiaRequest();
-        req.setType("read");
-        req.setMBean("java.lang:type=Memory");
-        req.setAttribute("HeapMemoryUsage");
-        req.setPath("used");
-        
+    private Observable<Triple<ServiceInfo, String, Indicator>> queryLongIndicator(
+            final ServiceInfoImpl impl, final String indicatorName, final JolokiaRequest req) {
         try {
             final LongValueResponse defaultresp = new LongValueResponse();
             defaultresp.setStatus(404);
@@ -427,45 +489,11 @@ public class ServiceMonitor {
                             public <V> V getValue() {
                                 return (V)value;
                             }};
-                        return Triple.of((ServiceInfo)impl, "usedMemory", indicator);
+                        return Triple.of((ServiceInfo)impl, indicatorName, indicator);
                     } else {
-                        return Triple.of((ServiceInfo)impl, "usedMemory", null);
+                        return Triple.of((ServiceInfo)impl, indicatorName, null);
                     }
                 }});
-            /*
-            new Action1<LongValueResponse>() {
-                @Override
-                public void call(final LongValueResponse resp) {
-                    if (200 == resp.getStatus()) {
-                        final long timestamp = resp.getTimestamp();
-                        final Long value = resp.getValue();
-                        final Indicator indicator = new Indicator() {
-                            @Override
-                            public long getTimestamp() {
-                                return timestamp;
-                            }
-                            @SuppressWarnings("unchecked")
-                            @Override
-                            public <V> V getValue() {
-                                return (V)value;
-                            }};
-                        impl._usedMemories.add(indicator);
-                        if (impl._usedMemories.size() > 10) {
-                            impl._usedMemories.remove(0);
-                        }
-                        _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
-                            @Override
-                            public void call(final UpdateStatus updateStatus) {
-                                updateStatus.onIndicator(impl._id, "usedMemory", indicator);
-                            }}));
-                    }
-                }}, 
-                new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable e) {
-                        LOG.warn("queryUsedMemory: got exception {}", e);
-                    }});
-                    */
         } catch (URISyntaxException e) {
             return null;
         }
