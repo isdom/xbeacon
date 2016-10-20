@@ -375,7 +375,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                     Feature.ENABLE_COMPRESSOR,
                     new SignalClient.UsingUri(_jolokiauri),
                     new SignalClient.UsingMethod(POST.class),
-                    new SignalClient.DecodeResponseAs(ExecResponse.class)
+                    new SignalClient.DecodeResponseBodyAs(ExecResponse.class)
                     )
             .timeout(1, TimeUnit.SECONDS)
             .toBlocking().single();
@@ -530,7 +530,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                 Feature.ENABLE_COMPRESSOR,
                 new SignalClient.UsingUri(this._jolokiauri),
                 new SignalClient.UsingMethod(POST.class),
-                new SignalClient.DecodeResponseAs(ReadAttrResponse.class)
+                new SignalClient.DecodeResponseBodyAs(ReadAttrResponse.class)
                 )
         .timeout(1, TimeUnit.SECONDS)
         .subscribe(eqf.subject());
@@ -585,7 +585,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                 Feature.ENABLE_COMPRESSOR,
                 new SignalClient.UsingUri(_jolokiauri),
                 new SignalClient.UsingMethod(POST.class),
-                new SignalClient.DecodeResponseAs(ListResponse.class)
+                new SignalClient.DecodeResponseBodyAs(ListResponse.class)
                 )
         .timeout(1, TimeUnit.SECONDS)
         .subscribe(eqf.subject());

@@ -426,7 +426,7 @@ public class ServiceMonitor {
                     Feature.ENABLE_COMPRESSOR,
                     new SignalClient.UsingUri(new URI(impl.getJolokiaUrl())),
                     new SignalClient.UsingMethod(POST.class),
-                    new SignalClient.DecodeResponseAs(LongValueResponse.class)
+                    new SignalClient.DecodeResponseBodyAs(LongValueResponse.class)
                     ))
             .timeout(1, TimeUnit.SECONDS)
             .onErrorResumeNext(onerror)
