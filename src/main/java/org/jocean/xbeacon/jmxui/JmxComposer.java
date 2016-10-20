@@ -102,6 +102,8 @@ public class JmxComposer extends SelectorComposer<Window>{
                 .appendMonths()
                 .appendSuffix(" 月 ")
 //                .printZeroRarelyLast()
+                .appendWeeks()
+                .appendSuffix(" 星期 ")
                 .appendDays()
                 .appendSuffix(" 天 ")
 //                .printZeroRarelyLast()
@@ -229,7 +231,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                                     if (null != ind.third) {
                                         final long startTime = (Long)ind.third.getValue();
                                         final long durationInSecond = ind.third.getTimestamp() - startTime/1000;
-                                        final Period period = new Period(durationInSecond * 1000L, PeriodType.yearMonthDayTime());
+                                        final Period period = new Period(durationInSecond * 1000L);
                                         final String periodAsString = PERIODFMT.print(period.normalizedStandard());
                                         
                                         data.setServiceTime(periodAsString);
