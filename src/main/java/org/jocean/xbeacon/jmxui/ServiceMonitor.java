@@ -344,6 +344,11 @@ public class ServiceMonitor {
         req4usedMemory.setAttribute("HeapMemoryUsage");
         req4usedMemory.setPath("used");
         
+        final JolokiaRequest req4startTime = new JolokiaRequest();
+        req4startTime.setType("read");
+        req4startTime.setMBean("java.lang:type=Runtime");
+        req4startTime.setAttribute("StartTime");
+        
         final Action1<Triple<ServiceInfo, String, Indicator>> onUsedMemoryInd = 
                 new Action1<Triple<ServiceInfo, String, Indicator>>() {
             @Override
@@ -356,17 +361,16 @@ public class ServiceMonitor {
                   }
               }
             }};
-            
-        final JolokiaRequest req4startTime = new JolokiaRequest();
-        req4startTime.setType("read");
-        req4startTime.setMBean("java.lang:type=Runtime");
-        req4startTime.setAttribute("StartTime");
+        final Map<String, Action1<Triple<ServiceInfo, String, Indicator>>> name2action = Maps.newHashMap();
+        name2action.put("usedMemory", onUsedMemoryInd);
         
         this._future = this._executor.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                updateIndicators("usedMemory", req4usedMemory, onUsedMemoryInd);
-                updateIndicators("startTime", req4startTime, null);
+                updateIndicators(
+                        new String[]{"usedMemory", "startTime"}, 
+                        new JolokiaRequest[]{req4usedMemory, req4startTime}, 
+                        name2action);
             }}, 5, 5, TimeUnit.SECONDS);
     }
     
@@ -386,70 +390,86 @@ public class ServiceMonitor {
     }
 
     private void updateIndicators(
-            final String indicatorName, 
-            final JolokiaRequest req, 
-            final Action1<Triple<ServiceInfo, String, Indicator>> onIndicator) {
-        final List<Observable<Triple<ServiceInfo, String, Indicator>>> querys = Lists.newArrayList();
+            final String[] indicatorNames, 
+            final JolokiaRequest[] reqs, 
+            final Map<String, Action1<Triple<ServiceInfo, String, Indicator>>> name2action) {
+        final List<Observable<List<Triple<ServiceInfo, String, Indicator>>>> querys = Lists.newArrayList();
         for (ServiceInfoImpl impl : this._services.values()) {
-            querys.add(queryLongIndicator(impl, indicatorName, req));
+            querys.add(queryLongIndicator(impl, indicatorNames, reqs));
         }
         Observable.merge(querys)
         .buffer(5, TimeUnit.SECONDS)
         .observeOn(this._scheduler)
-        .subscribe(new Action1<List<Triple<ServiceInfo, String, Indicator>>>() {
+        .subscribe(new Action1<List<List<Triple<ServiceInfo, String, Indicator>>>>() {
             @Override
-            public void call(final List<Triple<ServiceInfo, String, Indicator>> inds) {
-                for (Triple<ServiceInfo, String, Indicator> ind : inds) {
-                    if (null != onIndicator) {
-                        onIndicator.call(ind);
+            public void call(final List<List<Triple<ServiceInfo, String, Indicator>>> multiinds) {
+                final List<Triple<ServiceInfo, String, Indicator>> notify = Lists.newArrayList();
+                for (List<Triple<ServiceInfo, String, Indicator>> inds : multiinds) {
+                    notify.addAll(inds);
+                    for (Triple<ServiceInfo, String, Indicator> ind : inds) {
+                        final Action1<Triple<ServiceInfo, String, Indicator>> action = 
+                                name2action.get(ind.second);
+                        if (null != action) {
+                            action.call(ind);
+                        }
                     }
                 }
                 _eventqueue.publish(new Event(UPDATE_EVENT, null, new Action1<UpdateStatus>() {
                     @Override
                     public void call(final UpdateStatus updateStatus) {
-                        updateStatus.onIndicator(inds);
+                        updateStatus.onIndicator(notify);
                     }}));
             }});
     }
     
     @SuppressWarnings("unchecked")
-    private Observable<Triple<ServiceInfo, String, Indicator>> queryLongIndicator(
-            final ServiceInfoImpl impl, final String indicatorName, final JolokiaRequest req) {
+    private Observable<List<Triple<ServiceInfo, String, Indicator>>> queryLongIndicator(
+            final ServiceInfoImpl impl, final String[] indicatorNames, final JolokiaRequest[] reqs) {
         try {
-            final LongValueResponse defaultresp = new LongValueResponse();
-            defaultresp.setStatus(404);
-            final Observable<LongValueResponse> onerror = 
-                    Observable.just(defaultresp);
+            final List<LongValueResponse> defaultresps = Lists.newArrayList();
+            for (int idx = 0; idx < reqs.length; idx++) {
+                final LongValueResponse resp = new LongValueResponse();
+                resp.setStatus(404);
+                defaultresps.add(resp);
+            }
+            final Observable<LongValueResponse[]> onerror = 
+                    Observable.just(defaultresps.toArray(new LongValueResponse[0]));
             
-            return ((Observable<LongValueResponse>)this._signalClient.<LongValueResponse>defineInteraction(req, 
+            return ((Observable<LongValueResponse[]>)this._signalClient
+                .<LongValueResponse[]>defineInteraction(reqs, 
                     Feature.ENABLE_LOGGING,
                     Feature.ENABLE_COMPRESSOR,
                     new SignalClient.UsingUri(new URI(impl.getJolokiaUrl())),
                     new SignalClient.UsingMethod(POST.class),
-                    new SignalClient.DecodeResponseBodyAs(LongValueResponse.class)
+                    new SignalClient.DecodeResponseBodyAs(LongValueResponse[].class)
                     ))
             .timeout(1, TimeUnit.SECONDS)
             .onErrorResumeNext(onerror)
-            .map(new Func1<LongValueResponse, Triple<ServiceInfo, String, Indicator>> () {
+            .map(new Func1<LongValueResponse[], List<Triple<ServiceInfo, String, Indicator>>> () {
                 @Override
-                public Triple<ServiceInfo, String, Indicator> call(
-                        final LongValueResponse resp) {
-                    if (200 == resp.getStatus()) {
-                        final long timestamp = resp.getTimestamp();
-                        final Long value = resp.getValue();
-                        final Indicator indicator = new Indicator() {
-                            @Override
-                            public long getTimestamp() {
-                                return timestamp;
-                            }
-                            @Override
-                            public <V> V getValue() {
-                                return (V)value;
-                            }};
-                        return Triple.of((ServiceInfo)impl, indicatorName, indicator);
-                    } else {
-                        return Triple.of((ServiceInfo)impl, indicatorName, null);
+                public List<Triple<ServiceInfo, String, Indicator>> call(
+                        final LongValueResponse[] resps) {
+                    final List<Triple<ServiceInfo, String, Indicator>> inds = Lists.newArrayList();
+                    for (int idx=0; idx < resps.length; idx++) {
+                        final LongValueResponse resp = resps[idx];
+                        if (200 == resp.getStatus()) {
+                            final long timestamp = resp.getTimestamp();
+                            final Long value = resp.getValue();
+                            final Indicator indicator = new Indicator() {
+                                @Override
+                                public long getTimestamp() {
+                                    return timestamp;
+                                }
+                                @Override
+                                public <V> V getValue() {
+                                    return (V)value;
+                                }};
+                            inds.add(Triple.of((ServiceInfo)impl, indicatorNames[idx], indicator));
+                        } else {
+                            inds.add(Triple.of((ServiceInfo)impl, indicatorNames[idx], (Indicator)null));
+                        }
                     }
+                    return inds;
                 }});
         } catch (URISyntaxException e) {
             return null;
