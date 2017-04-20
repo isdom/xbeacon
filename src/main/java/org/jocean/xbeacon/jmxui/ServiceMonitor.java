@@ -436,13 +436,14 @@ public class ServiceMonitor {
                     Observable.just(defaultresps.toArray(new LongValueResponse[0]));
             
             return ((Observable<LongValueResponse[]>)this._signalClient
-                .<LongValueResponse[]>defineInteraction(reqs, 
-                    Feature.ENABLE_LOGGING,
+                .interaction()
+                .request(reqs)
+                .feature(Feature.ENABLE_LOGGING,
                     Feature.ENABLE_COMPRESSOR,
                     new SignalClient.UsingUri(new URI(impl.getJolokiaUrl())),
                     new SignalClient.UsingMethod(POST.class),
-                    new SignalClient.DecodeResponseBodyAs(LongValueResponse[].class)
-                    ))
+                    new SignalClient.DecodeResponseBodyAs(LongValueResponse[].class))
+                .<LongValueResponse[]>build())
             .timeout(1, TimeUnit.SECONDS)
             .onErrorResumeNext(onerror)
             .map(new Func1<LongValueResponse[], List<Triple<ServiceInfo, String, Indicator>>> () {

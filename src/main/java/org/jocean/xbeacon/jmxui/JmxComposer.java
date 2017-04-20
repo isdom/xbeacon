@@ -372,13 +372,15 @@ public class JmxComposer extends SelectorComposer<Window>{
         req.setArguments(args);
         
         final ExecResponse resp =
-            this._signalClient.<ExecResponse>defineInteraction(req, 
-                    Feature.ENABLE_LOGGING,
-                    Feature.ENABLE_COMPRESSOR,
-                    new SignalClient.UsingUri(_jolokiauri),
-                    new SignalClient.UsingMethod(POST.class),
-                    new SignalClient.DecodeResponseBodyAs(ExecResponse.class)
-                    )
+            this._signalClient.interaction().request(req)
+            .feature(
+                Feature.ENABLE_LOGGING,
+                Feature.ENABLE_COMPRESSOR,
+                new SignalClient.UsingUri(_jolokiauri),
+                new SignalClient.UsingMethod(POST.class),
+                new SignalClient.DecodeResponseBodyAs(ExecResponse.class)
+                )
+            .<ExecResponse>build()
             .timeout(1, TimeUnit.SECONDS)
             .toBlocking().single();
         if (200 == resp.getStatus()) {
@@ -527,13 +529,15 @@ public class JmxComposer extends SelectorComposer<Window>{
         req.setType("read");
         req.setMBean(mbeaninfo.getObjectName().toString());
         
-        this._signalClient.<ReadAttrResponse>defineInteraction(req, 
+        this._signalClient.interaction().request(req)
+        .feature( 
                 Feature.ENABLE_LOGGING,
                 Feature.ENABLE_COMPRESSOR,
                 new SignalClient.UsingUri(this._jolokiauri),
                 new SignalClient.UsingMethod(POST.class),
                 new SignalClient.DecodeResponseBodyAs(ReadAttrResponse.class)
                 )
+        .<ReadAttrResponse>build()
         .timeout(1, TimeUnit.SECONDS)
         .subscribe(eqf.subject());
     }
@@ -582,13 +586,15 @@ public class JmxComposer extends SelectorComposer<Window>{
         final JolokiaRequest req = new JolokiaRequest();
         req.setType("list");
         
-        this._signalClient.<ListResponse>defineInteraction(req, 
+        this._signalClient.interaction().request(req)
+        .feature(
                 Feature.ENABLE_LOGGING,
                 Feature.ENABLE_COMPRESSOR,
                 new SignalClient.UsingUri(_jolokiauri),
                 new SignalClient.UsingMethod(POST.class),
                 new SignalClient.DecodeResponseBodyAs(ListResponse.class)
                 )
+        .<ListResponse>build()
         .timeout(1, TimeUnit.SECONDS)
         .subscribe(eqf.subject());
     }

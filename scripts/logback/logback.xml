@@ -52,9 +52,11 @@
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.apache.curator" level="WARN"/>
     <logger name="org.zkoss" level="WARN"/>
+    <logger name="io.netty" level="INFO"/>
+    <logger name="org.jocean.xbeacon.zk.admin" level="DEBUG"/>
+    <logger name="org.jocean.xbeacon.jmxui.JmxComposer" level="DEBUG"/>
     
-    
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="stdout"/>
         <appender-ref ref="ASYNC"/>
         <appender-ref ref="errorFile"/>
