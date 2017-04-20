@@ -9,5 +9,7 @@
 /.gradle/
 /.gradle/*
 .DS_Store
-.classpath
+.idea
+.iml
 .project
+.classpath
