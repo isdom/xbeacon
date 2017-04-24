@@ -49,10 +49,10 @@ dependencies {
     compile "org.eclipse.jetty:jetty-jmx:${jettyVersion}"
     
     /* for yaml */
-    compile 'org.yaml:snakeyaml:1.16'
+    compile 'org.yaml:snakeyaml:1.18'
     
     /* zookeeper */
-    compile 'org.apache.curator:curator-recipes:2.7.1'
+    compile 'org.apache.curator:curator-recipes:3.3.0'
     
     /* log */
     compile 'org.slf4j:slf4j-api:1.7.21'
