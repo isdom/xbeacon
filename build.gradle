@@ -14,9 +14,9 @@ dependencies {
     compile 'javax.servlet:javax.servlet-api:3.1.0'
     
     compile 'commons-io:commons-io:2.4'
-    compile 'com.google.guava:guava:19.0'
-    compile 'com.alibaba:fastjson:1.2.17'
-    compile 'joda-time:joda-time:2.9.4'
+    compile 'com.google.guava:guava:21.0'
+    compile 'com.alibaba:fastjson:1.2.31'
+    compile 'joda-time:joda-time:2.9.9'
     
     /* jocean */
     compile 'org.jocean:jocean-idiom:0.1.4-SNAPSHOT'
@@ -61,7 +61,7 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.1.7'
     
     // jolokia-agent
-    compile 'org.jolokia:jolokia-spring:1.3.4'
+    compile 'org.jolokia:jolokia-spring:1.3.6'
     
     // compile 'org.jmxtrans.embedded:embedded-jmxtrans:1.1.3'
     // compile 'org.jmxtrans:jmxtrans-output-influxdb:259'
