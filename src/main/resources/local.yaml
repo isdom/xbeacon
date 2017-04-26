@@ -13,6 +13,6 @@ children:
     parameters: |
       webapp.host = 127.0.0.1
       webapp.port = 7080
-      webapp.path = /webui
+      webapp.path = /xbeacon
       webapp.category = demo
       webapp.priority = 100

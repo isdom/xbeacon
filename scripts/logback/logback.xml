@@ -51,7 +51,7 @@
     <logger name="org.apache.zookeeper" level="WARN"/>
     <logger name="org.springframework" level="WARN"/>
     <logger name="org.apache.curator" level="WARN"/>
-    <logger name="org.zkoss" level="WARN"/>
+    <logger name="org.zkoss" level="INFO"/>
     <logger name="io.netty" level="INFO"/>
     <logger name="org.jocean.xbeacon.zk.admin" level="DEBUG"/>
     <logger name="org.jocean.xbeacon.jmxui.JmxComposer" level="DEBUG"/>
