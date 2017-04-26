@@ -22,14 +22,11 @@ dependencies {
     compile 'org.jocean:jocean-idiom:0.1.4-SNAPSHOT'
     
     compile 'org.jocean:jocean-http:0.0.2-SNAPSHOT'
-    compile('org.jocean:jocean-j2se:0.0.4-SNAPSHOT') { transitive = false }
-    compile('org.jocean:jocean-zkoss:0.0.1-SNAPSHOT') { transitive = false }
+    compile 'org.jocean:jocean-j2se:0.0.4-SNAPSHOT'
+    compile 'org.jocean:jocean-zkoss:0.0.1-SNAPSHOT'
     compile 'org.jocean:jocean-jdmk:0.0.2'
     compile 'org.jocean:zkh5chart:1.21-SNAPSHOT'
     compile 'org.jocean:zhighcharts:0.3.0-SNAPSHOT'
-    
-    // javax.inject
-    compile 'javax.inject:javax.inject:1'
     
     /* zkoss */
     compile "org.zkoss.zk:zkplus:${zkossVersion}"
@@ -40,33 +37,17 @@ dependencies {
     compile('org.zkoss.zk:zkspring-core:3.1.1') { transitive = false }
     compile 'org.zkoss.theme:atlantic:1.1.1'
     
-    /* spring */
-    compile "org.springframework:spring-web:${springVersion}"
-    compile "org.springframework:spring-context-support:${springVersion}"
-    compile "org.springframework:spring-orm:${springVersion}"
-    
     compile "org.eclipse.jetty:jetty-webapp:${jettyVersion}"
     compile "org.eclipse.jetty:jetty-jmx:${jettyVersion}"
     
-    /* for yaml */
-    compile 'org.yaml:snakeyaml:1.18'
-    
-    /* zookeeper */
-    compile 'org.apache.curator:curator-recipes:3.3.0'
-    
     /* log */
-    compile 'org.slf4j:slf4j-api:1.7.21'
-    compile 'org.slf4j:jcl-over-slf4j:1.7.21'
-    compile 'org.slf4j:log4j-over-slf4j:1.7.21'
-    compile 'ch.qos.logback:logback-classic:1.1.7'
-    
-    // jolokia-agent
-    compile 'org.jolokia:jolokia-spring:1.3.6'
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    compile 'org.slf4j:jcl-over-slf4j:1.7.25'
+    compile 'org.slf4j:log4j-over-slf4j:1.7.25'
+    compile 'ch.qos.logback:logback-classic:1.2.2'
     
     // compile 'org.jmxtrans.embedded:embedded-jmxtrans:1.1.3'
     // compile 'org.jmxtrans:jmxtrans-output-influxdb:259'
-    
-    runtime 'org.jvnet.opendmk:jmxremote_optional:1.0_01-ea'
     
     testCompile 'junit:junit:4.12'
     testCompile "org.springframework:spring-test:${springVersion}"
