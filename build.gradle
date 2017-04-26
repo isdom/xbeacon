@@ -50,5 +50,4 @@ dependencies {
     // compile 'org.jmxtrans:jmxtrans-output-influxdb:259'
     
     testCompile 'junit:junit:4.12'
-    testCompile "org.springframework:spring-test:${springVersion}"
 }
