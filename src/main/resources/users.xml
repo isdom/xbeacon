@@ -4,12 +4,6 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
-    <import resource="classpath:unit/zkclient.xml"/>
+    <bean id="users" class="java.util.ArrayList"/>
     
-    <bean id="zkAgent" class="org.jocean.j2se.zk.ZKAgent"
-        init-method="start" 
-        destroy-method="stop">
-        <constructor-arg ref="zkClient"/>
-        <constructor-arg value="${zk.root.path}"/>
-    </bean>
 </beans>
