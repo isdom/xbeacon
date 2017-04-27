@@ -12,4 +12,7 @@
         <constructor-arg ref="zkClient"/>
         <constructor-arg value="${zk.root.path}"/>
     </bean>
+    
+    <bean id="users" class="java.util.ArrayList"/>
+    
 </beans>

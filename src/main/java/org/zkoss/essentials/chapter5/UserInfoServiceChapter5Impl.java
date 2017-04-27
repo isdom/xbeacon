@@ -8,7 +8,6 @@ Copyright (C) 2012 Potix Corporation. All Rights Reserved.
 package org.zkoss.essentials.chapter5;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.zkoss.essentials.entity.User;
@@ -17,11 +16,15 @@ import org.zkoss.essentials.services.UserInfoService;
 public class UserInfoServiceChapter5Impl implements UserInfoService,Serializable{
 	private static final long serialVersionUID = 1L;
 	
-	static protected List<User> userList = new ArrayList<User>();  
-	static{
-		userList.add(new User("anonymous","1234","Anonymous","anonumous@your.com"));
-		userList.add(new User("admin","1234","Admin","admin@your.com"));
-		userList.add(new User("zkoss","1234","ZKOSS","info@zkoss.org"));
+	protected List<User> userList;
+//	static{
+//		userList.add(new User("anonymous","1234","Anonymous","anonumous@your.com"));
+//		userList.add(new User("admin","1234","Admin","admin@your.com"));
+//		userList.add(new User("zkoss","1234","ZKOSS","info@zkoss.org"));
+//	}
+	
+	public UserInfoServiceChapter5Impl(final List<User> users) {
+		this.userList = users;
 	}
 	
 	/** synchronized is just because we use static userList in this demo to prevent concurrent access **/
