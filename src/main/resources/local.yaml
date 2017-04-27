@@ -4,6 +4,12 @@ parameters: |
   zk.address = 192.168.8.8:2181
   zk.root.path = /
 children:
+  - name: adduser
+    parameters: |
+      account = test
+      password = test
+      fullname = TEST
+      email = test@test.com
   - name: jolokia
   - name: jmxsrv
     parameters: |
@@ -16,11 +22,3 @@ children:
       webapp.path = /xbeacon
       webapp.category = demo
       webapp.priority = 100
-    children:
-      - name: adduser
-        parameters: |
-          account = test
-          password = test
-          fullname = TEST
-          email = test@test.com
-      
