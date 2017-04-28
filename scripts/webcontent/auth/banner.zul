@@ -1,7 +1,7 @@
 <div hflex="1" vflex="1" sclass="banner">
     <hbox hflex="1" vflex="1" align="center">
         <a href="http://www.zkoss.org/">
-            <image src="/imgs/zklogo.png" width="90px" />
+            <image src="/imgs/zklogo.png" width="40px" />
         </a>
         <div width="400px">
             <label value="XBEACON" sclass="banner-head" />
