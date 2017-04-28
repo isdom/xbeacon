@@ -1,6 +1,13 @@
 
+<?link rel="stylesheet" type="text/css" href="/auth/style.css"?>
 <?init class="org.zkoss.essentials.chapter8.AuthenticationInit"?>
+<?init class="org.zkoss.zk.ui.util.Composition" arg0="/auth/template.zul"?>
+    
 <zk>
+    <include id="mainInclude" self="@define(content)" src="/auth/home.zul"/>
+</zk>
+    
+<!-- zk>
     <window id="main" width="100%" height="100%">
         <borderlayout>
             <center id="center" flex="true" >
@@ -21,4 +28,4 @@
             </center>
         </borderlayout>
 	</window>
-</zk>
+</zk -->
