@@ -20,7 +20,6 @@ dependencies {
     
     /* jocean */
     compile 'org.jocean:jocean-idiom:0.1.4-SNAPSHOT'
-    
     compile 'org.jocean:jocean-http:0.0.2-SNAPSHOT'
     compile 'org.jocean:jocean-j2se:0.0.4-SNAPSHOT'
     compile 'org.jocean:jocean-zkoss:0.0.1-SNAPSHOT'
@@ -29,16 +28,18 @@ dependencies {
     compile 'org.jocean:zhighcharts:0.3.0-SNAPSHOT'
     
     /* zkoss */
-    compile "org.zkoss.zk:zkplus:${zkossVersion}"
-    compile "org.zkoss.zk:zhtml:${zkossVersion}"
-    compile "org.zkoss.zk:zkbind:${zkossVersion}"
-    compile "org.zkoss.zk:zul:${zkossVersion}"
     compile "org.zkoss.theme:sapphire:${zkossVersion}"
     compile('org.zkoss.zk:zkspring-core:3.1.1') { transitive = false }
     compile 'org.zkoss.theme:atlantic:1.1.1'
     
+    /*
+    compile "org.zkoss.zk:zkplus:${zkossVersion}"
+    compile "org.zkoss.zk:zhtml:${zkossVersion}"
+    compile "org.zkoss.zk:zkbind:${zkossVersion}"
+    compile "org.zkoss.zk:zul:${zkossVersion}"
     compile "org.eclipse.jetty:jetty-webapp:${jettyVersion}"
     compile "org.eclipse.jetty:jetty-jmx:${jettyVersion}"
+    */
     
     /* log */
     compile 'org.slf4j:slf4j-api:1.7.25'
