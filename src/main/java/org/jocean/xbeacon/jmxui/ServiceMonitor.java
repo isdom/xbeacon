@@ -286,7 +286,8 @@ public class ServiceMonitor {
             .observeOn(this._scheduler, 1000)
             .subscribe(RxObservables.<ZKAgent.Listener>asOnNext(new ZKAgent.Listener() {
             @Override
-            public void onAdded(final String absolutepath, final byte[] data) throws Exception {
+            public void onAdded(final ZKAgent agent, 
+                    final String absolutepath, final byte[] data) throws Exception {
                 if (!isServiceStatusPath(absolutepath)) {
                     return;
                 }
@@ -305,7 +306,8 @@ public class ServiceMonitor {
             }
 
             @Override
-            public void onUpdated(String absolutepath, byte[] data) throws Exception {
+            public void onUpdated(final ZKAgent agent, 
+                    String absolutepath, byte[] data) throws Exception {
                 if (!isServiceStatusPath(absolutepath)) {
                     return;
                 }
@@ -323,7 +325,8 @@ public class ServiceMonitor {
             }
 
             @Override
-            public void onRemoved(String absolutepath) throws Exception {
+            public void onRemoved(final ZKAgent agent, 
+                    String absolutepath) throws Exception {
                 if (!isServiceStatusPath(absolutepath)) {
                     return;
                 }

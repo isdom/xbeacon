@@ -110,7 +110,9 @@ public class ZKTreeManager {
         }
         
         @Override
-        public void onAdded(final String absolutepath, final byte[] data) throws Exception {
+        public void onAdded(final ZKAgent agent, 
+                final String absolutepath, 
+                final byte[] data) throws Exception {
             if (!isManagedPath(absolutepath)) {
                 return;
             }
@@ -134,7 +136,9 @@ public class ZKTreeManager {
         }
 
         @Override
-        public void onUpdated(final String absolutepath, final byte[] data) throws Exception {
+        public void onUpdated(final ZKAgent agent, 
+                final String absolutepath, 
+                final byte[] data) throws Exception {
             if (!isManagedPath(absolutepath)) {
                 return;
             }
@@ -160,7 +164,8 @@ public class ZKTreeManager {
         }
 
         @Override
-        public void onRemoved(final String absolutepath) throws Exception {
+        public void onRemoved(final ZKAgent agent, 
+                final String absolutepath) throws Exception {
             if (!isManagedPath(absolutepath)) {
                 return;
             }

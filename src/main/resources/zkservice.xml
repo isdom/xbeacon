@@ -4,10 +4,17 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
+    <bean id="zkagent" class="org.jocean.j2se.zk.ZKAgent"
+        init-method="start" 
+        destroy-method="stop">
+        <constructor-arg ref="zkClient"/>
+        <constructor-arg value="${managed.root.path:/}"/>
+    </bean>
+    
     <bean id="treemgr" class="org.jocean.xbeacon.zk.ZKTreeManager"
         init-method="start"
         destroy-method="stop">
-        <constructor-arg name="zkagent" ref="zkAgent"/>
+        <constructor-arg name="zkagent" ref="zkagent"/>
         <property name="root" value="${managed.root.path:/}"/>
         <property name="webapp">
             <bean class="org.jocean.xbeacon.MyWebAppInit" 
@@ -18,7 +25,7 @@
     <bean id="servicemonitor" class="org.jocean.xbeacon.jmxui.ServiceMonitor"
         init-method="start"
         destroy-method="stop">
-        <constructor-arg name="zkagent" ref="zkAgent"/>
+        <constructor-arg name="zkagent" ref="zkagent"/>
         <property name="root" value="${service.status.path:/service}"/>
         <property name="webapp">
             <bean class="org.jocean.xbeacon.MyWebAppInit" 
