@@ -123,18 +123,25 @@ public class ZKTreeManager {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("onNodeAdded: {}", Arrays.toString(paths));
             }
-            final SimpleTreeModel.Node node = 
-                    this.getRoot().addChildrenIfAbsent(paths);
-            node.setData(Pair.of(path, null != data
-                                    ? new String(data, Charsets.UTF_8)
-                                    : null));
-            final SimpleTreeModel.Node parent = node.getParent();
-            fireEvent(TreeDataEvent.INTERVAL_ADDED, 
-                    this.getPath(parent),
-                    this.getIndexOfChild(parent, node),
-                    parent.getChildCount() - 1,
-                    this.getPath(node)
-                    );
+            
+            Node parent = this.getRoot();
+            for ( String name : paths) {
+                Node child = parent.getChild(name);
+                if (null == child) {
+                    child = new Node(name);
+                    parent.addChild(child);
+                    fireEvent(TreeDataEvent.INTERVAL_ADDED, 
+                            this.getPath(parent),
+                            this.getIndexOfChild(parent, child),
+                            parent.getChildCount() - 1,
+                            this.getPath(child)
+                            );
+                }
+                parent = child;
+            }
+            parent.setData(Pair.of(path, null != data
+                                ? new String(data, Charsets.UTF_8)
+                                : null));
         }
 
         @Override
