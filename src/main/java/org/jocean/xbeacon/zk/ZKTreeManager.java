@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
 import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.Pair;
@@ -23,6 +24,8 @@ import org.zkoss.zul.event.TreeDataEvent;
 
 import com.google.common.base.Charsets;
 
+import rx.functions.Action0;
+
 public class ZKTreeManager {
     
     private static final UnitDescription[] EMPTY_UNITDESCS = new UnitDescription[0];
@@ -32,24 +35,22 @@ public class ZKTreeManager {
     private static final Logger LOG = 
             LoggerFactory.getLogger(ZKTreeManager.class);
 
-    public ZKTreeManager(final ZKAgent zkagent) {
-        this._zkagent = zkagent;
-//        this._rootPath = zkagent.root();
+    public ZKTreeManager(final CuratorFramework client) {
+        this._client = client;
     }
     
-//    public void setRoot(final String rootPath) {
-//        this._rootPath = rootPath;
-//    }
-    
     public SimpleTreeModel getModel() throws Exception {
-        final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node("/" /*this._rootPath*/));
-        final EventQueueForwarder<ZKAgent.Listener> eqf = 
-                new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
-        
-        eqf.subscribe(model);
-        Desktops.addActionForCurrentDesktopCleanup(
-            this._zkagent.addListener(eqf.subject()));
-        return model;
+//        final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
+//        final EventQueueForwarder<ZKAgent.Listener> eqf = 
+//                new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
+//        
+//        eqf.subscribe(model);
+        return this._model;
+    }
+    
+    public Action0 addZKAgent(final ZKAgent zkagent) {
+//        Desktops.addActionForCurrentDesktopCleanup(
+        return zkagent.addListener(this._eqf.subject());
     }
     
     public void setWebapp(final WebApp webapp) {
@@ -58,6 +59,8 @@ public class ZKTreeManager {
 
     public void start() throws Exception {
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
+        this._eqf = new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
+        this._eqf.subscribe(this._model);
     }
     
     public void stop() {
@@ -78,17 +81,17 @@ public class ZKTreeManager {
             throws Exception {
         @SuppressWarnings("unchecked")
         final String path = ((Pair<String,String>)node.getData()).first;
-        this._zkagent.client().setData()
+        this._client.setData()
             .forPath(path, data.getBytes(Charsets.UTF_8));
     }
     
     public String createZKNode(final String nodepath, final byte[] nodecontent) throws Exception {
-        return this._zkagent.client().create()
+        return this._client.create()
                 .forPath(nodepath, nodecontent);
     }
     
     public void removeZKNode(final String nodepath) throws Exception {
-        _zkagent.client().delete()
+        this._client.delete()
             .deletingChildrenIfNeeded()
             .forPath(nodepath);
     }
@@ -244,7 +247,7 @@ public class ZKTreeManager {
 
     private boolean isEphemeralNode(final String path) {
         try {
-            return 0 != this._zkagent.client().checkExists().forPath(path).getEphemeralOwner();
+            return 0 != this._client.checkExists().forPath(path).getEphemeralOwner();
         } catch (Exception e) {
             LOG.warn("exception when isEphemeralNode for {}, detail:{}",
                     path, ExceptionUtils.exception2detail(e));
@@ -268,7 +271,7 @@ public class ZKTreeManager {
 
     private String importContent(final String path, final UnitDescription desc) 
             throws Exception {
-        return this._zkagent.client().create()
+        return this._client.create()
                 .creatingParentsIfNeeded()
                 .withMode(CreateMode.PERSISTENT)
                 .forPath(path + "/" + desc.getName(), 
@@ -276,25 +279,12 @@ public class ZKTreeManager {
     }
 
     private String absolute2relative(final String rawpath) {
-//        return rawpath.substring(rootPathSize());
         return rawpath;
     }
 
-//    private int rootPathSize() {
-//        return this._rootPath.length() - ( this._rootPath.endsWith("/") ? 1 : 0);
-//    }
-
     private boolean isManagedPath(final String absolutepath) {
-//        return absolutepath.equals(this._rootPath) ||
-//                absolutepath.startsWith(fullRootPath());
         return true;
     }
-
-//    private String fullRootPath() {
-//        return this._rootPath.endsWith("/")
-//                ? this._rootPath 
-//                : this._rootPath + "/";
-//    }
 
     private static byte[] genBytes(final String parameters) {
         if (null!=parameters) {
@@ -304,8 +294,10 @@ public class ZKTreeManager {
         }
     }
     
-    private ZKAgent _zkagent;
+    private final CuratorFramework _client;
+    private final ZKTreeModel _model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
+    private EventQueueForwarder<ZKAgent.Listener> _eqf;
+//    private ZKAgent _zkagent;
     private WebApp _webapp;
-//    private String _rootPath;
     private EventQueue<Event> _eventqueue;
 }
