@@ -34,15 +34,15 @@ public class ZKTreeManager {
 
     public ZKTreeManager(final ZKAgent zkagent) {
         this._zkagent = zkagent;
-        this._rootPath = zkagent.root();
+//        this._rootPath = zkagent.root();
     }
     
-    public void setRoot(final String rootPath) {
-        this._rootPath = rootPath;
-    }
+//    public void setRoot(final String rootPath) {
+//        this._rootPath = rootPath;
+//    }
     
     public SimpleTreeModel getModel() throws Exception {
-        final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node(this._rootPath));
+        final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node("/" /*this._rootPath*/));
         final EventQueueForwarder<ZKAgent.Listener> eqf = 
                 new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
         
@@ -78,11 +78,13 @@ public class ZKTreeManager {
             throws Exception {
         @SuppressWarnings("unchecked")
         final String path = ((Pair<String,String>)node.getData()).first;
-        this._zkagent.client().setData().forPath(path, data.getBytes(Charsets.UTF_8));
+        this._zkagent.client().setData()
+            .forPath(path, data.getBytes(Charsets.UTF_8));
     }
     
     public String createZKNode(final String nodepath, final byte[] nodecontent) throws Exception {
-        return this._zkagent.client().create().forPath(nodepath, nodecontent);
+        return this._zkagent.client().create()
+                .forPath(nodepath, nodecontent);
     }
     
     public void removeZKNode(final String nodepath) throws Exception {
@@ -267,23 +269,25 @@ public class ZKTreeManager {
     }
 
     private String absolute2relative(final String rawpath) {
-        return rawpath.substring(rootPathSize());
+//        return rawpath.substring(rootPathSize());
+        return rawpath;
     }
 
-    private int rootPathSize() {
-        return this._rootPath.length() - ( this._rootPath.endsWith("/") ? 1 : 0);
-    }
+//    private int rootPathSize() {
+//        return this._rootPath.length() - ( this._rootPath.endsWith("/") ? 1 : 0);
+//    }
 
     private boolean isManagedPath(final String absolutepath) {
-        return absolutepath.equals(this._rootPath) ||
-                absolutepath.startsWith(fullRootPath());
+//        return absolutepath.equals(this._rootPath) ||
+//                absolutepath.startsWith(fullRootPath());
+        return true;
     }
 
-    private String fullRootPath() {
-        return this._rootPath.endsWith("/")
-                ? this._rootPath 
-                : this._rootPath + "/";
-    }
+//    private String fullRootPath() {
+//        return this._rootPath.endsWith("/")
+//                ? this._rootPath 
+//                : this._rootPath + "/";
+//    }
 
     private static byte[] genBytes(final String parameters) {
         if (null!=parameters) {
@@ -295,6 +299,6 @@ public class ZKTreeManager {
     
     private ZKAgent _zkagent;
     private WebApp _webapp;
-    private String _rootPath;
+//    private String _rootPath;
     private EventQueue<Event> _eventqueue;
 }
