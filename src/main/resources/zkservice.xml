@@ -5,7 +5,7 @@
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
     <bean factory-bean="treemgr" factory-method="setWebapp">
-        <constructor-arg name="zkagent">
+        <constructor-arg name="webapp">
             <bean class="org.jocean.xbeacon.MyWebAppInit"
                 factory-method="getWebapp"/>
         </constructor-arg>

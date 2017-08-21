@@ -58,6 +58,8 @@ public class ZKTreeManager {
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
         this._eqf = new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
         this._eqf.subscribe(this._model);
+        LOG.info("ZKTreeManager.setWebapp with webapp({}) and create eventqueue({})/eqf({})", 
+                webapp, this._eventqueue, this._eqf);
     }
 
 //    public void start() throws Exception {
