@@ -51,11 +51,23 @@ public class ZKTreeManager {
             Desktops.addActionForCurrentDesktopCleanup(
                 zka.addListener(eqf.subject()));
         }
+        
+        this._eqfs.add(eqf);
+        Desktops.addActionForCurrentDesktopCleanup(new Action0() {
+            @Override
+            public void call() {
+                _eqfs.remove(eqf);
+            }});
         return model;
     }
     
+    @SuppressWarnings("unchecked")
     public Action0 addZKAgent(final ZKAgent zkagent) {
         this._zkagents.add(zkagent);
+        final Object[] eqfs = this._eqfs.toArray();
+        for (Object eqf : eqfs) {
+            zkagent.addListener(((EventQueueForwarder<ZKAgent.Listener>)eqf).subject());
+        }
         return new Action0() {
             @Override
             public void call() {
@@ -315,4 +327,6 @@ public class ZKTreeManager {
     private WebApp _webapp;
     private EventQueue<Event> _eventqueue;
     private final List<ZKAgent> _zkagents = Lists.newCopyOnWriteArrayList();
+    private final List<EventQueueForwarder<ZKAgent.Listener>> _eqfs = 
+            Lists.newCopyOnWriteArrayList();
 }
