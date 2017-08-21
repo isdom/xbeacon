@@ -4,15 +4,15 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
+    <bean id="zkagent" class="org.jocean.j2se.zk.ZKAgent"
+        init-method="start" 
+        destroy-method="stop">
+        <constructor-arg ref="zkClient"/>
+        <constructor-arg value="${managed.path}"/>
+    </bean>
+    
     <bean factory-bean="treemgr" factory-method="addZKAgent"
         destroy-method="call">
-        <constructor-arg name="zkagent">
-            <bean class="org.jocean.j2se.zk.ZKAgent"
-                init-method="start" 
-                destroy-method="stop">
-                <constructor-arg ref="zkClient"/>
-                <constructor-arg value="${managed.path}"/>
-            </bean>
-        </constructor-arg>
+        <constructor-arg name="zkagent" ref="zkagent"/>
     </bean>
 </beans>
