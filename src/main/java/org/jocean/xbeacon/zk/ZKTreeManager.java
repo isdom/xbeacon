@@ -40,12 +40,12 @@ public class ZKTreeManager {
     }
     
     public SimpleTreeModel getModel() throws Exception {
-//        final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
+        final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
 //        final EventQueueForwarder<ZKAgent.Listener> eqf = 
 //                new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
 //        
-//        eqf.subscribe(model);
-        return this._model;
+        this._eqf.subscribe(model);
+        return model;
     }
     
     public Action0 addZKAgent(final ZKAgent zkagent) {
@@ -57,7 +57,7 @@ public class ZKTreeManager {
         this._webapp = webapp;
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
         this._eqf = new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
-        this._eqf.subscribe(this._model);
+//        this._eqf.subscribe(this._model);
         LOG.info("ZKTreeManager.setWebapp with webapp({}) and create eventqueue({})/eqf({})", 
                 webapp, this._eventqueue, this._eqf);
         return new Action0() {
@@ -303,7 +303,7 @@ public class ZKTreeManager {
     }
     
     private final CuratorFramework _client;
-    private final ZKTreeModel _model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
+//    private final ZKTreeModel _model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
     private EventQueueForwarder<ZKAgent.Listener> _eqf;
 //    private ZKAgent _zkagent;
     private WebApp _webapp;
