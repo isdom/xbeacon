@@ -53,13 +53,19 @@ public class ZKTreeManager {
         return zkagent.addListener(this._eqf.subject());
     }
     
-    public void setWebapp(final WebApp webapp) {
+    public Action0 setWebapp(final WebApp webapp) {
         this._webapp = webapp;
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
         this._eqf = new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
         this._eqf.subscribe(this._model);
         LOG.info("ZKTreeManager.setWebapp with webapp({}) and create eventqueue({})/eqf({})", 
                 webapp, this._eventqueue, this._eqf);
+        return new Action0() {
+            @Override
+            public void call() {
+                EventQueues.remove("zktree", _webapp);
+                // TODO, zkagent.addListener(this._eqf.subject())'s call to remove Listener
+            }};
     }
 
 //    public void start() throws Exception {
