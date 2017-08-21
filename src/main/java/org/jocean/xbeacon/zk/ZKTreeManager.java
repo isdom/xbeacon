@@ -55,13 +55,13 @@ public class ZKTreeManager {
     
     public void setWebapp(final WebApp webapp) {
         this._webapp = webapp;
-    }
-
-    public void start() throws Exception {
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
         this._eqf = new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
         this._eqf.subscribe(this._model);
     }
+
+//    public void start() throws Exception {
+//    }
     
     public void stop() {
         EventQueues.remove("zktree", this._webapp);
