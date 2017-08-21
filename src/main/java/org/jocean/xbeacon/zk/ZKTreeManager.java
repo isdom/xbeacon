@@ -23,6 +23,7 @@ import org.zkoss.zk.ui.event.EventQueues;
 import org.zkoss.zul.event.TreeDataEvent;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 
 import rx.functions.Action0;
 
@@ -41,25 +42,33 @@ public class ZKTreeManager {
     
     public SimpleTreeModel getModel() throws Exception {
         final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
-//        final EventQueueForwarder<ZKAgent.Listener> eqf = 
-//                new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
-//        
-        this._eqf.subscribe(model);
+        final EventQueueForwarder<ZKAgent.Listener> eqf = 
+                new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
+        
+        eqf.subscribe(model);
+        final ZKAgent[] agents = this._zkagents.toArray(new ZKAgent[0]);
+        for (ZKAgent zka : agents) {
+            Desktops.addActionForCurrentDesktopCleanup(
+                zka.addListener(eqf.subject()));
+        }
         return model;
     }
     
     public Action0 addZKAgent(final ZKAgent zkagent) {
-//        Desktops.addActionForCurrentDesktopCleanup(
-        return zkagent.addListener(this._eqf.subject());
+        this._zkagents.add(zkagent);
+        return new Action0() {
+            @Override
+            public void call() {
+                _zkagents.remove(zkagent);
+            }
+        };
     }
     
     public Action0 setWebapp(final WebApp webapp) {
         this._webapp = webapp;
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
-        this._eqf = new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
-//        this._eqf.subscribe(this._model);
-        LOG.info("ZKTreeManager.setWebapp with webapp({}) and create eventqueue({})/eqf({})", 
-                webapp, this._eventqueue, this._eqf);
+        LOG.info("ZKTreeManager.setWebapp with webapp({}) and create eventqueue({})", 
+                webapp, this._eventqueue);
         return new Action0() {
             @Override
             public void call() {
@@ -303,9 +312,7 @@ public class ZKTreeManager {
     }
     
     private final CuratorFramework _client;
-//    private final ZKTreeModel _model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
-    private EventQueueForwarder<ZKAgent.Listener> _eqf;
-//    private ZKAgent _zkagent;
     private WebApp _webapp;
     private EventQueue<Event> _eventqueue;
+    private final List<ZKAgent> _zkagents = Lists.newCopyOnWriteArrayList();
 }
