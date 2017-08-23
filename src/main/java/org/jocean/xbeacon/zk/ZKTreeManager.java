@@ -49,10 +49,15 @@ public class ZKTreeManager {
         }
         
         public void close() {
-            for (Action0 detacher : this._detachers) {
-                detacher.call();
-            }
-            this._detachers.clear();
+            _executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    for (Action0 detacher : _detachers) {
+                        detacher.call();
+                    }
+                    _detachers.clear();
+                    _models.remove(ModelSource.this);
+                }});
         }
         
         private final ZKTreeModel _model;
