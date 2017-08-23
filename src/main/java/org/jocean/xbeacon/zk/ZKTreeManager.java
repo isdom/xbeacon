@@ -3,6 +3,8 @@ package org.jocean.xbeacon.zk;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -24,10 +26,39 @@ import org.zkoss.zul.event.TreeDataEvent;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import rx.functions.Action0;
 
 public class ZKTreeManager {
+    
+    public class ModelSource {
+        public ModelSource(final ZKTreeModel model,
+                final EventQueue<Event> eq) {
+            this._model = model;
+            this._eqf = new EventQueueForwarder<>(ZKAgent.Listener.class, eq);
+            this._eqf.subscribe(model);
+        }
+        
+        public SimpleTreeModel model() {
+            return this._model;
+        }
+        
+        public void attachToZKAgent(final ZKAgent agent) {
+            this._detachers.add(agent.addListener(this._eqf.subject()));
+        }
+        
+        public void close() {
+            for (Action0 detacher : this._detachers) {
+                detacher.call();
+            }
+            this._detachers.clear();
+        }
+        
+        private final ZKTreeModel _model;
+        private final EventQueueForwarder<ZKAgent.Listener> _eqf;
+        private final List<Action0> _detachers = new ArrayList<>();
+    }
     
     private static final UnitDescription[] EMPTY_UNITDESCS = new UnitDescription[0];
     private static final byte[] EMPTY_BYTES = new byte[0];
@@ -38,44 +69,65 @@ public class ZKTreeManager {
 
     public ZKTreeManager(final CuratorFramework client) {
         this._client = client;
+        this._executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
+                .setNameFormat("ZKTreeManager-%d")
+                .setDaemon(false)
+                .build());
     }
     
-    public SimpleTreeModel getModel() throws Exception {
-        final ZKTreeModel model = new ZKTreeModel(new SimpleTreeModel.Node("/"));
-        final EventQueueForwarder<ZKAgent.Listener> eqf = 
-                new EventQueueForwarder<>(ZKAgent.Listener.class, this._eventqueue);
-        
-        eqf.subscribe(model);
-        final ZKAgent[] agents = this._zkagents.toArray(new ZKAgent[0]);
-        for (ZKAgent zka : agents) {
-            Desktops.addActionForCurrentDesktopCleanup(
-                zka.addListener(eqf.subject()));
-        }
-        
-        this._eqfs.add(eqf);
+    public ModelSource getModel() throws Exception {
+        final ModelSource source = new ModelSource(new ZKTreeModel(new SimpleTreeModel.Node("/")), 
+                this._eventqueue);
+            
+        this._executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                addModel(source);
+            }});
         Desktops.addActionForCurrentDesktopCleanup(new Action0() {
             @Override
             public void call() {
-                _eqfs.remove(eqf);
+                source.close();
             }});
-        return model;
+        return source;
     }
     
-    @SuppressWarnings("unchecked")
-    public Action0 addZKAgent(final ZKAgent zkagent) {
-        this._zkagents.add(zkagent);
-        final Object[] eqfs = this._eqfs.toArray();
-        for (Object eqf : eqfs) {
-            zkagent.addListener(((EventQueueForwarder<ZKAgent.Listener>)eqf).subject());
+    private void addModel(final ModelSource source) {
+        this._models.add(source);
+        for (ZKAgent zka : this._zkagents) {
+            source.attachToZKAgent(zka);
         }
+    }
+
+    public Action0 addZKAgent(final ZKAgent zkagent) {
+        this._executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                doAddZKAgent(zkagent);
+            }});
         return new Action0() {
             @Override
             public void call() {
-                _zkagents.remove(zkagent);
+                _executor.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        doRemoveZKAgent(zkagent);
+                    }});
             }
         };
     }
     
+    private void doAddZKAgent(final ZKAgent zkagent) {
+        this._zkagents.add(zkagent);
+        for (ModelSource source : this._models) {
+            source.attachToZKAgent(zkagent);
+        }
+    }
+    
+    private void doRemoveZKAgent(final ZKAgent zkagent) {
+        this._zkagents.remove(zkagent);        
+    }
+
     public Action0 setWebapp(final WebApp webapp) {
         this._webapp = webapp;
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
@@ -94,6 +146,7 @@ public class ZKTreeManager {
     
     public void stop() {
         EventQueues.remove("zktree", this._webapp);
+        this._executor.shutdownNow();
     }
 
     @SuppressWarnings("unchecked")
@@ -324,9 +377,12 @@ public class ZKTreeManager {
     }
     
     private final CuratorFramework _client;
+    private final ExecutorService _executor;
     private WebApp _webapp;
     private EventQueue<Event> _eventqueue;
     private final List<ZKAgent> _zkagents = Lists.newCopyOnWriteArrayList();
-    private final List<EventQueueForwarder<ZKAgent.Listener>> _eqfs = 
-            Lists.newCopyOnWriteArrayList();
+    
+    //  TODO, replace with all source
+    
+    private final List<ModelSource> _models = new ArrayList<>();
 }

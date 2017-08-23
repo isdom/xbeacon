@@ -381,10 +381,10 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
     }
 
 	private void refreshNodeTree() throws Exception {
-	    this._model = this._zkmgr.getModel();
+	    this._model = this._zkmgr.getModel().model();
 		this.nodes.setModel(_model);
 		enableNodesMenus(false);
-		_model.addTreeDataListener(new TreeDataListener() {
+		this._model.addTreeDataListener(new TreeDataListener() {
             @Override
             public void onChange(final TreeDataEvent event) {
                 if (event.getType() == TreeDataEvent.CONTENTS_CHANGED) {
