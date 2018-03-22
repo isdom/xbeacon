@@ -43,7 +43,6 @@ import rx.Scheduler;
 import rx.Subscription;
 import rx.functions.Action0;
 import rx.functions.Action1;
-import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 public class ServiceMonitor {
@@ -449,32 +448,29 @@ public class ServiceMonitor {
                 .<LongValueResponse[]>build())
             .timeout(1, TimeUnit.SECONDS)
             .onErrorResumeNext(onerror)
-            .map(new Func1<LongValueResponse[], List<Triple<ServiceInfo, String, Indicator>>> () {
-                @Override
-                public List<Triple<ServiceInfo, String, Indicator>> call(
-                        final LongValueResponse[] resps) {
-                    final List<Triple<ServiceInfo, String, Indicator>> inds = Lists.newArrayList();
-                    for (int idx=0; idx < resps.length; idx++) {
-                        final LongValueResponse resp = resps[idx];
-                        if (200 == resp.getStatus()) {
-                            final long timestamp = resp.getTimestamp();
-                            final Long value = resp.getValue();
-                            final Indicator indicator = new Indicator() {
-                                @Override
-                                public long getTimestamp() {
-                                    return timestamp;
-                                }
-                                @Override
-                                public <V> V getValue() {
-                                    return (V)value;
-                                }};
-                            inds.add(Triple.of((ServiceInfo)impl, indicatorNames[idx], indicator));
-                        } else {
-                            inds.add(Triple.of((ServiceInfo)impl, indicatorNames[idx], (Indicator)null));
-                        }
+            .map(resps -> {
+                final List<Triple<ServiceInfo, String, Indicator>> inds = Lists.newArrayList();
+                for (int idx=0; idx < resps.length; idx++) {
+                    final LongValueResponse resp = resps[idx];
+                    if (200 == resp.getStatus()) {
+                        final long timestamp = resp.getTimestamp();
+                        final Long value = resp.getValue();
+                        final Indicator indicator = new Indicator() {
+                            @Override
+                            public long getTimestamp() {
+                                return timestamp;
+                            }
+                            @Override
+                            public <V> V getValue() {
+                                return (V)value;
+                            }};
+                        inds.add(Triple.of((ServiceInfo)impl, indicatorNames[idx], indicator));
+                    } else {
+                        inds.add(Triple.of((ServiceInfo)impl, indicatorNames[idx], (Indicator)null));
                     }
-                    return inds;
-                }});
+                }
+                return inds;
+            });
         } catch (URISyntaxException e) {
             return null;
         }
