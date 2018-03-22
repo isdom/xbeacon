@@ -21,8 +21,8 @@ public class LongValueResponse extends JolokiaResponse {
      */
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder();
-        builder.append("LongValueResponse [_value=").append(_value)
+        final StringBuilder builder = new StringBuilder();
+        builder.append("LongValueResponse [value=").append(_value)
                 .append(", super=").append(super.toString()).append("]");
         return builder.toString();
     }
