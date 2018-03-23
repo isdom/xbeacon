@@ -1,6 +1,6 @@
 name: units
 parameters: |
-  __spring.xml=zkagent.xml,http/httpclient.xml,http/signal.xml,users.xml
+  __spring.xml=zkagent.xml,http/httpclient.xml,users.xml
   zk.address = 192.168.8.8:2181
   zk.root.path = /
 children:
