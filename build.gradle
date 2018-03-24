@@ -1,5 +1,16 @@
 apply from: 'http://git.jocean.org/jocean/devconf/raw/master/devconf/build-lib.gradle'
 
+allprojects {
+    sourceSets {
+        main {
+            resources {
+                srcDirs 'src/main/resources', 'scripts/webcontent'
+            }
+        }
+    }
+}
+
+
 tasks.withType(JavaCompile) {
     options.encoding = "UTF-8"
     options.debug = "on"
