@@ -2,6 +2,7 @@ package org.jocean.xbeacon.jmxui;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -429,9 +430,15 @@ public class ServiceMonitor {
             .map(resp2indicator(impl, names));
     }
 
-    private Func1<Interact, Observable<? extends Interaction>> sendreq(final String uri, final Object req) {
-        return interact->interact.method(HttpMethod.POST).uri(uri)
-                .reqbean(req).feature(Feature.ENABLE_LOGGING, Feature.ENABLE_COMPRESSOR).execution();
+    private Func1<Interact, Observable<? extends Interaction>> sendreq(final String suri, final Object req) {
+        return interact-> { 
+            try {
+                return interact.method(HttpMethod.POST).uri(suri).path(new URI(suri).getRawPath())
+                        .reqbean(req).feature(Feature.ENABLE_LOGGING, Feature.ENABLE_COMPRESSOR).execution();
+            } catch (Exception e) {
+                return Observable.error(e);
+            }
+        };
     }
 
     private Func1<? super LongValueResponse[], ? extends List<Triple<ServiceInfo, String, Indicator>>> resp2indicator(
