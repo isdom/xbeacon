@@ -8,7 +8,7 @@
     <display-name>xbeacon</display-name>
     <context-param>
         <param-name>contextConfigLocation</param-name>
-        <param-value>classpath:zkservice.xml</param-value>
+        <param-value>classpath:xbeacon/zkservice.xml</param-value>
     </context-param>
     <context-param>
         <param-name>contextInitializerClasses</param-name>
