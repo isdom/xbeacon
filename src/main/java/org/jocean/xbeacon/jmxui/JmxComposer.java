@@ -374,18 +374,9 @@ public class JmxComposer extends SelectorComposer<Window>{
         req.setArguments(args);
         
         final ExecResponse resp =
-                this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
-                .flatMap(sendreq(_jolokiauri, req))
-                .compose(MessageUtil.responseAs(ExecResponse.class, MessageUtil::unserializeAsJson))
-//            this._signalClient.interaction().request(req)
-//            .feature(
-//                Feature.ENABLE_LOGGING,
-//                Feature.ENABLE_COMPRESSOR,
-//                new SignalClient.UsingUri(_jolokiauri),
-//                new SignalClient.UsingMethod(POST.class),
-//                new SignalClient.DecodeResponseBodyAs(ExecResponse.class)
-//                )
-//            .<ExecResponse>build()
+            this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
+            .flatMap(sendreq(_jolokiauri, req))
+            .compose(MessageUtil.responseAs(ExecResponse.class, MessageUtil::unserializeAsJson))
             .timeout(1, TimeUnit.SECONDS)
             .toBlocking().single();
         if (200 == resp.getStatus()) {
@@ -546,15 +537,6 @@ public class JmxComposer extends SelectorComposer<Window>{
         this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
             .flatMap(sendreq(this._jolokiauri, req))
             .compose(MessageUtil.responseAs(ReadAttrResponse.class, MessageUtil::unserializeAsJson))
-//        this._signalClient.interaction().request(req)
-//        .feature( 
-//                Feature.ENABLE_LOGGING,
-//                Feature.ENABLE_COMPRESSOR,
-//                new SignalClient.UsingUri(this._jolokiauri),
-//                new SignalClient.UsingMethod(POST.class),
-//                new SignalClient.DecodeResponseBodyAs(ReadAttrResponse.class)
-//                )
-//        .<ReadAttrResponse>build()
             .timeout(1, TimeUnit.SECONDS)
             .subscribe(eqf.subject());
     }
@@ -606,15 +588,6 @@ public class JmxComposer extends SelectorComposer<Window>{
         this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
             .flatMap(sendreq(_jolokiauri, req))
             .compose(MessageUtil.responseAs(ListResponse.class, MessageUtil::unserializeAsJson))
-//        this._signalClient.interaction().request(req)
-//        .feature(
-//                Feature.ENABLE_LOGGING,
-//                Feature.ENABLE_COMPRESSOR,
-//                new SignalClient.UsingUri(_jolokiauri),
-//                new SignalClient.UsingMethod(POST.class),
-//                new SignalClient.DecodeResponseBodyAs(ListResponse.class)
-//                )
-//        .<ListResponse>build()
             .timeout(1, TimeUnit.SECONDS)
             .subscribe(eqf.subject());
     }
@@ -892,9 +865,6 @@ public class JmxComposer extends SelectorComposer<Window>{
     private Action0     _unsubscribeServiceStatus;
     
     private URI _jolokiauri;
-    
-//    @WireVariable("signalClient") 
-//    private SignalClient _signalClient;
     
     @WireVariable("beanFinder") 
     private BeanFinder _finder;
