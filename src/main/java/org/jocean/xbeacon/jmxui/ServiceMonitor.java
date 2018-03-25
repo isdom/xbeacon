@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.inject.Inject;
 
+import org.jocean.http.ContentUtil;
 import org.jocean.http.Feature;
 import org.jocean.http.Interact;
 import org.jocean.http.Interaction;
@@ -434,7 +435,9 @@ public class ServiceMonitor {
         return interact-> { 
             try {
                 return interact.method(HttpMethod.POST).uri(suri).path(new URI(suri).getRawPath())
-                        .reqbean(req).feature(Feature.ENABLE_LOGGING, Feature.ENABLE_COMPRESSOR).execution();
+                        .body(req, ContentUtil.TOJSON)
+                        .feature(Feature.ENABLE_LOGGING, Feature.ENABLE_COMPRESSOR)
+                        .execution();
             } catch (Exception e) {
                 return Observable.error(e);
             }
