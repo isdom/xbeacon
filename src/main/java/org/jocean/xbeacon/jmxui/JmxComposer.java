@@ -10,10 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.ws.rs.POST;
-
+import org.jocean.http.ContentUtil;
 import org.jocean.http.Feature;
-import org.jocean.http.rosa.SignalClient;
+import org.jocean.http.Interact;
+import org.jocean.http.Interaction;
+import org.jocean.http.MessageUtil;
+import org.jocean.http.client.HttpClient;
+import org.jocean.idiom.BeanFinder;
 import org.jocean.idiom.Triple;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.Indicator;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.InitStatus;
@@ -74,9 +77,12 @@ import org.zkoss.zul.Window;
 
 import com.alibaba.fastjson.JSONArray;
 
+import io.netty.handler.codec.http.HttpMethod;
+import rx.Observable;
 import rx.Observer;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func1;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class JmxComposer extends SelectorComposer<Window>{
@@ -368,15 +374,18 @@ public class JmxComposer extends SelectorComposer<Window>{
         req.setArguments(args);
         
         final ExecResponse resp =
-            this._signalClient.interaction().request(req)
-            .feature(
-                Feature.ENABLE_LOGGING,
-                Feature.ENABLE_COMPRESSOR,
-                new SignalClient.UsingUri(_jolokiauri),
-                new SignalClient.UsingMethod(POST.class),
-                new SignalClient.DecodeResponseBodyAs(ExecResponse.class)
-                )
-            .<ExecResponse>build()
+                this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
+                .flatMap(sendreq(_jolokiauri, req))
+                .compose(MessageUtil.responseAs(ExecResponse.class, MessageUtil::unserializeAsJson))
+//            this._signalClient.interaction().request(req)
+//            .feature(
+//                Feature.ENABLE_LOGGING,
+//                Feature.ENABLE_COMPRESSOR,
+//                new SignalClient.UsingUri(_jolokiauri),
+//                new SignalClient.UsingMethod(POST.class),
+//                new SignalClient.DecodeResponseBodyAs(ExecResponse.class)
+//                )
+//            .<ExecResponse>build()
             .timeout(1, TimeUnit.SECONDS)
             .toBlocking().single();
         if (200 == resp.getStatus()) {
@@ -386,6 +395,15 @@ public class JmxComposer extends SelectorComposer<Window>{
             Messagebox.show("invoke " + op.getName() + " failed, status code is " + resp.getStatus(), 
                     "exec operation result", Messagebox.OK, Messagebox.ERROR);
         }
+    }
+    
+    private Func1<Interact, Observable<? extends Interaction>> sendreq(final URI uri, final Object req) {
+        return interact->interact.method(HttpMethod.POST)
+                .uri(uri.toString())
+                .path(uri.getRawPath())
+                .body(req, ContentUtil.TOJSON)
+                .feature(Feature.ENABLE_LOGGING, Feature.ENABLE_COMPRESSOR)
+                .execution();
     }
     
     private void showMBeanOperations(final MBeanInfo mbeaninfo, final Action1<OperationInfo> invokeOperation) {
@@ -525,17 +543,20 @@ public class JmxComposer extends SelectorComposer<Window>{
         req.setType("read");
         req.setMBean(mbeaninfo.getObjectName().toString());
         
-        this._signalClient.interaction().request(req)
-        .feature( 
-                Feature.ENABLE_LOGGING,
-                Feature.ENABLE_COMPRESSOR,
-                new SignalClient.UsingUri(this._jolokiauri),
-                new SignalClient.UsingMethod(POST.class),
-                new SignalClient.DecodeResponseBodyAs(ReadAttrResponse.class)
-                )
-        .<ReadAttrResponse>build()
-        .timeout(1, TimeUnit.SECONDS)
-        .subscribe(eqf.subject());
+        this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
+            .flatMap(sendreq(this._jolokiauri, req))
+            .compose(MessageUtil.responseAs(ReadAttrResponse.class, MessageUtil::unserializeAsJson))
+//        this._signalClient.interaction().request(req)
+//        .feature( 
+//                Feature.ENABLE_LOGGING,
+//                Feature.ENABLE_COMPRESSOR,
+//                new SignalClient.UsingUri(this._jolokiauri),
+//                new SignalClient.UsingMethod(POST.class),
+//                new SignalClient.DecodeResponseBodyAs(ReadAttrResponse.class)
+//                )
+//        .<ReadAttrResponse>build()
+            .timeout(1, TimeUnit.SECONDS)
+            .subscribe(eqf.subject());
     }
     
 	private SimpleTreeModel.Node currentSelectedNode() {
@@ -582,17 +603,20 @@ public class JmxComposer extends SelectorComposer<Window>{
         final JolokiaRequest req = new JolokiaRequest();
         req.setType("list");
         
-        this._signalClient.interaction().request(req)
-        .feature(
-                Feature.ENABLE_LOGGING,
-                Feature.ENABLE_COMPRESSOR,
-                new SignalClient.UsingUri(_jolokiauri),
-                new SignalClient.UsingMethod(POST.class),
-                new SignalClient.DecodeResponseBodyAs(ListResponse.class)
-                )
-        .<ListResponse>build()
-        .timeout(1, TimeUnit.SECONDS)
-        .subscribe(eqf.subject());
+        this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
+            .flatMap(sendreq(_jolokiauri, req))
+            .compose(MessageUtil.responseAs(ListResponse.class, MessageUtil::unserializeAsJson))
+//        this._signalClient.interaction().request(req)
+//        .feature(
+//                Feature.ENABLE_LOGGING,
+//                Feature.ENABLE_COMPRESSOR,
+//                new SignalClient.UsingUri(_jolokiauri),
+//                new SignalClient.UsingMethod(POST.class),
+//                new SignalClient.DecodeResponseBodyAs(ListResponse.class)
+//                )
+//        .<ListResponse>build()
+            .timeout(1, TimeUnit.SECONDS)
+            .subscribe(eqf.subject());
     }
     
     private ServiceData addServiceInfo(final ServiceInfo info) {
@@ -869,8 +893,11 @@ public class JmxComposer extends SelectorComposer<Window>{
     
     private URI _jolokiauri;
     
-    @WireVariable("signalClient") 
-    private SignalClient _signalClient;
+//    @WireVariable("signalClient") 
+//    private SignalClient _signalClient;
+    
+    @WireVariable("beanFinder") 
+    private BeanFinder _finder;
     
     private EventQueue<Event> _eventqueue;
 }
