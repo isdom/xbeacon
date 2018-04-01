@@ -18,11 +18,12 @@ import org.jocean.http.MessageUtil;
 import org.jocean.http.client.HttpClient;
 import org.jocean.idiom.BeanFinder;
 import org.jocean.idiom.Triple;
+import org.jocean.jolokia.JolokiaAPI;
+import org.jocean.jolokia.spi.ExecResponse;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.Indicator;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.InitStatus;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.ServiceInfo;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.UpdateStatus;
-import org.jocean.xbeacon.jmxui.bean.ExecResponse;
 import org.jocean.xbeacon.jmxui.bean.JolokiaRequest;
 import org.jocean.xbeacon.jmxui.bean.ListResponse;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.ArgInfo;
@@ -367,7 +368,7 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
     
     private void invokeOperation(final MBeanInfo mbean, final OperationInfo op, final JSONArray args) {
-        final JolokiaRequest req = new JolokiaRequest();
+        final org.jocean.jolokia.spi.JolokiaRequest req = new org.jocean.jolokia.spi.JolokiaRequest();
         req.setType("exec");
         req.setMBean(mbean.getObjectName().toString());
         req.setOperation(op.genNameWithSignature());
@@ -375,9 +376,10 @@ public class JmxComposer extends SelectorComposer<Window>{
         
         final ExecResponse resp =
             this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
-            .flatMap(sendreq(_jolokiauri, req))
-            .compose(MessageUtil.responseAs(ExecResponse.class, MessageUtil::unserializeAsJson))
-            .timeout(1, TimeUnit.SECONDS)
+            .compose(interacts->this._finder.find(JolokiaAPI.class).flatMap(api->interacts.flatMap(api.exec(_jolokiauri.toString(), req)) ) )
+//            .flatMap(sendreq(_jolokiauri, req))
+//            .compose(MessageUtil.responseAs(ExecResponse.class, MessageUtil::unserializeAsJson))
+//            .timeout(1, TimeUnit.SECONDS)
             .toBlocking().single();
         if (200 == resp.getStatus()) {
             Messagebox.show("invoke " + op.getName() + " success, return: " + resp.getValue(), 
@@ -387,7 +389,7 @@ public class JmxComposer extends SelectorComposer<Window>{
                     "exec operation result", Messagebox.OK, Messagebox.ERROR);
         }
     }
-    
+
     private Func1<Interact, Observable<? extends Interaction>> sendreq(final URI uri, final Object req) {
         return interact->interact.method(HttpMethod.POST)
                 .uri(uri.toString())
