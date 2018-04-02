@@ -20,6 +20,7 @@ import org.jocean.idiom.BeanFinder;
 import org.jocean.idiom.Triple;
 import org.jocean.jolokia.JolokiaAPI;
 import org.jocean.jolokia.spi.ExecResponse;
+import org.jocean.jolokia.spi.ReadAttrResponse;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.Indicator;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.InitStatus;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.ServiceInfo;
@@ -30,7 +31,6 @@ import org.jocean.xbeacon.jmxui.bean.ListResponse.ArgInfo;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.DomainInfo;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.MBeanInfo;
 import org.jocean.xbeacon.jmxui.bean.ListResponse.OperationInfo;
-import org.jocean.xbeacon.jmxui.bean.ReadAttrResponse;
 import org.jocean.zkoss.annotation.RowSource;
 import org.jocean.zkoss.builder.UIBuilders;
 import org.jocean.zkoss.builder.ZModels;
@@ -297,22 +297,14 @@ public class JmxComposer extends SelectorComposer<Window>{
     }
 	
 	private void displayMBeanInfo(final MBeanInfo mbeaninfo) {
-	    showMBeanOperations(mbeaninfo, new Action1<OperationInfo>() {
-            @Override
-            public void call(final OperationInfo op) {
-                lauchOperation(mbeaninfo, op);
-            }});
-	    queryAttrValue(mbeaninfo, new Action1<ReadAttrResponse>() {
-            @Override
-            public void call(final ReadAttrResponse resp) {
-                showMBeanAttributes(resp);
-            }}, new Action1<Throwable>() {
-                @Override
-                public void call(Throwable e) {
-                    status.getChildren().clear();
-                    Messagebox.show("query " + mbeaninfo.getObjectName() + " attribute failed, detail: " + e.getMessage(), 
-                            "query attribute result", Messagebox.OK, Messagebox.ERROR);
-                }});
+	    showMBeanOperations(mbeaninfo, op -> lauchOperation(mbeaninfo, op));
+	    queryAttrValue(mbeaninfo, 
+            resp -> showMBeanAttributes(resp), 
+            e -> {
+                status.getChildren().clear();
+                Messagebox.show("query " + mbeaninfo.getObjectName() + " attribute failed, detail: " + e.getMessage(), 
+                        "query attribute result", Messagebox.OK, Messagebox.ERROR);
+            });
     }
 
     private void buildArgsGrid(final OperationInfo op, final Grid grid) {
@@ -532,14 +524,15 @@ public class JmxComposer extends SelectorComposer<Window>{
                 }
             }});
         
-        final JolokiaRequest req = new JolokiaRequest();
-        req.setType("read");
-        req.setMBean(mbeaninfo.getObjectName().toString());
+//        final JolokiaRequest req = new JolokiaRequest();
+//        req.setType("read");
+//        req.setMBean(mbeaninfo.getObjectName().toString());
         
         this._finder.find(HttpClient.class).map(client->MessageUtil.interact(client))
-            .flatMap(sendreq(this._jolokiauri, req))
-            .compose(MessageUtil.responseAs(ReadAttrResponse.class, MessageUtil::unserializeAsJson))
-            .timeout(1, TimeUnit.SECONDS)
+            .compose(interacts->this._finder.find(JolokiaAPI.class).flatMap(api->interacts.flatMap(api.readAttribute(_jolokiauri.toString(), mbeaninfo.getObjectName().toString())) ) )
+//            .flatMap(sendreq(this._jolokiauri, req))
+//            .compose(MessageUtil.responseAs(ReadAttrResponse.class, MessageUtil::unserializeAsJson))
+//            .timeout(1, TimeUnit.SECONDS)
             .subscribe(eqf.subject());
     }
     
