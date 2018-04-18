@@ -404,8 +404,6 @@ public class ServiceMonitor {
             final ServiceInfoImpl impl, final String[] names, final JolokiaRequest[] reqs) {
         return this._finder.find(JolokiaAPI.class).flatMap(api->
             ControllerUtil.interacts(this._finder).flatMap(api.batch(impl.getJolokiaUrl(), reqs, LongValueResponse[].class)))
-//            .compose(MessageUtil.responseAs(LongValueResponse[].class, MessageUtil::unserializeAsJson))
-//            .timeout(1, TimeUnit.SECONDS)
             .onErrorResumeNext(resp404(reqs.length))
             .map(resp2indicator(impl, names));
     }

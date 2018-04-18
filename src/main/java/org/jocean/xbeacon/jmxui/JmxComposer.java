@@ -352,9 +352,6 @@ public class JmxComposer extends SelectorComposer<Window>{
 
         final ExecResponse resp = this._finder.find(JolokiaAPI.class).flatMap(
             api->ControllerUtil.interacts(this._finder).flatMap(api.exec(_jolokiauri.toString(), req)))
-//            .flatMap(sendreq(_jolokiauri, req))
-//            .compose(MessageUtil.responseAs(ExecResponse.class, MessageUtil::unserializeAsJson))
-//            .timeout(1, TimeUnit.SECONDS)
             .toBlocking().single();
         if (200 == resp.getStatus()) {
             Messagebox.show("invoke " + op.getName() + " success, return: " + resp.getValue(),
@@ -501,16 +498,9 @@ public class JmxComposer extends SelectorComposer<Window>{
                 }
             }});
 
-//        final JolokiaRequest req = new JolokiaRequest();
-//        req.setType("read");
-//        req.setMBean(mbeaninfo.getObjectName().toString());
-
         this._finder.find(JolokiaAPI.class).flatMap(
             api->ControllerUtil.interacts(this._finder).flatMap(
                     api.readAttribute(_jolokiauri.toString(), mbeaninfo.getObjectName().toString())))
-//            .flatMap(sendreq(this._jolokiauri, req))
-//            .compose(MessageUtil.responseAs(ReadAttrResponse.class, MessageUtil::unserializeAsJson))
-//            .timeout(1, TimeUnit.SECONDS)
             .subscribe(eqf.subject());
     }
 
@@ -555,14 +545,8 @@ public class JmxComposer extends SelectorComposer<Window>{
                 action.call(resp);
             }});
 
-//        final JolokiaRequest req = new JolokiaRequest();
-//        req.setType("list");
-
         this._finder.find(JolokiaAPI.class).flatMap(
             api->ControllerUtil.interacts(this._finder).flatMap(api.list(_jolokiauri.toString())) )
-//            .flatMap(sendreq(_jolokiauri, req))
-//            .compose(MessageUtil.responseAs(ListResponse.class, MessageUtil::unserializeAsJson))
-//            .timeout(1, TimeUnit.SECONDS)
             .subscribe(eqf.subject());
     }
 
