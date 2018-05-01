@@ -165,6 +165,8 @@ public class ZKTreeManager {
 
     @SuppressWarnings("unchecked")
     public String getNodePath(final SimpleTreeModel.Node node) {
+        LOG.info("getNodePath, node:{};node.data:{};node.data.first:{}", node, node.getData(),
+                null != node.getData() ? ((Pair<String, ?>)node.getData()).first : null);
         return ((Pair<String,String>)node.getData()).first;
     }
 
