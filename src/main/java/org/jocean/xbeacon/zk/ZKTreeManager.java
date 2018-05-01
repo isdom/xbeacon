@@ -198,7 +198,8 @@ public class ZKTreeManager {
                 Node child = parent.getChild(name);
                 if (null == child) {
                     child = new Node(name);
-                    child.setData(Pair.of(path, null));
+                    // TBD concat all previous name(s) to complete path
+                    child.setData(Pair.of(name, null));
                     parent.addChild(child);
                     fireEvent(TreeDataEvent.INTERVAL_ADDED,
                             this.getPath(parent),
