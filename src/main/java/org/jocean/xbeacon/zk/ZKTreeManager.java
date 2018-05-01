@@ -81,23 +81,9 @@ public class ZKTreeManager {
     }
 
     public ModelSource getModel() throws Exception {
-        final SimpleTreeModel.Node root = new SimpleTreeModel.Node("/");
-        // init data with path("/") and content(null)
-        root.setData(Pair.of("/", null));
-
-        final ModelSource source = new ModelSource(new ZKTreeModel(root),
-                this._eventqueue);
-
-        this._executor.submit(new Runnable() {
-            @Override
-            public void run() {
-                addModel(source);
-            }});
-        Desktops.addActionForCurrentDesktopCleanup(new Action0() {
-            @Override
-            public void call() {
-                source.close();
-            }});
+        final ModelSource source = new ModelSource(new ZKTreeModel(new SimpleTreeModel.Node("root")), this._eventqueue);
+        this._executor.submit(()->addModel(source));
+        Desktops.addActionForCurrentDesktopCleanup(()->source.close());
         return source;
     }
 
@@ -109,21 +95,8 @@ public class ZKTreeManager {
     }
 
     public Action0 addZKAgent(final ZKAgent zkagent) {
-        this._executor.submit(new Runnable() {
-            @Override
-            public void run() {
-                doAddZKAgent(zkagent);
-            }});
-        return new Action0() {
-            @Override
-            public void call() {
-                _executor.submit(new Runnable() {
-                    @Override
-                    public void run() {
-                        doRemoveZKAgent(zkagent);
-                    }});
-            }
-        };
+        this._executor.submit(()->doAddZKAgent(zkagent));
+        return ()->this._executor.submit(()->doRemoveZKAgent(zkagent));
     }
 
     private void doAddZKAgent(final ZKAgent zkagent) {
@@ -165,8 +138,8 @@ public class ZKTreeManager {
 
     @SuppressWarnings("unchecked")
     public String getNodePath(final SimpleTreeModel.Node node) {
-        LOG.info("getNodePath, node:{};node.data:{};node.data.first:{}", node, node.getData(),
-                null != node.getData() ? ((Pair<String, ?>)node.getData()).first : null);
+//        LOG.info("getNodePath, node:{};node.data:{};node.data.first:{}", node, node.getData(),
+//                null != node.getData() ? ((Pair<String, ?>)node.getData()).first : null);
         return ((Pair<String,String>)node.getData()).first;
     }
 
@@ -225,6 +198,7 @@ public class ZKTreeManager {
                 Node child = parent.getChild(name);
                 if (null == child) {
                     child = new Node(name);
+                    child.setData(Pair.of(path, null));
                     parent.addChild(child);
                     fireEvent(TreeDataEvent.INTERVAL_ADDED,
                             this.getPath(parent),
