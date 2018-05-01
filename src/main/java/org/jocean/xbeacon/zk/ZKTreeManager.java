@@ -31,7 +31,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import rx.functions.Action0;
 
 public class ZKTreeManager {
-    
+
     public class ModelSource {
         public ModelSource(final ZKTreeModel model,
                 final EventQueue<Event> eq) {
@@ -39,37 +39,37 @@ public class ZKTreeManager {
             this._eqf = new EventQueueForwarder<>(ZKAgent.Listener.class, eq);
             this._eqf.subscribe(model);
         }
-        
+
         public SimpleTreeModel model() {
             return this._model;
         }
-        
+
         public void attachToZKAgent(final ZKAgent agent) {
             this._detachers.add(agent.addListener(this._eqf.subject()));
         }
-        
+
         public void close() {
             _executor.submit(new Runnable() {
                 @Override
                 public void run() {
-                    for (Action0 detacher : _detachers) {
+                    for (final Action0 detacher : _detachers) {
                         detacher.call();
                     }
                     _detachers.clear();
                     _models.remove(ModelSource.this);
                 }});
         }
-        
+
         private final ZKTreeModel _model;
         private final EventQueueForwarder<ZKAgent.Listener> _eqf;
         private final List<Action0> _detachers = new ArrayList<>();
     }
-    
+
     private static final UnitDescription[] EMPTY_UNITDESCS = new UnitDescription[0];
     private static final byte[] EMPTY_BYTES = new byte[0];
     private static final String[] PATH_ROOT = new String[]{"/"};
-    
-    private static final Logger LOG = 
+
+    private static final Logger LOG =
             LoggerFactory.getLogger(ZKTreeManager.class);
 
     public ZKTreeManager(final CuratorFramework client) {
@@ -79,11 +79,15 @@ public class ZKTreeManager {
                 .setDaemon(false)
                 .build());
     }
-    
+
     public ModelSource getModel() throws Exception {
-        final ModelSource source = new ModelSource(new ZKTreeModel(new SimpleTreeModel.Node("/")), 
+        final SimpleTreeModel.Node root = new SimpleTreeModel.Node("/");
+        // init data with path("/") and content(null)
+        root.setData(Pair.of("/", null));
+
+        final ModelSource source = new ModelSource(new ZKTreeModel(root),
                 this._eventqueue);
-            
+
         this._executor.submit(new Runnable() {
             @Override
             public void run() {
@@ -96,10 +100,10 @@ public class ZKTreeManager {
             }});
         return source;
     }
-    
+
     private void addModel(final ModelSource source) {
         this._models.add(source);
-        for (ZKAgent zka : this._zkagents) {
+        for (final ZKAgent zka : this._zkagents) {
             source.attachToZKAgent(zka);
         }
     }
@@ -121,22 +125,22 @@ public class ZKTreeManager {
             }
         };
     }
-    
+
     private void doAddZKAgent(final ZKAgent zkagent) {
         this._zkagents.add(zkagent);
-        for (ModelSource source : this._models) {
+        for (final ModelSource source : this._models) {
             source.attachToZKAgent(zkagent);
         }
     }
-    
+
     private void doRemoveZKAgent(final ZKAgent zkagent) {
-        this._zkagents.remove(zkagent);        
+        this._zkagents.remove(zkagent);
     }
 
     public Action0 setWebapp(final WebApp webapp) {
         this._webapp = webapp;
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
-        LOG.info("ZKTreeManager.setWebapp with webapp({}) and create eventqueue({})", 
+        LOG.info("ZKTreeManager.setWebapp with webapp({}) and create eventqueue({})",
                 webapp, this._eventqueue);
         return new Action0() {
             @Override
@@ -148,7 +152,7 @@ public class ZKTreeManager {
 
 //    public void start() throws Exception {
 //    }
-    
+
     public void stop() {
         EventQueues.remove("zktree", this._webapp);
         this._executor.shutdownNow();
@@ -158,31 +162,31 @@ public class ZKTreeManager {
     public String getNodeDataAsString(final SimpleTreeModel.Node node) {
         return ((Pair<String,String>)node.getData()).second;
     }
-    
+
     @SuppressWarnings("unchecked")
     public String getNodePath(final SimpleTreeModel.Node node) {
         return ((Pair<String,String>)node.getData()).first;
     }
-    
-    public void setNodeDataAsString(final SimpleTreeModel.Node node, final String data) 
+
+    public void setNodeDataAsString(final SimpleTreeModel.Node node, final String data)
             throws Exception {
         @SuppressWarnings("unchecked")
         final String path = ((Pair<String,String>)node.getData()).first;
         this._client.setData()
             .forPath(path, data.getBytes(Charsets.UTF_8));
     }
-    
+
     public String createZKNode(final String nodepath, final byte[] nodecontent) throws Exception {
         return this._client.create()
                 .forPath(nodepath, nodecontent);
     }
-    
+
     public void removeZKNode(final String nodepath) throws Exception {
         this._client.delete()
             .deletingChildrenIfNeeded()
             .forPath(nodepath);
     }
-    
+
     private static String[] buildPath(final String rawpath) {
         final String[] path = rawpath.split("/");
         if ( 0 == path.length) {
@@ -200,10 +204,10 @@ public class ZKTreeManager {
         public ZKTreeModel(final Node root) {
             super(root);
         }
-        
+
         @Override
-        public void onAdded(final ZKAgent agent, 
-                final String absolutepath, 
+        public void onAdded(final ZKAgent agent,
+                final String absolutepath,
                 final byte[] data) throws Exception {
             if (!isManagedPath(absolutepath)) {
                 return;
@@ -213,14 +217,14 @@ public class ZKTreeManager {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("onNodeAdded: {}", Arrays.toString(paths));
             }
-            
+
             Node parent = this.getRoot();
-            for ( String name : paths) {
+            for ( final String name : paths) {
                 Node child = parent.getChild(name);
                 if (null == child) {
                     child = new Node(name);
                     parent.addChild(child);
-                    fireEvent(TreeDataEvent.INTERVAL_ADDED, 
+                    fireEvent(TreeDataEvent.INTERVAL_ADDED,
                             this.getPath(parent),
                             this.getIndexOfChild(parent, child),
                             parent.getChildCount() - 1,
@@ -235,8 +239,8 @@ public class ZKTreeManager {
         }
 
         @Override
-        public void onUpdated(final ZKAgent agent, 
-                final String absolutepath, 
+        public void onUpdated(final ZKAgent agent,
+                final String absolutepath,
                 final byte[] data) throws Exception {
             if (!isManagedPath(absolutepath)) {
                 return;
@@ -246,10 +250,10 @@ public class ZKTreeManager {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("onNodeUpdated: {}", Arrays.toString(paths));
             }
-            final SimpleTreeModel.Node node = 
+            final SimpleTreeModel.Node node =
                     this.getRoot().getDescendant(paths);
             if (null!=node) {
-                node.setData(Pair.of(path, null != data 
+                node.setData(Pair.of(path, null != data
                                         ? new String(data, Charsets.UTF_8)
                                         : null));
                 final SimpleTreeModel.Node parent = node.getParent();
@@ -263,7 +267,7 @@ public class ZKTreeManager {
         }
 
         @Override
-        public void onRemoved(final ZKAgent agent, 
+        public void onRemoved(final ZKAgent agent,
                 final String absolutepath) throws Exception {
             if (!isManagedPath(absolutepath)) {
                 return;
@@ -279,7 +283,7 @@ public class ZKTreeManager {
                 final int idx = this.getIndexOfChild(node.getParent(), node);
                 final SimpleTreeModel.Node parent = node.getParent();
                 this.getRoot().removeChild(paths);
-                fireEvent(TreeDataEvent.INTERVAL_REMOVED, 
+                fireEvent(TreeDataEvent.INTERVAL_REMOVED,
                         this.getPath(parent),
                         idx,
                         idx,
@@ -291,13 +295,13 @@ public class ZKTreeManager {
     public UnitDescription node2desc(final SimpleTreeModel.Node node) {
         try {
             return dumpNode(node);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOG.warn("exception when dumpNode for node {}, detail: {}",
                     node, ExceptionUtils.exception2detail(e));
             return null;
         }
     }
-    
+
     private UnitDescription dumpNode(final SimpleTreeModel.Node node) {
         final UnitDescription desc = dumpContent(node);
         if (null!=desc) {
@@ -335,7 +339,7 @@ public class ZKTreeManager {
     private boolean isEphemeralNode(final String path) {
         try {
             return 0 != this._client.checkExists().forPath(path).getEphemeralOwner();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOG.warn("exception when isEphemeralNode for {}, detail:{}",
                     path, ExceptionUtils.exception2detail(e));
             return false;
@@ -345,23 +349,23 @@ public class ZKTreeManager {
     public String importNode(final String path, final UnitDescription desc) {
         try {
             final String createdPath = importContent(path, desc);
-            for (UnitDescription child : desc.getChildren()) {
+            for (final UnitDescription child : desc.getChildren()) {
                 importNode(createdPath, child);
             }
             return createdPath;
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOG.warn("exception when importNode for path {}, detail: {}",
                     path, ExceptionUtils.exception2detail(e));
             return null;
         }
     }
 
-    private String importContent(final String path, final UnitDescription desc) 
+    private String importContent(final String path, final UnitDescription desc)
             throws Exception {
         return this._client.create()
                 .creatingParentsIfNeeded()
                 .withMode(CreateMode.PERSISTENT)
-                .forPath(path + "/" + desc.getName(), 
+                .forPath(path + "/" + desc.getName(),
                         genBytes(desc.getParameters()));
     }
 
@@ -380,14 +384,14 @@ public class ZKTreeManager {
             return EMPTY_BYTES;
         }
     }
-    
+
     private final CuratorFramework _client;
     private final ExecutorService _executor;
     private WebApp _webapp;
     private EventQueue<Event> _eventqueue;
     private final List<ZKAgent> _zkagents = Lists.newCopyOnWriteArrayList();
-    
+
     //  TODO, replace with all source
-    
+
     private final List<ModelSource> _models = new ArrayList<>();
 }
