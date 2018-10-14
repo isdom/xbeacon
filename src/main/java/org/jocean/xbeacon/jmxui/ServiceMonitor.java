@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.inject.Inject;
 
+import org.jocean.http.RpcRunner;
 import org.jocean.idiom.BeanFinder;
 import org.jocean.idiom.Triple;
 import org.jocean.idiom.rx.RxObservables;
@@ -23,7 +24,7 @@ import org.jocean.j2se.zk.ZKAgent;
 import org.jocean.jolokia.JolokiaAPI;
 import org.jocean.jolokia.spi.JolokiaRequest;
 import org.jocean.jolokia.spi.LongValueResponse;
-import org.jocean.svr.ControllerUtil;
+import org.jocean.svr.FinderUtil;
 import org.jocean.zkoss.util.Desktops;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -402,8 +403,10 @@ public class ServiceMonitor {
 
     private Observable<List<Triple<ServiceInfo, String, Indicator>>> queryLongIndicator(
             final ServiceInfoImpl impl, final String[] names, final JolokiaRequest[] reqs) {
+
+        final Observable<RpcRunner> rpcs = FinderUtil.rpc(this._finder).runner();
         return this._finder.find(JolokiaAPI.class).flatMap(api->
-            ControllerUtil.interacts(this._finder).flatMap(api.batch(impl.getJolokiaUrl(), reqs, LongValueResponse[].class)))
+            rpcs.compose(api.batch(impl.getJolokiaUrl(), reqs, LongValueResponse[].class)))
             .onErrorResumeNext(resp404(reqs.length))
             .map(resp2indicator(impl, names));
     }
