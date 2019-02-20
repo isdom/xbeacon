@@ -205,8 +205,7 @@ public class ServiceMonitor {
     }
 
     @SuppressWarnings("unused")
-    private static final Logger LOG =
-            LoggerFactory.getLogger(ServiceMonitor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServiceMonitor.class);
 
     public ServiceMonitor(final ZKAgent zkagent) {
         this._zkagent = zkagent;
@@ -404,9 +403,9 @@ public class ServiceMonitor {
     private Observable<List<Triple<ServiceInfo, String, Indicator>>> queryLongIndicator(
             final ServiceInfoImpl impl, final String[] names, final JolokiaRequest[] reqs) {
 
-        final Observable<RpcRunner> rpcs = FinderUtil.rpc(this._finder).runner();
+        final Observable<RpcRunner> runners = FinderUtil.rpc(this._finder).runner();
         return this._finder.find(JolokiaAPI.class).flatMap(api->
-            rpcs.compose(api.batch(impl.getJolokiaUrl(), reqs, LongValueResponse[].class)))
+            runners.compose(api.batch(impl.getJolokiaUrl(), reqs, LongValueResponse[].class)))
             .onErrorResumeNext(resp404(reqs.length))
             .map(resp2indicator(impl, names));
     }

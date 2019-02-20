@@ -20,10 +20,10 @@
                 init-method="start" 
                 destroy-method="stop">
                 <constructor-arg ref="zkClient"/>
-                <constructor-arg value="${service.status.path:/service}"/>
+                <constructor-arg value="${service.status.path:/status/services}"/>
             </bean>
         </constructor-arg>
-        <property name="root" value="${service.status.path:/service}"/>
+        <property name="root" value="${service.status.path:/status/services}"/>
         <property name="webapp">
             <bean class="org.jocean.xbeacon.MyWebAppInit" 
                 factory-method="getWebapp"/>
