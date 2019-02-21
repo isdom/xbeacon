@@ -117,7 +117,7 @@ public class ApiController {
                 final int end = info._buildNo.lastIndexOf("-");
                 if (end > start) {
                     final String buildno = info._buildNo.substring(start + "-SNAPSHOT-".length(), end);
-                    return host + Strings.padStart("[" + buildno + "]", 12 - host.length(), ' ');
+                    return host + Strings.padStart("[" + buildno + "]", 12 - host.length(), '_');
                 }
             }
         }
