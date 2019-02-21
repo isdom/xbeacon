@@ -1,6 +1,10 @@
 package org.jocean.xbeacon.api;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -12,9 +16,38 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+
 @Controller
 @Scope("singleton")
 public class ApiController {
+
+    final static class NameValue {
+        @JSONField(name = "name")
+        public String getName() {
+            return _name;
+        }
+
+        @JSONField(name = "name")
+        public void setName(final String name) {
+            this._name = name;
+        }
+
+        @JSONField(name = "value")
+        public String getValue() {
+            return _value;
+        }
+
+        @JSONField(name = "value")
+        public void setValue(final String value) {
+            this._value = value;
+        }
+
+        String _name;
+        String _value;
+    }
 
 	@SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
@@ -23,18 +56,67 @@ public class ApiController {
     @Named("services")
     List<ServiceInfo> _services;
 
+    Map<String, List<String>> _host2svrs = new ConcurrentHashMap<>();
+
 	@Path("/app-status/services")
 	public String listServices() {
-	    final StringBuilder sb = new StringBuilder();
-	    for (final ServiceInfo srv : _services) {
-	        sb.append(srv.toString());
-	        sb.append("\r\n");
+	    final Multimap<String, String> services = HashMultimap.create();
+
+	    for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
+	        for (final String srv : entry.getValue()) {
+	            services.put(srv, entry.getKey());
+	        }
 	    }
+
+        final StringBuilder sb = new StringBuilder();
+        String comma = "";
+
+        sb.append('[');
+
+	    final Map<String, Collection<String>> srv2host = services.asMap();
+        for (final Map.Entry<String, Collection<String>> entry2 : srv2host.entrySet()) {
+            final String service = entry2.getKey();
+
+            sb.append(comma);
+            sb.append('[');
+            sb.append('"');
+            sb.append(service);
+            sb.append('"');
+            sb.append(',');
+            sb.append("\"service\"");
+            sb.append(']');
+            comma = ",";
+
+            for (final String host : entry2.getValue()) {
+                sb.append(comma);
+                sb.append('[');
+                sb.append('"');
+                sb.append(host);
+                sb.append('"');
+                sb.append(',');
+                sb.append('"');
+                sb.append(isServiceRunning(service, host) ? "success" : "error");
+                sb.append('"');
+                sb.append(']');
+            }
+        }
+        sb.append(']');
+
         return sb.toString();
 	}
 
+    private boolean isServiceRunning(final String service, final String host) {
+        for (final ServiceInfo info : this._services) {
+            if (info._service.equals(service) && info._hostname.equals(host)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Path("/app-status/report-srvs")
     public String reportServices(@QueryParam("srvs") final String srvs, @QueryParam("hostname") final String hostname) {
-        return hostname + ":" + srvs;
+        _host2svrs.put(hostname, Arrays.asList(srvs.split(",")));
+        return "OK";
     }
 }
