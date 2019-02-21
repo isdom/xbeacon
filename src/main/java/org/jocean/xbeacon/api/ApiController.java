@@ -2,6 +2,7 @@ package org.jocean.xbeacon.api;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
@@ -17,12 +18,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
+import com.alibaba.acm.shaded.com.google.common.collect.Lists;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.base.Strings;
-import com.google.common.collect.Maps;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Sets;
 
 @Controller
 @Scope("singleton")
@@ -64,7 +64,7 @@ public class ApiController {
 
 	@Path("/app-status/services")
 	public String listServices() {
-	    final Multimap<String, String> services = Multimaps.newSortedSetMultimap(Maps.newHashMap(), ()->Sets.newTreeSet());
+	    final Multimap<String, String> services = HashMultimap.create();
 
 	    for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
 	        for (final String srv : entry.getValue()) {
@@ -79,32 +79,18 @@ public class ApiController {
 
         try (final Formatter formatter = new Formatter(sb)) {
             final Map<String, Collection<String>> srv2host = services.asMap();
-            for (final Map.Entry<String, Collection<String>> entry2 : srv2host.entrySet()) {
-                final String service = entry2.getKey();
+            final List<String> srvs = Lists.newArrayList(srv2host.keySet().toArray(new String[0]));
+            Collections.sort(srvs);
 
+            for (final String service : srvs) {
                 sb.append(comma);
                 formatter.format("[\"%s\",\"service\"]", Strings.padEnd(service, 20, '_'));
-//                sb.append('[');
-//                sb.append('"');
-//                sb.append(service);
-//                sb.append('"');
-//                sb.append(',');
-//                sb.append("\"service\"");
-//                sb.append(']');
                 comma = ",";
 
-                for (final String host : entry2.getValue()) {
+                for (final String host : srv2host.get(service)) {
                     sb.append(comma);
-                    formatter.format("[\"%s\",\"%s\"]", Strings.padEnd(host, 10, '_'), isServiceRunning(service, host) ? "success" : "error");
-//                    sb.append('[');
-//                    sb.append('"');
-//                    sb.append();
-//                    sb.append('"');
-//                    sb.append(',');
-//                    sb.append('"');
-//                    sb.append();
-//                    sb.append('"');
-//                    sb.append(']');
+                    formatter.format("[\"%s\",\"%s\"]", Strings.padEnd(host, 10, '_'),
+                            isServiceRunning(service, host) ? "success" : "error");
                 }
             }
         }
