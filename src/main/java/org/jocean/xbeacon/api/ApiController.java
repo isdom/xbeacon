@@ -2,6 +2,7 @@ package org.jocean.xbeacon.api;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,8 +18,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
 import com.alibaba.fastjson.annotation.JSONField;
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 
 @Controller
 @Scope("singleton")
@@ -60,7 +63,7 @@ public class ApiController {
 
 	@Path("/app-status/services")
 	public String listServices() {
-	    final Multimap<String, String> services = HashMultimap.create();
+	    final Multimap<String, String> services = Multimaps.newSortedSetMultimap(Maps.newHashMap(), ()->Sets.newTreeSet());
 
 	    for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
 	        for (final String srv : entry.getValue()) {
@@ -73,31 +76,35 @@ public class ApiController {
 
         sb.append('[');
 
-	    final Map<String, Collection<String>> srv2host = services.asMap();
-        for (final Map.Entry<String, Collection<String>> entry2 : srv2host.entrySet()) {
-            final String service = entry2.getKey();
+        try (final Formatter formatter = new Formatter(sb)) {
+            final Map<String, Collection<String>> srv2host = services.asMap();
+            for (final Map.Entry<String, Collection<String>> entry2 : srv2host.entrySet()) {
+                final String service = entry2.getKey();
 
-            sb.append(comma);
-            sb.append('[');
-            sb.append('"');
-            sb.append(service);
-            sb.append('"');
-            sb.append(',');
-            sb.append("\"service\"");
-            sb.append(']');
-            comma = ",";
-
-            for (final String host : entry2.getValue()) {
                 sb.append(comma);
-                sb.append('[');
-                sb.append('"');
-                sb.append(host);
-                sb.append('"');
-                sb.append(',');
-                sb.append('"');
-                sb.append(isServiceRunning(service, host) ? "success" : "error");
-                sb.append('"');
-                sb.append(']');
+                formatter.format("[\"%s10\",\"service\"]", service);
+//                sb.append('[');
+//                sb.append('"');
+//                sb.append(service);
+//                sb.append('"');
+//                sb.append(',');
+//                sb.append("\"service\"");
+//                sb.append(']');
+                comma = ",";
+
+                for (final String host : entry2.getValue()) {
+                    sb.append(comma);
+                    formatter.format("[\"%s10\",\"%s\"]", host, isServiceRunning(service, host) ? "success" : "error");
+//                    sb.append('[');
+//                    sb.append('"');
+//                    sb.append();
+//                    sb.append('"');
+//                    sb.append(',');
+//                    sb.append('"');
+//                    sb.append();
+//                    sb.append('"');
+//                    sb.append(']');
+                }
             }
         }
         sb.append(']');
