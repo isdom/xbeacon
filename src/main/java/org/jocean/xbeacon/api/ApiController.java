@@ -13,6 +13,7 @@ import javax.inject.Named;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
+import org.jocean.idiom.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -94,14 +95,12 @@ public class ApiController {
 
             for (final String service : srvs) {
                 if (!this._ignores.contains(service)) {
-                    sb.append(comma);
-                    formatter.format("[\"%s\",\"service\"]", Strings.padEnd(service, 20, '_'));
+                    formatter.format("%s[\"%s\",\"service\"]", comma, Strings.padEnd(service, 16, '_'));
                     comma = ",";
 
                     for (final String host : hosts) {
-                        sb.append(comma);
-                        formatter.format("[\"%s\",\"%s\"]", Strings.padEnd(host, 10, '_'),
-                                serviceStatus(service, host, srv2host.get(service)));
+                        final Pair<ServiceInfo, String> status = serviceStatus(service, host, srv2host.get(service));
+                        formatter.format(",[\"%s\",\"%s\"]", hostWithBuildno(host, status.first), status.second);
                     }
                 }
             }
@@ -111,16 +110,30 @@ public class ApiController {
         return sb.toString();
 	}
 
-    private String serviceStatus(final String service, final String host, final Collection<String> installedHosts) {
+    private String hostWithBuildno(final String host, final ServiceInfo info) {
+        if (null != info) {
+            final int start = info._buildNo.indexOf("-SNAPSHOT-");
+            if (start >= 0) {
+                final int end = info._buildNo.lastIndexOf("-");
+                if (end > start) {
+                    final String buildno = info._buildNo.substring(start + "-SNAPSHOT-".length(), end);
+                    return host + Strings.padStart("[" + buildno + "]", 12 - host.length(), ' ');
+                }
+            }
+        }
+        return Strings.padEnd(host, 12, '_');
+    }
+
+    private Pair<ServiceInfo,String> serviceStatus(final String service, final String host, final Collection<String> installedHosts) {
         if (installedHosts.contains(host)) {
             for (final ServiceInfo info : this._services) {
                 if (info._service.equals(service) && info._hostname.equals(host)) {
-                    return "success";
+                    return Pair.of(info, "success");
                 }
             }
-            return "error";
+            return Pair.of(null, "error");
         } else {
-            return "none";
+            return Pair.of(null, "none");
         }
     }
 
