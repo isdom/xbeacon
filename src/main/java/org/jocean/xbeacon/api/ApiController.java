@@ -112,13 +112,15 @@ public class ApiController {
 	}
 
     private String hostWithBuildno(final String host, final ServiceInfo[] infos) {
+        String slash = "";
         final StringBuilder sb = new StringBuilder();
         if (null != infos) {
             for (final ServiceInfo info : infos) {
                 final String build = extractBuild(info._buildNo);
                 if (null != build) {
+                    sb.append(slash);
                     sb.append(build);
-                    sb.append('/');
+                    slash = "/";
                 }
             }
         }
@@ -149,7 +151,7 @@ public class ApiController {
                 }
             }
             if (!infos.isEmpty()) {
-                return Pair.of(infos.toArray(new ServiceInfo[0]), "success");
+                return Pair.of(infos.toArray(new ServiceInfo[0]), infos.size() == 1 ? "success" : "multi");
             } else {
                 return Pair.of(null, "error");
             }
