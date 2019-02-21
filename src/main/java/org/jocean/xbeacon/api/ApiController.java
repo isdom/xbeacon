@@ -18,6 +18,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
 import com.alibaba.fastjson.annotation.JSONField;
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -82,7 +83,7 @@ public class ApiController {
                 final String service = entry2.getKey();
 
                 sb.append(comma);
-                formatter.format("[\"%10s\",\"service\"]", service);
+                formatter.format("[\"%s\",\"service\"]", Strings.padEnd(service, 20, '_'));
 //                sb.append('[');
 //                sb.append('"');
 //                sb.append(service);
@@ -94,7 +95,7 @@ public class ApiController {
 
                 for (final String host : entry2.getValue()) {
                     sb.append(comma);
-                    formatter.format("[\"%10s\",\"%s\"]", host, isServiceRunning(service, host) ? "success" : "error");
+                    formatter.format("[\"%s\",\"%s\"]", Strings.padEnd(host, 10, '_'), isServiceRunning(service, host) ? "success" : "error");
 //                    sb.append('[');
 //                    sb.append('"');
 //                    sb.append();
