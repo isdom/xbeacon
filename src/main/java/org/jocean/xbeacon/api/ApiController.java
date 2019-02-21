@@ -82,7 +82,7 @@ public class ApiController {
                 final String service = entry2.getKey();
 
                 sb.append(comma);
-                formatter.format("[\"%s10\",\"service\"]", service);
+                formatter.format("[\"%10s\",\"service\"]", service);
 //                sb.append('[');
 //                sb.append('"');
 //                sb.append(service);
@@ -94,7 +94,7 @@ public class ApiController {
 
                 for (final String host : entry2.getValue()) {
                     sb.append(comma);
-                    formatter.format("[\"%s10\",\"%s\"]", host, isServiceRunning(service, host) ? "success" : "error");
+                    formatter.format("[\"%10s\",\"%s\"]", host, isServiceRunning(service, host) ? "success" : "error");
 //                    sb.append('[');
 //                    sb.append('"');
 //                    sb.append();
