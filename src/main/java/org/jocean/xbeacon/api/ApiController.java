@@ -5,6 +5,7 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.ws.rs.Path;
+import javax.ws.rs.QueryParam;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,4 +33,8 @@ public class ApiController {
         return sb.toString();
 	}
 
+    @Path("/app-status/report-srvs")
+    public String reportServices(@QueryParam("srvs") final String srvs, @QueryParam("hostname") final String hostname) {
+        return hostname + ":" + srvs;
+    }
 }
