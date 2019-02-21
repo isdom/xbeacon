@@ -15,6 +15,7 @@ import javax.ws.rs.QueryParam;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
 
@@ -60,6 +61,13 @@ public class ApiController {
     @Named("services")
     List<ServiceInfo> _services;
 
+    @Value("${ignores}")
+    public void setIgnore(final String ignores) {
+        this._ignores = Arrays.asList(ignores.split(","));
+    }
+
+    private List<String> _ignores = Collections.emptyList();
+
     Map<String, List<String>> _host2svrs = new ConcurrentHashMap<>();
 
 	@Path("/app-status/services")
@@ -71,6 +79,8 @@ public class ApiController {
 	            services.put(srv, entry.getKey());
 	        }
 	    }
+	    final List<String> hosts = Arrays.asList(_host2svrs.keySet().toArray(new String[0]));
+	    Collections.sort(hosts);
 
         final StringBuilder sb = new StringBuilder();
         String comma = "";
@@ -83,14 +93,16 @@ public class ApiController {
             Collections.sort(srvs);
 
             for (final String service : srvs) {
-                sb.append(comma);
-                formatter.format("[\"%s\",\"service\"]", Strings.padEnd(service, 20, '_'));
-                comma = ",";
-
-                for (final String host : srv2host.get(service)) {
+                if (!this._ignores.contains(service)) {
                     sb.append(comma);
-                    formatter.format("[\"%s\",\"%s\"]", Strings.padEnd(host, 10, '_'),
-                            isServiceRunning(service, host) ? "success" : "error");
+                    formatter.format("[\"%s\",\"service\"]", Strings.padEnd(service, 20, '_'));
+                    comma = ",";
+
+                    for (final String host : hosts) {
+                        sb.append(comma);
+                        formatter.format("[\"%s\",\"%s\"]", Strings.padEnd(host, 10, '_'),
+                                serviceStatus(service, host, srv2host.get(service)));
+                    }
                 }
             }
         }
@@ -99,13 +111,17 @@ public class ApiController {
         return sb.toString();
 	}
 
-    private boolean isServiceRunning(final String service, final String host) {
-        for (final ServiceInfo info : this._services) {
-            if (info._service.equals(service) && info._hostname.equals(host)) {
-                return true;
+    private String serviceStatus(final String service, final String host, final Collection<String> installedHosts) {
+        if (installedHosts.contains(host)) {
+            for (final ServiceInfo info : this._services) {
+                if (info._service.equals(service) && info._hostname.equals(host)) {
+                    return "success";
+                }
             }
+            return "error";
+        } else {
+            return "none";
         }
-        return false;
     }
 
     @Path("/app-status/report-srvs")
