@@ -1,5 +1,6 @@
 package org.jocean.xbeacon.api;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -99,7 +100,7 @@ public class ApiController {
                     comma = ",";
 
                     for (final String host : hosts) {
-                        final Pair<ServiceInfo, String> status = serviceStatus(service, host, srv2host.get(service));
+                        final Pair<ServiceInfo[], String> status = serviceStatus(service, host, srv2host.get(service));
                         formatter.format(",[\"%s\",\"%s\"]", hostWithBuildno(host, status.first), status.second);
                     }
                 }
@@ -110,28 +111,48 @@ public class ApiController {
         return sb.toString();
 	}
 
-    private String hostWithBuildno(final String host, final ServiceInfo info) {
-        if (null != info) {
-            final int start = info._buildNo.indexOf("-SNAPSHOT-");
-            if (start >= 0) {
-                final int end = info._buildNo.lastIndexOf("-");
-                if (end > start) {
-                    final String buildno = info._buildNo.substring(start + "-SNAPSHOT-".length(), end);
-                    return host + Strings.padStart("[" + buildno + "]", 12 - host.length(), '_');
+    private String hostWithBuildno(final String host, final ServiceInfo[] infos) {
+        final StringBuilder sb = new StringBuilder();
+        if (null != infos) {
+            for (final ServiceInfo info : infos) {
+                final String build = extractBuild(info._buildNo);
+                if (null != build) {
+                    sb.append(build);
+                    sb.append('/');
                 }
             }
         }
-        return Strings.padEnd(host, 12, '_');
+        if (sb.length() > 0) {
+            return host + Strings.padStart("[" + sb.toString() + "]", 12 - host.length(), '_');
+        } else {
+            return Strings.padEnd(host, 12, '_');
+        }
     }
 
-    private Pair<ServiceInfo,String> serviceStatus(final String service, final String host, final Collection<String> installedHosts) {
+    static private String extractBuild(final String buildNo) {
+        final int start = buildNo.indexOf("-SNAPSHOT-");
+        if (start >= 0) {
+            final int end = buildNo.lastIndexOf("-");
+            if (end > start) {
+                return buildNo.substring(start + "-SNAPSHOT-".length(), end);
+            }
+        }
+        return null;
+    }
+
+    private Pair<ServiceInfo[],String> serviceStatus(final String service, final String host, final Collection<String> installedHosts) {
+        final List<ServiceInfo> infos = new ArrayList<>();
         if (installedHosts.contains(host)) {
             for (final ServiceInfo info : this._services) {
                 if (info._service.equals(service) && info._hostname.equals(host)) {
-                    return Pair.of(info, "success");
+                    infos.add(info);
                 }
             }
-            return Pair.of(null, "error");
+            if (!infos.isEmpty()) {
+                return Pair.of(infos.toArray(new ServiceInfo[0]), "success");
+            } else {
+                return Pair.of(null, "error");
+            }
         } else {
             return Pair.of(null, "none");
         }
