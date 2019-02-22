@@ -125,19 +125,19 @@ public class ApiController {
             }
         }
         if (sb.length() > 0) {
-            return host + Strings.padStart("[" + sb.toString() + "]", 12 - host.length(), '_');
+            return Strings.padStart(sb.toString(), 20, '_');
         } else {
-            return Strings.padEnd(host, 12, '_');
+            return Strings.padStart(Strings.padEnd(host, 12, '_'), 20, '_');
         }
     }
 
     static private String extractBuild(final String buildNo) {
         final int start = buildNo.indexOf("-SNAPSHOT-");
         if (start >= 0) {
-            final int end = buildNo.lastIndexOf("-");
-            if (end > start) {
-                return buildNo.substring(start + "-SNAPSHOT-".length(), end);
-            }
+//            final int end = buildNo.lastIndexOf("-");
+//            if (end > start) {
+                return buildNo.substring(start + "-SNAPSHOT-".length());
+//            }
         }
         return null;
     }
