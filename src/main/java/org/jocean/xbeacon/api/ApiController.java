@@ -15,8 +15,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
 import org.jocean.idiom.Pair;
-import org.jocean.svr.ResponseBean;
-import org.jocean.svr.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -160,18 +158,18 @@ public class ApiController {
     }
 
     @Path("/app-status/checkServicesStatus")
-    public ResponseBean checkServicesStatus() {
+    public String checkServicesStatus() {
         for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
             for (final String srv : entry.getValue()) {
                 if (!this._ignores.contains(srv)) {
                     if (!isServiceRunning(srv, entry.getKey())) {
-                        return ResponseUtil.statusOnly(615);
+                        return "error";
                     }
                 }
             }
         }
 
-        return ResponseUtil.statusOnly(200);
+        return "success";
     }
 
     private boolean isServiceRunning(final String service, final String host) {
