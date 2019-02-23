@@ -15,6 +15,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
 import org.jocean.idiom.Pair;
+import org.jocean.svr.ResponseBean;
+import org.jocean.svr.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -134,10 +136,7 @@ public class ApiController {
     static private String extractBuild(final String buildNo) {
         final int start = buildNo.indexOf("-SNAPSHOT-");
         if (start >= 0) {
-//            final int end = buildNo.lastIndexOf("-");
-//            if (end > start) {
-                return buildNo.substring(start + "-SNAPSHOT-".length());
-//            }
+            return buildNo.substring(start + "-SNAPSHOT-".length());
         }
         return null;
     }
@@ -158,6 +157,30 @@ public class ApiController {
         } else {
             return Pair.of(null, "none");
         }
+    }
+
+    @Path("/app-status/checkServicesStatus")
+    public ResponseBean checkServicesStatus() {
+        for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
+            for (final String srv : entry.getValue()) {
+                if (!this._ignores.contains(srv)) {
+                    if (!isServiceRunning(srv, entry.getKey())) {
+                        return ResponseUtil.statusOnly(615);
+                    }
+                }
+            }
+        }
+
+        return ResponseUtil.statusOnly(200);
+    }
+
+    private boolean isServiceRunning(final String service, final String host) {
+        for (final ServiceInfo info : this._services) {
+            if (info._service.equals(service) && info._hostname.equals(host)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Path("/app-status/report-srvs")
