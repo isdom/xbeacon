@@ -147,19 +147,15 @@ public class ZKTreeManager {
             throws Exception {
         @SuppressWarnings("unchecked")
         final String path = ((Pair<String,String>)node.getData()).first;
-        this._client.setData()
-            .forPath(path, data.getBytes(Charsets.UTF_8));
+        this._client.setData().forPath(path, data.getBytes(Charsets.UTF_8));
     }
 
     public String createZKNode(final String nodepath, final byte[] nodecontent) throws Exception {
-        return this._client.create()
-                .forPath(nodepath, nodecontent);
+        return this._client.create().forPath(nodepath, nodecontent);
     }
 
     public void removeZKNode(final String nodepath) throws Exception {
-        this._client.delete()
-            .deletingChildrenIfNeeded()
-            .forPath(nodepath);
+        this._client.delete().deletingChildrenIfNeeded().forPath(nodepath);
     }
 
     private static String[] buildPath(final String rawpath) {
