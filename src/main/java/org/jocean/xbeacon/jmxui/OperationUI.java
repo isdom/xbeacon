@@ -2,8 +2,8 @@ package org.jocean.xbeacon.jmxui;
 
 import java.util.Arrays;
 
-import org.jocean.jolokia.spi.ListResponse.ArgInfo;
-import org.jocean.jolokia.spi.ListResponse.OperationInfo;
+import org.jocean.jolokia.api.ListResponse.ArgInfo;
+import org.jocean.jolokia.api.ListResponse.OperationInfo;
 import org.jocean.zkoss.annotation.RowSource;
 import org.zkoss.zk.ui.event.Events;
 import org.zkoss.zul.Button;

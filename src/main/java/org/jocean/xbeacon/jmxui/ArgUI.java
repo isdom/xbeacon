@@ -2,7 +2,7 @@ package org.jocean.xbeacon.jmxui;
 
 import java.util.Map;
 
-import org.jocean.jolokia.spi.ListResponse.ArgInfo;
+import org.jocean.jolokia.api.ListResponse.ArgInfo;
 import org.jocean.zkoss.annotation.RowSource;
 import org.zkoss.zul.Doublebox;
 import org.zkoss.zul.Intbox;
