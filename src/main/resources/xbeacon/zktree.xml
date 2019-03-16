@@ -4,9 +4,6 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
-    <bean id="treemgr" class="org.jocean.xbeacon.zk.ZKTreeManager"
-        destroy-method="stop">
-        <constructor-arg name="client" ref="zkClient"/>
-    </bean>
+    <bean id="treemgr" class="org.jocean.xbeacon.zk.ZKTreeManager" destroy-method="stop"/>
     
 </beans>

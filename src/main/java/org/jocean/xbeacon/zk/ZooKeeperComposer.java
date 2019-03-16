@@ -46,19 +46,19 @@ import rx.functions.Action1;
 
 @VariableResolver(org.zkoss.zkplus.spring.DelegatingVariableResolver.class)
 public class ZooKeeperComposer extends SelectorComposer<Window>{
-	
+
     private static final long serialVersionUID = -9063622647244777848L;
 
-    private static final Logger LOG = 
-        	LoggerFactory.getLogger(ZooKeeperComposer.class);
-    
-	public void doAfterCompose(final Window comp) throws Exception {
+    private static final Logger LOG = LoggerFactory.getLogger(ZooKeeperComposer.class);
+
+	@Override
+    public void doAfterCompose(final Window comp) throws Exception {
 		super.doAfterCompose(comp);
-		
+
 		nodes.setItemRenderer(new NodeTreeRenderer());
-		
+
 		nodes.addEventListener(Events.ON_SELECT, new EventListener<Event>() {
-			
+
 			@Override
 			public void onEvent(final Event event) throws Exception {
 				final SimpleTreeModel.Node node = currentSelectedNode();
@@ -66,9 +66,9 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
 					LOG.info("select node:{}", (Object)node.getData());
 					displayNodeData(node);
 				}
-			}		
+			}
 		});
-		
+
         addnode.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
@@ -78,7 +78,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
                     addNodeFor(node);
                 }
             }});
-        
+
         delnode.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
@@ -88,7 +88,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
                     delNodeFor(node);
                 }
             }});
-        
+
         backup.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
@@ -98,7 +98,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
                     backupNode(node);
                 }
             }});
-        
+
         restore.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
@@ -108,7 +108,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
                     restoreFromNode(node);
                 }
             }});
-        
+
         closeall.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
             @Override
             public void onEvent(final Event event) throws Exception {
@@ -116,7 +116,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
                     _tabs.values().iterator().next().second.close();
                 }
             }});
-        
+
         refreshNodeTree();
 	}
 
@@ -134,9 +134,9 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
         dialog.setHeight("200px");
         dialog.setSizable(false);
         dialog.setPage(this.getPage());
-        
+
         final Textbox tbNodename = new Textbox() {
-            private static final long serialVersionUID = 1L; 
+            private static final long serialVersionUID = 1L;
             {
                 this.setWidth("260px");
             }};
@@ -145,7 +145,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             {
                 this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
                     @Override
-                    public void onEvent(Event event) throws Exception {
+                    public void onEvent(final Event event) throws Exception {
                         final String createdPath = doRestoreTo(node, tbNodename.getText());
                         dialog.detach();
                         if (null!=createdPath) {
@@ -161,7 +161,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             {
                 this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
                     @Override
-                    public void onEvent(Event event) throws Exception {
+                    public void onEvent(final Event event) throws Exception {
                         dialog.detach();
                     }});
             }
@@ -171,17 +171,17 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
         dialog.appendChild(btnCancel);
         dialog.doModal();
     }
-    
+
     private String doRestoreTo(final Node node, final String restoreTo) {
         final Yaml yaml = new Yaml(new Constructor(UnitDescription.class));
         final UnitDescription root = (UnitDescription)yaml.load(this._zkmgr.getNodeDataAsString(node));
         try {
             return this._zkmgr.importNode(restoreTo, root);
-        } catch (Exception e) {
+        } catch (final Exception e) {
             LOG.warn("exception when createZKNode for path {}, detail: {}",
                     restoreTo, ExceptionUtils.exception2detail(e));
         }
-        
+
         return null;
     }
 
@@ -192,9 +192,9 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
         dialog.setHeight("200px");
         dialog.setSizable(false);
         dialog.setPage(this.getPage());
-        
+
         final Textbox tbNodename = new Textbox() {
-            private static final long serialVersionUID = 1L; 
+            private static final long serialVersionUID = 1L;
             {
                 this.setWidth("260px");
             }};
@@ -203,7 +203,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             {
                 this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
                     @Override
-                    public void onEvent(Event event) throws Exception {
+                    public void onEvent(final Event event) throws Exception {
                         final String createdPath = doBackupFor(node, tbNodename.getText());
                         dialog.detach();
                         if (null!=createdPath) {
@@ -219,7 +219,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             {
                 this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
                     @Override
-                    public void onEvent(Event event) throws Exception {
+                    public void onEvent(final Event event) throws Exception {
                         dialog.detach();
                     }});
             }
@@ -231,23 +231,23 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
     }
 
     private String doBackupFor(final Node node, final String backupTo) {
-        
+
         final UnitDescription root = this._zkmgr.node2desc(node);
         if (null!=root) {
             final Yaml yaml = new Yaml(new Constructor(UnitDescription.class));
             final String backupcontent = yaml.dump(root);
-            
+
             try {
                 return _zkmgr.createZKNode(backupTo, backupcontent.getBytes(Charsets.UTF_8));
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 LOG.warn("exception when createZKNode for path {}, detail: {}",
                         backupTo, ExceptionUtils.exception2detail(e));
             }
         }
-        
+
         return null;
     }
-    
+
     private void enableNodesMenus(final boolean enabled) {
         this.addnode.setDisabled(!enabled);
         this.delnode.setDisabled(!enabled);
@@ -262,14 +262,14 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
         dialog.setHeight("550px");
         dialog.setSizable(true);
         dialog.setPage(this.getPage());
-        
+
         final Textbox tbNodename = new Textbox() {
-            private static final long serialVersionUID = 1L; 
+            private static final long serialVersionUID = 1L;
             {
                 this.setWidth("260px");
             }};
         final Textbox tbNodecontent = new Textbox() {
-            private static final long serialVersionUID = 1L; 
+            private static final long serialVersionUID = 1L;
             {
                 this.setWidth("260px");
                 this.setHeight("400px");
@@ -280,7 +280,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             {
                 this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
                     @Override
-                    public void onEvent(Event event) throws Exception {
+                    public void onEvent(final Event event) throws Exception {
                         final String nodepath = concatParentAndChild(path, tbNodename.getText());
                         final byte[] nodecontent = tbNodecontent.getText().getBytes(Charsets.UTF_8);
                         final String createdPath = _zkmgr.createZKNode(nodepath, nodecontent);
@@ -294,7 +294,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             {
                 this.addEventListener(Events.ON_CLICK, new EventListener<Event>() {
                     @Override
-                    public void onEvent(Event event) throws Exception {
+                    public void onEvent(final Event event) throws Exception {
                         dialog.detach();
                     }});
             }
@@ -308,34 +308,35 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
 
     private void delNodeFor(final Node node) {
         final String path = _zkmgr.getNodePath(node);
-        Messagebox.show("Are you sure to delete node(" + path + ")?", 
-            "Confirm Dialog", 
-            Messagebox.OK | Messagebox.CANCEL, 
-            Messagebox.QUESTION, 
+        Messagebox.show("Are you sure to delete node(" + path + ")?",
+            "Confirm Dialog",
+            Messagebox.OK | Messagebox.CANCEL,
+            Messagebox.QUESTION,
             new org.zkoss.zk.ui.event.EventListener<Event>() {
-                public void onEvent(Event evt) throws InterruptedException {
+                @Override
+                public void onEvent(final Event evt) throws InterruptedException {
                     if (evt.getName().equals("onOK")) {
                         try {
                             _zkmgr.removeZKNode(path);
                             alert(path + " deleted!");
-                        } catch (Exception e) {
+                        } catch (final Exception e) {
                             alert(ExceptionUtils.exception2detail(e));
                         }
                     } else {
                     }
             }});
     }
-    
+
     private void displayNodeData(final Node node) {
         final String treepath = Arrays.toString(this._model.getPath(node));
         final String path = this._zkmgr.getNodePath(node);
         final Pair<Textbox,EditableTab> pair = this._tabs.get(treepath);
-        
+
         if (null != pair ) {
             pair.second.setSelected();
         } else {
             this._tabs.put(treepath, buildNewTab(node, path, treepath));
-            
+
         }
     }
 
@@ -358,7 +359,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
                 public void call() {
                     try {
                         _zkmgr.setNodeDataAsString(node,  textbox.getText());
-                    } catch (Exception e) {
+                    } catch (final Exception e) {
                         LOG.warn("exception when save data for {}, detail:{}",
                                 path, ExceptionUtils.exception2detail(e));
                     }
@@ -371,7 +372,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             .appendChild(textbox)
             .appendToTabs(this.maintabs)
             .appendToTabpanels(this.maintabpanels);
-        
+
         textbox.addEventListener(Events.ON_CHANGING, new EventListener<InputEvent>() {
             @Override
             public void onEvent(final InputEvent event) throws Exception {
@@ -397,12 +398,12 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
                 }
             }});
 	}
-	
+
     private void onContentChanged(final TreeDataEvent event) {
         final String treepath = Arrays.toString(event.getAffectedPath());
         final Pair<Textbox,EditableTab> pair = this._tabs.get(treepath);
         if (null!=pair) {
-            final SimpleTreeModel.Node node = 
+            final SimpleTreeModel.Node node =
                     (SimpleTreeModel.Node)event.getModel().getChild(event.getAffectedPath());
             pair.first.setText(_zkmgr.getNodeDataAsString(node));
         }
@@ -412,13 +413,13 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             final String child) {
         return fullpath + (!fullpath.endsWith("/") ? "/" : "") + child;
     }
-    
+
    private SimpleTreeModel.Node currentSelectedNode() {
         final Treeitem item = nodes.getSelectedItem();
 
         if (null!=item) {
             final Object data = item.getValue();
-        
+
             if ( data instanceof SimpleTreeModel.Node ) {
                 return  (SimpleTreeModel.Node)data;
             }
@@ -427,7 +428,8 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
     }
 
     class NodeTreeRenderer implements TreeitemRenderer<SimpleTreeModel.Node> {
-        public void render(final Treeitem item, final SimpleTreeModel.Node node, int index) 
+        @Override
+        public void render(final Treeitem item, final SimpleTreeModel.Node node, final int index)
                 throws Exception {
             item.setValue(node);
             item.appendChild( new Treerow() {
@@ -437,38 +439,38 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
             }});
         }
     }
-    
+
     @Wire
     private Tree    nodes;
-    
+
     private TreeModel<SimpleTreeModel.Node> _model;
-	
+
     @Wire
     private Tabs    maintabs;
-    
+
     @Wire
     private Tabpanels    maintabpanels;
-    
+
     @Wire
     private Menuitem        addnode;
-    
+
     @Wire
     private Menuitem        delnode;
-    
+
     @Wire
     private Menuitem        backup;
-    
+
     @Wire
     private Menuitem        restore;
-    
+
     @Wire
     private Menuitem        closeall;
-    
+
     @Wire
     private Caption         status;
-    
-	@WireVariable("treemgr") 
+
+	@WireVariable("treemgr")
 	private ZKTreeManager _zkmgr;
-	
+
     private final Map<String, Pair<Textbox,EditableTab>>  _tabs = new HashMap<>();
 }

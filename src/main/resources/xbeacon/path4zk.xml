@@ -7,10 +7,7 @@
     <bean factory-bean="treemgr" factory-method="addZKAgent"
         destroy-method="call">
         <constructor-arg name="zkagent">
-            <bean class="org.jocean.j2se.zk.ZKAgent"
-                init-method="start" 
-                destroy-method="stop">
-                <constructor-arg ref="zkClient"/>
+            <bean class="org.jocean.j2se.zk.ZKAgent" init-method="start"  destroy-method="stop">
                 <constructor-arg value="${managed.path}"/>
             </bean>
         </constructor-arg>

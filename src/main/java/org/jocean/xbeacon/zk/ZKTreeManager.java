@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.inject.Inject;
+
 import org.apache.commons.io.FilenameUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.zookeeper.CreateMode;
@@ -69,10 +71,11 @@ public class ZKTreeManager {
     private static final byte[] EMPTY_BYTES = new byte[0];
     private static final String[] PATH_ROOT = new String[]{"/"};
 
-    private static final Logger LOG =
-            LoggerFactory.getLogger(ZKTreeManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ZKTreeManager.class);
 
-    public ZKTreeManager(final CuratorFramework client) {
+    @Inject
+    public void setClient(final CuratorFramework client) throws Exception {
+        LOG.info("inject CuratorFramework {}", client);
         this._client = client;
         this._executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                 .setNameFormat("ZKTreeManager-%d")
@@ -115,12 +118,7 @@ public class ZKTreeManager {
         this._eventqueue = EventQueues.lookup("zktree", this._webapp, true);
         LOG.info("ZKTreeManager.setWebapp with webapp({}) and create eventqueue({})",
                 webapp, this._eventqueue);
-        return new Action0() {
-            @Override
-            public void call() {
-                EventQueues.remove("zktree", _webapp);
-                // TODO, zkagent.addListener(this._eqf.subject())'s call to remove Listener
-            }};
+        return () ->EventQueues.remove("zktree", _webapp); // TODO, zkagent.addListener(this._eqf.subject())'s call to remove Listener
     }
 
 //    public void start() throws Exception {
@@ -358,8 +356,8 @@ public class ZKTreeManager {
         }
     }
 
-    private final CuratorFramework _client;
-    private final ExecutorService _executor;
+    private CuratorFramework _client;
+    private ExecutorService _executor;
     private WebApp _webapp;
     private EventQueue<Event> _eventqueue;
     private final List<ZKAgent> _zkagents = Lists.newCopyOnWriteArrayList();
