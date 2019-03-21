@@ -9,8 +9,6 @@
 
     <bean id="services" class="java.util.concurrent.CopyOnWriteArrayList"/>
     
-    <context:component-scan annotation-config="false"
-        base-package="org.jocean.xbeacon.api"
-    />
+    <context:component-scan annotation-config="false" base-package="org.jocean.xbeacon.api"/>
           
 </beans>
