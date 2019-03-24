@@ -7,6 +7,6 @@
     <import resource="classpath:unit/zkclient.xml"/>
     
     <bean id="zkAgent" class="org.jocean.j2se.zk.ZKAgent" init-method="start" destroy-method="stop">
-        <constructor-arg value="${zk.root.path}"/>
+        <property name="root" value="${zk.root.path}"/>
     </bean>
 </beans>
