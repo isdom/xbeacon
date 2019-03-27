@@ -1,4 +1,4 @@
-/* 
+/*
 	Description:
 		ZK Essentials
 	History:
@@ -9,25 +9,29 @@ package org.zkoss.essentials.entity;
 
 import java.io.Serializable;
 import java.util.Date;
+
+import org.springframework.beans.factory.annotation.Value;
 /**
  * User entity
  */
 public class User implements Serializable,Cloneable {
 	private static final long serialVersionUID = 1L;
+
+	@Value("${account}")
 	String account;
+
+	@Value("${fullname}")
 	String fullName;
+
+	@Value("${password}")
 	String password;
+
+	@Value("${email}")
 	String email;
+
 	Date birthday;
 	String country;
 	String bio;
-
-	public User(String account, String password, String fullName,String email) {
-		this.account = account;
-		this.password = password;
-		this.fullName = fullName;
-		this.email = email;
-	}
 
 	public String getAccount() {
 		return account;
@@ -37,7 +41,7 @@ public class User implements Serializable,Cloneable {
 		return fullName;
 	}
 
-	public void setFullName(String fullName) {
+	public void setFullName(final String fullName) {
 		this.fullName = fullName;
 	}
 
@@ -45,7 +49,7 @@ public class User implements Serializable,Cloneable {
 		return email;
 	}
 
-	public void setEmail(String email) {
+	public void setEmail(final String email) {
 		this.email = email;
 	}
 
@@ -53,7 +57,7 @@ public class User implements Serializable,Cloneable {
 		return birthday;
 	}
 
-	public void setBirthday(Date birthday) {
+	public void setBirthday(final Date birthday) {
 		this.birthday = birthday;
 	}
 
@@ -61,7 +65,7 @@ public class User implements Serializable,Cloneable {
 		return country;
 	}
 
-	public void setCountry(String country) {
+	public void setCountry(final String country) {
 		this.country = country;
 	}
 
@@ -69,7 +73,7 @@ public class User implements Serializable,Cloneable {
 		return bio;
 	}
 
-	public void setBio(String bio) {
+	public void setBio(final String bio) {
 		this.bio = bio;
 	}
 
@@ -77,7 +81,7 @@ public class User implements Serializable,Cloneable {
 		return password;
 	}
 
-	public void setPassword(String password) {
+	public void setPassword(final String password) {
 		this.password = password;
 	}
 
@@ -90,14 +94,14 @@ public class User implements Serializable,Cloneable {
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(final Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		User other = (User) obj;
+		final User other = (User) obj;
 		if (account == null) {
 			if (other.account != null)
 				return false;
@@ -105,11 +109,11 @@ public class User implements Serializable,Cloneable {
 			return false;
 		return true;
 	}
-	
-	public static User clone(User user){
+
+	public static User clone(final User user){
 		try {
 			return (User)user.clone();
-		} catch (CloneNotSupportedException e) {
+		} catch (final CloneNotSupportedException e) {
 			//not possible
 		}
 		return null;

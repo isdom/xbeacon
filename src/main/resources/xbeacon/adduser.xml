@@ -9,12 +9,7 @@
         destroy-method="call">
         <constructor-arg ref="users"/>
         <constructor-arg>
-            <bean class="org.zkoss.essentials.entity.User">
-                <constructor-arg name="account" value="${account}"/>
-                <constructor-arg name="password" value="${password}"/>
-                <constructor-arg name="fullName" value="${fullname}"/>
-                <constructor-arg name="email" value="${email}"/>
-            </bean>
+            <bean class="org.zkoss.essentials.entity.User"/>
         </constructor-arg>
     </bean>
     
