@@ -14,6 +14,8 @@ import javax.inject.Named;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 
+import org.jocean.http.endpoint.internal.DefaultEndpointSet;
+import org.jocean.idiom.BeanFinder;
 import org.jocean.idiom.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +29,15 @@ import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
+import rx.Observable;
+
 @Controller
 @Scope("singleton")
 public class ApiController {
+
+    private static final ServiceInfo[] EMPTY_SRVINFOS = new ServiceInfo[0];
+
+    private static final String[] EMPTY_STRS = new String[0];
 
     final static class NameValue {
         @JSONField(name = "name")
@@ -81,7 +89,7 @@ public class ApiController {
 	            services.put(srv, entry.getKey());
 	        }
 	    }
-	    final List<String> hosts = Arrays.asList(_host2svrs.keySet().toArray(new String[0]));
+	    final List<String> hosts = Arrays.asList(_host2svrs.keySet().toArray(EMPTY_STRS));
 	    Collections.sort(hosts);
 
         final StringBuilder sb = new StringBuilder();
@@ -91,7 +99,7 @@ public class ApiController {
 
         try (final Formatter formatter = new Formatter(sb)) {
             final Map<String, Collection<String>> srv2host = services.asMap();
-            final List<String> srvs = Lists.newArrayList(srv2host.keySet().toArray(new String[0]));
+            final List<String> srvs = Lists.newArrayList(srv2host.keySet().toArray(EMPTY_STRS));
             Collections.sort(srvs);
 
             for (final String service : srvs) {
@@ -148,7 +156,7 @@ public class ApiController {
                 }
             }
             if (!infos.isEmpty()) {
-                return Pair.of(infos.toArray(new ServiceInfo[0]), infos.size() == 1 ? "success" : "multi");
+                return Pair.of(infos.toArray(EMPTY_SRVINFOS), infos.size() == 1 ? "success" : "multi");
             } else {
                 return Pair.of(null, "error");
             }
@@ -185,5 +193,31 @@ public class ApiController {
     public String reportServices(@QueryParam("srvs") final String srvs, @QueryParam("hostname") final String hostname) {
         _host2svrs.put(hostname, Arrays.asList(srvs.split(",")));
         return "OK";
+    }
+
+    @Inject
+    BeanFinder _beanFinder;
+
+    @Path("/rpc-status/rpcs")
+    public Observable<String> listRpcs() {
+
+        return this._beanFinder.find(DefaultEndpointSet.class).map(eps -> {
+            final String[] types = eps.types();
+            final StringBuilder sb = new StringBuilder();
+            String comma = "";
+
+            sb.append('[');
+
+            try (final Formatter formatter = new Formatter(sb)) {
+                for (final String type : types) {
+
+                    formatter.format("%s[\"%s\",\"$s\"]", comma, type, eps.uris(type).length > 1 ? "multi" : "single");
+                    comma = ",";
+                }
+            }
+            sb.append(']');
+
+            return sb.toString();
+        });
     }
 }
