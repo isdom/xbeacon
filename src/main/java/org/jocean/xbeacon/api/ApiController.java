@@ -211,7 +211,8 @@ public class ApiController {
             try (final Formatter formatter = new Formatter(sb)) {
                 for (final String type : types) {
 
-                    formatter.format("%s[\"%s\",\"$s\"]", comma, type, eps.uris(type).length > 1 ? "multi" : "single");
+                    formatter.format("%s[\"%s\",\"%s\"]", comma, Strings.padStart(type, 20, '.'),
+                            eps.uris(type).length > 1 ? "multi" : "single");
                     comma = ",";
                 }
             }
