@@ -1,5 +1,8 @@
 package org.jocean.xbeacon.api;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -7,26 +10,34 @@ import java.util.Collections;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.MediaType;
 
 import org.jocean.http.endpoint.internal.DefaultEndpointSet;
 import org.jocean.idiom.BeanFinder;
+import org.jocean.idiom.ExceptionUtils;
 import org.jocean.idiom.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Controller;
+import org.yaml.snakeyaml.Yaml;
 
 import com.alibaba.acm.shaded.com.google.common.collect.Lists;
+import com.alibaba.edas.acm.ConfigService;
 import com.alibaba.fastjson.annotation.JSONField;
+import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
 import rx.Observable;
@@ -79,6 +90,69 @@ public class ApiController {
     private List<String> _ignores = Collections.emptyList();
 
     Map<String, List<String>> _host2svrs = new ConcurrentHashMap<>();
+
+    @Value("${acm.endpoint}")
+    String _acmEndpoint;
+
+    @Value("${acm.namespace}")
+    String _acmNamespace;
+
+    @Value("${ecs.rolename}")
+    String _ecsRolename;
+
+    @Value("${ver.dataid}")
+    String _verDataId;
+
+    @Value("${ver.group}")
+    String _verGroup;
+
+    @Path("/app-status/version")
+    @Produces(MediaType.APPLICATION_JSON)
+    public Object getVersion(@QueryParam("service") final String service) throws Exception {
+        // 从控制台命名空间管理中拷贝对应值
+        final Properties props = new Properties();
+        props.put("endpoint", _acmEndpoint);
+        props.put("namespace", _acmNamespace);
+        // 通过 ECS 实例 RAM 角色访问 ACM
+        props.put("ramRoleName", _ecsRolename);
+
+        // 如果是加密配置，则添加下面两行进行自动解密
+        //props.put("openKMSFilter", true);
+        //props.put("regionId", "$regionId");
+
+        ConfigService.init(props);
+
+        final String content = ConfigService.getConfig(_verDataId, _verGroup, 6000);
+        try (final InputStream is = new ByteArrayInputStream(content.getBytes(Charsets.UTF_8))) {
+            final Map<String, String> srv2ver = asStringStringMap(null, (Map<Object, Object>)new Yaml().loadAs(is, Map.class));
+            return new String[]{srv2ver.get(service)};
+        } catch (final IOException e) {
+            LOG.warn("exception when loadYaml from {}, detail: {}", content, ExceptionUtils.exception2detail(e));
+            return new String[]{"-1"};
+        }
+    }
+
+    private Map<String, String> asStringStringMap(final String prefix, final Map<Object, Object> map) {
+        if (null == map) {
+            return null;
+        }
+        final Map<String, String> ssmap = Maps.newHashMap();
+        for(final Map.Entry<Object, Object> entry : map.entrySet()) {
+            final String key = withPrefix(prefix, entry.getKey().toString());
+            if (entry.getValue() instanceof Map) {
+                @SuppressWarnings("unchecked")
+                final Map<Object, Object> orgmap = (Map<Object, Object>)entry.getValue();
+                ssmap.putAll(asStringStringMap(key, orgmap));
+            } else {
+                ssmap.put(key, entry.getValue().toString());
+            }
+        }
+        return ssmap;
+    }
+
+    private String withPrefix(final String prefix, final String key) {
+        return null != prefix ? prefix + "." + key : key;
+    }
 
 	@Path("/app-status/services")
 	public String listServices() {
