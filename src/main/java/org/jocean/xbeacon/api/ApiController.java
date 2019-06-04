@@ -39,6 +39,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 import rx.Observable;
 
@@ -75,7 +76,6 @@ public class ApiController {
         String _value;
     }
 
-	@SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
 
     @Inject
@@ -155,16 +155,24 @@ public class ApiController {
     }
 
 	@Path("/app-status/services")
-	public String listServices() {
-	    final Multimap<String, String> services = HashMultimap.create();
+	public String listServices(@QueryParam("hosts") final String hostsAsString) {
 
-	    for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
-	        for (final String srv : entry.getValue()) {
-	            services.put(srv, entry.getKey());
-	        }
-	    }
-	    final List<String> hosts = Arrays.asList(_host2svrs.keySet().toArray(EMPTY_STRS));
+//	    final List<String> hosts = Arrays.asList(_host2svrs.keySet().toArray(EMPTY_STRS));
+	    final List<String> hosts = new ArrayList<>(
+	            Sets.intersection(Sets.newHashSet(hostsAsString.split(",")),
+	                    Sets.newHashSet(_host2svrs.keySet().toArray(EMPTY_STRS))));
+
 	    Collections.sort(hosts);
+
+        final Multimap<String, String> services = HashMultimap.create();
+
+        for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
+            if (hosts.contains(entry.getKey())) {
+                for (final String srv : entry.getValue()) {
+                    services.put(srv, entry.getKey());
+                }
+            }
+        }
 
         final StringBuilder sb = new StringBuilder();
         String comma = "";
