@@ -31,9 +31,9 @@ dependencies {
     compile 'javax.servlet:javax.servlet-api:4.0.1'
     
     compile 'commons-io:commons-io:2.6'
-    compile 'com.google.guava:guava:21.0'
-    compile 'com.alibaba:fastjson:1.2.51'
-    compile 'joda-time:joda-time:2.10.1'
+    compile 'com.google.guava:guava:28.0-jre'
+    compile 'com.alibaba:fastjson:1.2.58'
+    compile 'joda-time:joda-time:2.10.2'
     
     /* jocean */
     compile 'org.jocean:jocean-idiom:0.1.4-SNAPSHOT'
