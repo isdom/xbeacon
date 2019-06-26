@@ -33,6 +33,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.alibaba.acm.shaded.com.google.common.collect.Lists;
 import com.alibaba.edas.acm.ConfigService;
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
@@ -77,34 +78,6 @@ public class ApiController {
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
-
-    @Inject
-    @Named("services")
-    List<ServiceInfo> _services;
-
-    @Value("${ignores}")
-    public void setIgnore(final String ignores) {
-        this._ignores = Arrays.asList(ignores.split(","));
-    }
-
-    private List<String> _ignores = Collections.emptyList();
-
-    Map<String, List<String>> _host2svrs = new ConcurrentHashMap<>();
-
-    @Value("${acm.endpoint}")
-    String _acmEndpoint;
-
-    @Value("${acm.namespace}")
-    String _acmNamespace;
-
-    @Value("${ecs.rolename}")
-    String _ecsRolename;
-
-    @Value("${ver.dataid}")
-    String _verDataId;
-
-    @Value("${ver.group}")
-    String _verGroup;
 
     @Path("/app-status/version")
     @Produces(MediaType.APPLICATION_JSON)
@@ -277,9 +250,6 @@ public class ApiController {
         return "OK";
     }
 
-    @Inject
-    BeanFinder _beanFinder;
-
     @Path("/rpc-status/rpcs")
     public Observable<String> listRpcs() {
 
@@ -303,4 +273,47 @@ public class ApiController {
             return sb.toString();
         });
     }
+
+    @Path("/app-status/restins")
+    public String listRestins() {
+        final List<RestinInfo> restins = new ArrayList<>(this._restins);
+        Collections.sort(restins);
+
+        return JSON.toJSONString(restins);
+    }
+
+    @Inject
+    BeanFinder _beanFinder;
+
+    @Inject
+    @Named("services")
+    List<ServiceInfo> _services;
+
+    @Value("${ignores}")
+    public void setIgnore(final String ignores) {
+        this._ignores = Arrays.asList(ignores.split(","));
+    }
+
+    private List<String> _ignores = Collections.emptyList();
+
+    Map<String, List<String>> _host2svrs = new ConcurrentHashMap<>();
+
+    @Inject
+    @Named("restins")
+    List<RestinInfo> _restins;
+
+    @Value("${acm.endpoint}")
+    String _acmEndpoint;
+
+    @Value("${acm.namespace}")
+    String _acmNamespace;
+
+    @Value("${ecs.rolename}")
+    String _ecsRolename;
+
+    @Value("${ver.dataid}")
+    String _verDataId;
+
+    @Value("${ver.group}")
+    String _verGroup;
 }

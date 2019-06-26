@@ -8,6 +8,7 @@
         http://www.springframework.org/schema/context/spring-context.xsd">
 
     <bean id="services" class="java.util.concurrent.CopyOnWriteArrayList"/>
+    <bean id="restins" class="java.util.concurrent.CopyOnWriteArrayList"/>
     
     <context:component-scan annotation-config="false" base-package="org.jocean.xbeacon.api"/>
           
