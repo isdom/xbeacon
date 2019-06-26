@@ -1,9 +1,11 @@
 package org.jocean.xbeacon.api;
 
+import org.jocean.j2se.annotation.Updatable;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.alibaba.fastjson.annotation.JSONField;
 
+@Updatable
 public class RestinInfo implements Comparable<RestinInfo> {
 
     @JSONField(name = "hostname")
