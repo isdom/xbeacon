@@ -4,13 +4,13 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
         
+    <bean id="riinfo" class="org.jocean.xbeacon.api.RestinInfo"/>
+    
     <bean class="org.jocean.idiom.rx.RxActions"
         factory-method="doAdd"
         destroy-method="call">
         <constructor-arg ref="restins"/>
-        <constructor-arg>
-            <bean class="org.jocean.xbeacon.api.RestinInfo"/>
-        </constructor-arg>
+        <constructor-arg ref="riinfo"/>
     </bean>
     
 </beans>
