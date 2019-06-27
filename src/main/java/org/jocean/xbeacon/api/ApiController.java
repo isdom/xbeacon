@@ -276,7 +276,7 @@ public class ApiController {
 
     @Path("/app-status/restins")
     public String listRestins() {
-        final List<RestinInfo> restins = new ArrayList<>(this._restins);
+        final List<OperationInfo> restins = new ArrayList<>(this._restins);
         Collections.sort(restins);
 
         return JSON.toJSONString(restins);
@@ -300,7 +300,7 @@ public class ApiController {
 
     @Inject
     @Named("restins")
-    List<RestinInfo> _restins;
+    List<OperationInfo> _restins;
 
     @Value("${acm.endpoint}")
     String _acmEndpoint;

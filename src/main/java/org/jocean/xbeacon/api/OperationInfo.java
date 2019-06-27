@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import com.alibaba.fastjson.annotation.JSONField;
 
 @Updatable
-public class RestinInfo implements Comparable<RestinInfo> {
+public class OperationInfo implements Comparable<OperationInfo> {
 
     @JSONField(name = "hostname")
     public String getHostname() {
@@ -38,6 +38,11 @@ public class RestinInfo implements Comparable<RestinInfo> {
         return _port;
     }
 
+    @JSONField(name = "operation")
+    public String getOperation() {
+        return _operation;
+    }
+
     @JSONField(name = "tradeCount")
     public int getTradeCount() {
         return _tradeCount;
@@ -61,11 +66,14 @@ public class RestinInfo implements Comparable<RestinInfo> {
     @Value("${port}")
     int _port;
 
+    @Value("${operation}")
+    String _operation;
+
     @Value("${trade.count}")
     int _tradeCount;
 
     @Override
-    public int compareTo(final RestinInfo o) {
+    public int compareTo(final OperationInfo o) {
         int ret = this._hostname.compareTo(o._hostname);
         if (ret != 0) {
             return ret;
@@ -88,6 +96,10 @@ public class RestinInfo implements Comparable<RestinInfo> {
         }
 
         ret = this._port - o._port;
+        if (ret != 0) {
+            return ret;
+        }
+        ret = this._operation.compareTo(o._operation);
         if (ret != 0) {
             return ret;
         }
