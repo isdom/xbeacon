@@ -29,7 +29,7 @@ public class RestinInfo implements Comparable<RestinInfo> {
     }
 
     @JSONField(name = "path")
-    public int getPath() {
+    public String getPath() {
         return _path;
     }
 
@@ -56,7 +56,7 @@ public class RestinInfo implements Comparable<RestinInfo> {
     String _pid;
 
     @Value("${request.path}")
-    int _path;
+    String _path;
 
     @Value("${port}")
     int _port;
@@ -79,6 +79,10 @@ public class RestinInfo implements Comparable<RestinInfo> {
             return ret;
         }
         ret = this._pid.compareTo(o._pid);
+        if (ret != 0) {
+            return ret;
+        }
+        ret = this._path.compareTo(o._path);
         if (ret != 0) {
             return ret;
         }
