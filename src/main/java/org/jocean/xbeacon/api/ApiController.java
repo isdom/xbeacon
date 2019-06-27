@@ -275,8 +275,19 @@ public class ApiController {
     }
 
     @Path("/app-status/restins")
-    public String listRestins() {
-        final List<OperationInfo> restins = new ArrayList<>(this._restins);
+    public String listRestins(@QueryParam("srv") final String service) {
+        final List<OperationInfo> restins = new ArrayList<>();
+
+        for (final OperationInfo info : this._restins) {
+            if (null != service) {
+                if (service.equals(info.getService())) {
+                    restins.add(info);
+                }
+            }
+            else {
+                restins.add(info);
+            }
+        }
         Collections.sort(restins);
 
         return JSON.toJSONString(restins);
