@@ -33,7 +33,6 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.alibaba.acm.shaded.com.google.common.collect.Lists;
 import com.alibaba.edas.acm.ConfigService;
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.annotation.JSONField;
 import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
@@ -275,11 +274,11 @@ public class ApiController {
     }
 
     @Path("/app-status/restins")
-    public String listRestins(@QueryParam("srv") final String service) {
+    public Object listRestins(@QueryParam("srv") final String service) {
         final List<OperationInfo> restins = new ArrayList<>();
 
         for (final OperationInfo info : this._restins) {
-            if (null != service) {
+            if (null != service && !service.isEmpty()) {
                 if (service.equals(info.getService())) {
                     restins.add(info);
                 }
@@ -290,7 +289,7 @@ public class ApiController {
         }
         Collections.sort(restins);
 
-        return JSON.toJSONString(restins);
+        return restins;
     }
 
     @Inject
