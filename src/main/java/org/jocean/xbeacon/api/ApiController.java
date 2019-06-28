@@ -292,6 +292,26 @@ public class ApiController {
         return restins;
     }
 
+    final static class Tab {
+        @JSONField(name = "id")
+        public int getId() {
+            return _id;
+        }
+
+        @JSONField(name = "content")
+        public String getContent() {
+            return _content;
+        }
+
+        Tab(final int id, final String content) {
+            _id = id;
+            _content = content;
+        }
+
+        int _id;
+        String _content;
+    }
+
     @Path("/app-status/restin-services")
     public Object listRestinServices() {
         final List<String> services = new ArrayList<>();
@@ -303,7 +323,13 @@ public class ApiController {
         }
         Collections.sort(services);
 
-        return services;
+        final List<Tab> tabs = new ArrayList<>();
+        int idx = 1;
+        for (final String srv : services) {
+            tabs.add(new Tab(idx++, srv));
+        }
+
+        return tabs;
     }
 
     @Inject
