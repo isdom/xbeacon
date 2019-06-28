@@ -292,6 +292,20 @@ public class ApiController {
         return restins;
     }
 
+    @Path("/app-status/restin-services")
+    public Object listRestinServices() {
+        final List<String> services = new ArrayList<>();
+
+        for (final OperationInfo info : this._restins) {
+            if (!services.contains(info.getService())) {
+                services.add(info.getService());
+            }
+        }
+        Collections.sort(services);
+
+        return services;
+    }
+
     @Inject
     BeanFinder _beanFinder;
 
