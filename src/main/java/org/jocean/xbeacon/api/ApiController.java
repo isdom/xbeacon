@@ -69,12 +69,15 @@ public class ApiController {
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
 
 	@Path("/app-status/services")
-	public String listServices(@QueryParam("hosts") final String hostsAsString) {
+	public String listServices(@QueryParam("hosts") final String hostsAsString,
+	        @QueryParam("srvs") final String srvsAsString) {
 
-//	    final List<String> hosts = Arrays.asList(_host2svrs.keySet().toArray(EMPTY_STRS));
-	    final List<String> hosts = new ArrayList<>(
-	            Sets.intersection(Sets.newHashSet(hostsAsString.split(",")),
-	                    Sets.newHashSet(_host2svrs.keySet().toArray(EMPTY_STRS))));
+	    final List<String> hosts = (null != hostsAsString && !hostsAsString.isEmpty())
+	            ? new ArrayList<>(Sets.intersection(Sets.newHashSet(hostsAsString.split(",")),
+    	                    Sets.newHashSet(_host2svrs.keySet().toArray(EMPTY_STRS))))
+                : Arrays.asList(_host2svrs.keySet().toArray(EMPTY_STRS));
+	    final List<String> srvPrefixs = (null != srvsAsString && !srvsAsString.isEmpty())
+	            ? Arrays.asList(srvsAsString.split(",")) : null;
 
 	    Collections.sort(hosts);
 
@@ -83,7 +86,9 @@ public class ApiController {
         for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
             if (hosts.contains(entry.getKey())) {
                 for (final String srv : entry.getValue()) {
-                    services.put(srv, entry.getKey());
+                    if (startWithPrefixs(srvPrefixs, srv)) {
+                        services.put(srv, entry.getKey());
+                    }
                 }
             }
         }
@@ -114,6 +119,18 @@ public class ApiController {
 
         return sb.toString();
 	}
+
+    static private boolean startWithPrefixs(final List<String> prefixs, final String srv) {
+        if (null == prefixs) {
+            return true;
+        }
+        for (final String prefix : prefixs) {
+            if (srv.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private String hostWithBuildno(final String host, final ServiceInfo[] infos) {
         String slash = "";
