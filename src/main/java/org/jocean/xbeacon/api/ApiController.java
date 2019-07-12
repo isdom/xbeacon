@@ -72,6 +72,8 @@ public class ApiController {
 	public String listServices(@QueryParam("hosts") final String hostsAsString,
 	        @QueryParam("srvs") final String srvsAsString) {
 
+	    LOG.info("hosts {}/srvs {}", hostsAsString, srvsAsString);
+
 	    final List<String> hosts = (null != hostsAsString && !hostsAsString.isEmpty())
 	            ? new ArrayList<>(Sets.intersection(Sets.newHashSet(hostsAsString.split(",")),
     	                    Sets.newHashSet(_host2svrs.keySet().toArray(EMPTY_STRS))))
