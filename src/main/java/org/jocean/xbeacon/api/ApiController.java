@@ -157,7 +157,9 @@ public class ApiController {
         if (start >= 0) {
             return buildNo.substring(start + "-SNAPSHOT-".length());
         }
-        return null;
+        else {
+            return buildNo;
+        }
     }
 
     private Pair<ServiceInfo[],String> serviceStatus(final String service, final String host, final Collection<String> installedHosts) {
