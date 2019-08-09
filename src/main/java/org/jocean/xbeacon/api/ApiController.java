@@ -109,10 +109,10 @@ public class ApiController {
             formatter.format("%s[\"%s\",\"service\"]", comma, Strings.padEnd("<timestamp>", 16, '_'));
             comma = ",";
 
+            final String now = Strings.padStart(Strings.padEnd(new SimpleDateFormat("HH:mm:ss:SSS").format(new Date()), 15, '_'), 20, '_');
+
             for (final String host : hosts) {
-                formatter.format(",[\"%s\",\"%s\"]",
-                        new SimpleDateFormat("HH:mm:ss").format(new Date()),
-                        "success");
+                formatter.format(",[\"%s\",\"%s\"]", now, "success");
             }
 
             for (final String service : srvs) {
