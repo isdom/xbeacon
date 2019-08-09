@@ -1,9 +1,11 @@
 package org.jocean.xbeacon.api;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.Formatter;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +104,16 @@ public class ApiController {
             final Map<String, Collection<String>> srv2host = services.asMap();
             final List<String> srvs = Lists.newArrayList(srv2host.keySet().toArray(EMPTY_STRS));
             Collections.sort(srvs);
+
+            // add title bar
+            formatter.format("%s[\"%s\",\"service\"]", comma, Strings.padEnd("<timestamp>", 16, '_'));
+            comma = ",";
+
+            for (final String host : hosts) {
+                formatter.format(",[\"%s\",\"%s\"]",
+                        new SimpleDateFormat("HH:mm:ss").format(new Date()),
+                        "success");
+            }
 
             for (final String service : srvs) {
                 if (!this._ignores.contains(service)) {
