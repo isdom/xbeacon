@@ -32,7 +32,7 @@ dependencies {
     
     compile 'commons-io:commons-io:2.6'
     compile 'com.google.guava:guava:28.0-jre'
-    compile 'com.alibaba:fastjson:1.2.58'
+    compile 'com.alibaba:fastjson:1.2.59'
     compile 'joda-time:joda-time:2.10.2'
     
     /* jocean */
