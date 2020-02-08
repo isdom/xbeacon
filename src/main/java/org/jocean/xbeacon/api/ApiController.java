@@ -67,7 +67,6 @@ public class ApiController {
         String _value;
     }
 
-    @SuppressWarnings("unused")
     private static final Logger LOG = LoggerFactory.getLogger(ApiController.class);
 
 	@Path("/app-status/services")
@@ -207,6 +206,25 @@ public class ApiController {
         }
 
         return "success";
+    }
+
+    @Path("/app-status/servicesStatusDetail")
+    public String servicesStatusDetail() {
+        final StringBuilder sb = new StringBuilder();
+        for (final Map.Entry<String, List<String>> entry : _host2svrs.entrySet()) {
+            for (final String srv : entry.getValue()) {
+                if (!this._ignores.contains(srv)) {
+                    if (!isServiceRunning(srv, entry.getKey())) {
+                        sb.append(entry.getKey()).append('/').append(srv).append(":!DOWN!").append('\n');
+                    }
+                    else {
+                        sb.append(entry.getKey()).append('/').append(srv).append(":running").append('\n');
+                    }
+                }
+            }
+        }
+
+        return sb.length() > 0 ? sb.toString() : "no service";
     }
 
     private boolean isServiceRunning(final String service, final String host) {
