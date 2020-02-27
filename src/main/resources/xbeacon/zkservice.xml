@@ -18,6 +18,9 @@
             <bean class="org.jocean.j2se.zk.ZKAgent"
                 init-method="start" 
                 destroy-method="stop">
+                <constructor-arg>
+                    <bean factory-bean="treemgr" factory-method="getConnName"/>
+                </constructor-arg>
                 <property name="root" value="${service.status.path:/status/services}"/>
             </bean>
         </constructor-arg>
