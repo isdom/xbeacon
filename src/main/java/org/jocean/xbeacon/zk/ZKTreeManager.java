@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.curator.framework.CuratorFramework;
@@ -73,14 +74,23 @@ public class ZKTreeManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(ZKTreeManager.class);
 
+    public ZKTreeManager(final String connName) {
+        this.connName = connName;
+    }
+
     @Inject
-    public void setClient(final CuratorFramework client) throws Exception {
-        LOG.info("inject CuratorFramework {}", client);
-        this._client = client;
+    @Named("this.connName")
+    public void setCurator(final CuratorFramework curator) throws Exception {
+        LOG.info("inject zkconn named[{}]/CuratorFramework {}", this.connName, curator);
+        this._curator = curator;
         this._executor = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                 .setNameFormat("ZKTreeManager-%d")
                 .setDaemon(false)
                 .build());
+    }
+
+    public String getConnName() {
+        return this.connName;
     }
 
     public ModelSource getModel() throws Exception {
@@ -145,15 +155,15 @@ public class ZKTreeManager {
             throws Exception {
         @SuppressWarnings("unchecked")
         final String path = ((Pair<String,String>)node.getData()).first;
-        this._client.setData().forPath(path, data.getBytes(Charsets.UTF_8));
+        this._curator.setData().forPath(path, data.getBytes(Charsets.UTF_8));
     }
 
     public String createZKNode(final String nodepath, final byte[] nodecontent) throws Exception {
-        return this._client.create().forPath(nodepath, nodecontent);
+        return this._curator.create().forPath(nodepath, nodecontent);
     }
 
     public void removeZKNode(final String nodepath) throws Exception {
-        this._client.delete().deletingChildrenIfNeeded().forPath(nodepath);
+        this._curator.delete().deletingChildrenIfNeeded().forPath(nodepath);
     }
 
     private static String[] buildPath(final String rawpath) {
@@ -309,7 +319,7 @@ public class ZKTreeManager {
 
     private boolean isEphemeralNode(final String path) {
         try {
-            return 0 != this._client.checkExists().forPath(path).getEphemeralOwner();
+            return 0 != this._curator.checkExists().forPath(path).getEphemeralOwner();
         } catch (final Exception e) {
             LOG.warn("exception when isEphemeralNode for {}, detail:{}",
                     path, ExceptionUtils.exception2detail(e));
@@ -333,7 +343,7 @@ public class ZKTreeManager {
 
     private String importContent(final String path, final UnitDescription desc)
             throws Exception {
-        return this._client.create()
+        return this._curator.create()
                 .creatingParentsIfNeeded()
                 .withMode(CreateMode.PERSISTENT)
                 .forPath(path + "/" + desc.getName(),
@@ -356,7 +366,9 @@ public class ZKTreeManager {
         }
     }
 
-    private CuratorFramework _client;
+    private final String connName;
+
+    private CuratorFramework _curator;
     private ExecutorService _executor;
     private WebApp _webapp;
     private EventQueue<Event> _eventqueue;
