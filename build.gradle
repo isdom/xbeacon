@@ -52,8 +52,8 @@ dependencies {
     compile 'org.zkoss.theme:atlantic:1.1.1'
     
     /* log */
-    runtime 'org.slf4j:jcl-over-slf4j:1.7.25'
-    runtime 'org.slf4j:log4j-over-slf4j:1.7.25'
+    runtime 'org.slf4j:jcl-over-slf4j:1.7.32'
+    runtime 'org.slf4j:log4j-over-slf4j:1.7.32'
     runtime 'ch.qos.logback:logback-classic:1.2.5'
     
     // compile 'org.jmxtrans.embedded:embedded-jmxtrans:1.2.1'
