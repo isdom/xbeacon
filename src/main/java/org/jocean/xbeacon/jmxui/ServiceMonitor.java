@@ -16,15 +16,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.inject.Inject;
 
-import org.jocean.http.RpcRunner;
 import org.jocean.idiom.BeanFinder;
 import org.jocean.idiom.Triple;
 import org.jocean.idiom.rx.RxObservables;
 import org.jocean.j2se.zk.ZKAgent;
-import org.jocean.jolokia.JolokiaAPI;
 import org.jocean.jolokia.api.JolokiaRequest;
 import org.jocean.jolokia.api.LongValueResponse;
-import org.jocean.svr.FinderUtil;
 import org.jocean.zkoss.util.Desktops;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -267,11 +264,13 @@ public class ServiceMonitor {
 
     public void start() throws Exception {
         this._eventqueue = EventQueues.lookup("service", this._webapp, true);
-        startMonitorServices();
+        // remark temp 10.14
+        // startMonitorServices();
     }
 
     public void stop() {
-        stopMonitorService();
+        // remark temp 10.14
+//        stopMonitorService();
         EventQueues.remove("service", this._webapp);
     }
 
@@ -403,11 +402,13 @@ public class ServiceMonitor {
     private Observable<List<Triple<ServiceInfo, String, Indicator>>> queryLongIndicator(
             final ServiceInfoImpl impl, final String[] names, final JolokiaRequest[] reqs) {
 
-        final Observable<RpcRunner> runners = FinderUtil.rpc(this._finder).runner();
-        return this._finder.find(JolokiaAPI.class).flatMap(api->
-            runners.compose(api.batch(impl.getJolokiaUrl(), reqs, LongValueResponse[].class)))
-            .onErrorResumeNext(resp404(reqs.length))
-            .map(resp2indicator(impl, names));
+        // remark temp 10.14
+//        final Observable<RpcRunner> runners = FinderUtil.rpc(this._finder).runner();
+//        return this._finder.find(JolokiaAPI.class).flatMap(api->
+//            runners.compose(api.batch(impl.getJolokiaUrl(), reqs, LongValueResponse[].class)))
+//            .onErrorResumeNext(resp404(reqs.length))
+//            .map(resp2indicator(impl, names));
+        return Observable.empty();
     }
 
     private Func1<? super LongValueResponse[], ? extends List<Triple<ServiceInfo, String, Indicator>>> resp2indicator(
