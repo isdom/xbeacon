@@ -41,7 +41,7 @@ dependencies {
     compile 'org.jocean:jocean-j2se:0.0.4-SNAPSHOT'
     compile 'org.jocean:jocean-zkoss:0.0.1-SNAPSHOT'
     compile 'org.jocean:jocean-jolokia:0.0.1-SNAPSHOT'
-    compile 'org.jocean:jocean-svr:0.0.1-SNAPSHOT'
+    compile 'org.jocean:jocean-svr:0.0.2-SNAPSHOT'
     compile 'org.jocean:jocean-jdmk:0.0.2'
     compile 'org.jocean:zkh5chart:1.21-SNAPSHOT'
     compile 'org.jocean:zhighcharts:0.3.0-SNAPSHOT'

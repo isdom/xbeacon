@@ -20,6 +20,7 @@ import org.jocean.jolokia.api.ListResponse.DomainInfo;
 import org.jocean.jolokia.api.ListResponse.MBeanInfo;
 import org.jocean.jolokia.api.ListResponse.OperationInfo;
 import org.jocean.jolokia.api.ReadAttrResponse;
+import org.jocean.svr.FinderUtil;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.Indicator;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.InitStatus;
 import org.jocean.xbeacon.jmxui.ServiceMonitor.ServiceInfo;
@@ -347,8 +348,8 @@ public class JmxComposer extends SelectorComposer<Window>{
     private void invokeOperation(final MBeanInfo mbean, final OperationUI op, final JSONArray args) {
         final Observable<RpcRunner> rpcs =
                 // remark temp 10.14
-                Observable.empty();
-                // FinderUtil.rpc(this._finder).runner();
+//                Observable.empty();
+                 FinderUtil.rpc(this._finder).runner();
 
         final JolokiaRequest req = new JolokiaRequest();
         req.setType("exec");
@@ -506,8 +507,8 @@ public class JmxComposer extends SelectorComposer<Window>{
 
         final Observable<RpcRunner> rpcs =
                 // remark temp 10.14
-                Observable.empty();
-                // FinderUtil.rpc(this._finder).runner();
+//                Observable.empty();
+                 FinderUtil.rpc(this._finder).runner();
 
         this._finder.find(JolokiaAPI.class).flatMap(api->rpcs.compose(
                     api.readAttribute(_jolokiauri.toString(), mbeaninfo.getObjectName().toString())))
@@ -557,8 +558,8 @@ public class JmxComposer extends SelectorComposer<Window>{
 
         final Observable<RpcRunner> rpcs =
                 // remark temp 10.14
-                Observable.empty();
-                // FinderUtil.rpc(this._finder).runner();
+//                Observable.empty();
+                 FinderUtil.rpc(this._finder).runner();
 
         this._finder.find(JolokiaAPI.class).flatMap(
             api->rpcs.compose(api.list(_jolokiauri.toString())) )
