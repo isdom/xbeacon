@@ -12,6 +12,7 @@ import org.jocean.zkoss.model.SimpleTreeModel.Node;
 import org.jocean.zkoss.ui.EditableTab;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.Constructor;
 import org.zkoss.zk.ui.event.Event;
@@ -173,7 +174,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
     }
 
     private String doRestoreTo(final Node node, final String restoreTo) {
-        final Yaml yaml = new Yaml(new Constructor(UnitDescription.class));
+        final Yaml yaml = new Yaml(new Constructor(UnitDescription.class, new LoaderOptions()));
         final UnitDescription root = (UnitDescription)yaml.load(this._zkmgr.getNodeDataAsString(node));
         try {
             return this._zkmgr.importNode(restoreTo, root);
@@ -234,7 +235,7 @@ public class ZooKeeperComposer extends SelectorComposer<Window>{
 
         final UnitDescription root = this._zkmgr.node2desc(node);
         if (null!=root) {
-            final Yaml yaml = new Yaml(new Constructor(UnitDescription.class));
+            final Yaml yaml = new Yaml(new Constructor(UnitDescription.class, new LoaderOptions()));
             final String backupcontent = yaml.dump(root);
 
             try {
