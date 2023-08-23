@@ -31,7 +31,7 @@ dependencies {
     compile 'javax.servlet:javax.servlet-api:4.0.1'
     
     compile 'commons-io:commons-io:2.11.0'
-    compile 'joda-time:joda-time:2.12.2'
+    compile 'joda-time:joda-time:2.12.5'
     
     /* jocean */
     compile 'org.jocean:jocean-idiom:0.1.4-SNAPSHOT'
